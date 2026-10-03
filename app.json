@@ -11,6 +11,12 @@
       "resizeMode": "contain",
       "backgroundColor": "#080B10"
     },
+    "androidStatusBar": {
+      "hidden": true
+    },
+    "androidNavigationBar": {
+      "visible": "sticky-immersive"
+    },
     "ios": {
       "supportsTablet": true
     },
