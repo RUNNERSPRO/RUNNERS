@@ -12,7 +12,7 @@
     "expo": "~54.0.0",
     "react": "19.1.0",
     "react-native": "0.81.5",
-    "expo-font": "*",
+    "expo-font": "~14.0.12",
     "expo-location": "~19.0.8",
     "expo-task-manager": "~14.0.9",
     "expo-speech": "~14.0.8",
