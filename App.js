@@ -20,6 +20,7 @@ import * as Speech from "expo-speech";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import { Ionicons } from "@expo/vector-icons";
+import * as NavigationBar from "expo-navigation-bar";
 
 const { width, height } = Dimensions.get("window");
 
@@ -479,6 +480,14 @@ export default function App() {
   const [mapLayoutSet, setMapLayoutSet] = useState(false);
 
   useEffect(() => {
+    async function hideSystemBars() {
+      await NavigationBar.setVisibilityAsync("hidden");
+      await NavigationBar.setBehaviorAsync("overlay-swipe");
+    }
+    hideSystemBars();
+  }, []);
+
+  useEffect(() => {
     initializeApp();
   }, []);
 
@@ -795,7 +804,7 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="light-content" backgroundColor="#080B10" />
+      <StatusBar hidden={true} barStyle="light-content" backgroundColor="#080B10" />
       <View style={styles.container}>
         {/* HEADER */}
         <View style={styles.header}>
