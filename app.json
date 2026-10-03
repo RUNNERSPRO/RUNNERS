@@ -1,20 +1,23 @@
 {
   "expo": {
-    "name": "bold-orange-marshmallows",
-    "slug": "snack-0b70d8e9-8d2f-4c78-9970-45d09c2c7502",
+    "name": "Runners Pro",
+    "slug": "runners-pro",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+
     "ios": {
       "supportsTablet": true
     },
+
     "android": {
       "package": "com.shiva.runners",
       "adaptiveIcon": {
@@ -23,8 +26,15 @@
       },
       "edgeToEdgeEnabled": true
     },
+
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+
+    "extra": {
+      "eas": {
+        "projectId": "YOUR_EAS_PROJECT_ID"
+      }
     }
   }
 }
