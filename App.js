@@ -20,7 +20,6 @@ import * as Speech from "expo-speech";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import { Ionicons } from "@expo/vector-icons";
-import * as NavigationBar from "expo-navigation-bar";
 
 const { width, height } = Dimensions.get("window");
 
@@ -38,13 +37,13 @@ const MAX_ROUTE_POINTS = 6000;
 const MAP_DELTA = 0.0045;
 
 const SPEED_STOPS = [
-  { speed: 0, color: "#EF4444" },   // RED
-  { speed: 4, color: "#FB923C" },   // ORANGE
-  { speed: 7, color: "#FACC15" },   // YELLOW
-  { speed: 10, color: "#A3E635" },  // LIME
-  { speed: 13, color: "#22C55E" },  // GREEN
-  { speed: 16, color: "#06B6D4" },  // CYAN
-  { speed: 20, color: "#2563EB" },  // BLUE
+  { speed: 0, color: "#EF4444" },   
+  { speed: 4, color: "#FB923C" },   
+  { speed: 7, color: "#FACC15" },   
+  { speed: 10, color: "#A3E635" },  
+  { speed: 13, color: "#22C55E" },  
+  { speed: 16, color: "#06B6D4" },  
+  { speed: 20, color: "#2563EB" },  
 ];
 
 /* =========================================================
@@ -273,10 +272,9 @@ function splitRouteSegments(points) {
 }
 
 /* =========================================================
-   MEMOIZED COMPONENTS (To stop freezing and blinking)
+   MEMOIZED COMPONENTS 
 ========================================================= */
 
-// Memoized Route: Will ONLY re-render when points length changes, saving huge CPU cycles
 const MemoizedSpectrumRoute = React.memo(({ points, prefix = "route" }) => {
   if (!Array.isArray(points) || points.length < 2) return null;
   const segments = splitRouteSegments(points);
@@ -338,7 +336,6 @@ const MemoizedSpectrumRoute = React.memo(({ points, prefix = "route" }) => {
   );
 }, (prevProps, nextProps) => prevProps.points.length === nextProps.points.length);
 
-// Memoized Markers: Stops Android from continuously flashing them every second
 const StartMarker = React.memo(({ coordinate }) => {
   if (!coordinate || !isValidCoordinate(coordinate)) return null;
   return (
@@ -371,7 +368,6 @@ const LiveMarker = React.memo(({ coordinate }) => {
     </Marker>
   );
 });
-
 
 /* =========================================================
    BACKGROUND LOCATION TASK
@@ -441,9 +437,7 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
     }
 
     await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(updatedSession));
-  } catch (taskError) {
-    console.log("Background task failed:", taskError);
-  }
+  } catch (taskError) {}
 });
 
 /* =========================================================
@@ -478,14 +472,6 @@ export default function App() {
 
   const [mapRendered, setMapRendered] = useState(false);
   const [mapLayoutSet, setMapLayoutSet] = useState(false);
-
-  useEffect(() => {
-    async function hideSystemBars() {
-      await NavigationBar.setVisibilityAsync("hidden");
-      await NavigationBar.setBehaviorAsync("overlay-swipe");
-    }
-    hideSystemBars();
-  }, []);
 
   useEffect(() => {
     initializeApp();
@@ -584,7 +570,6 @@ export default function App() {
     }
   }
 
-  // Optimized Sync Interval: Stops unnecessary array creations
   useEffect(() => {
     if (!running) return;
     const interval = setInterval(async () => {
@@ -597,7 +582,6 @@ export default function App() {
         setSpeed(Number(session.speedKmh || 0));
         setTopSpeed(Number(session.topSpeedKmh || 0));
 
-        // ONLY update route array if length changed to prevent heavy UI freeze
         if (Array.isArray(session.route)) {
           setRoute(prevRoute => prevRoute.length !== session.route.length ? session.route : prevRoute);
         }
@@ -668,9 +652,7 @@ export default function App() {
 
       Speech.speak("Run started", { language: "en-IN", rate: 0.95 });
       Vibration.vibrate(100);
-    } catch (error) {
-      Alert.alert("Unable to Start", "Could not get your current location.");
-    }
+    } catch (error) {}
   }
 
   async function pauseRun() {
@@ -729,9 +711,7 @@ export default function App() {
 
       Speech.speak("Run resumed", { language: "en-IN", rate: 0.95 });
       Vibration.vibrate(100);
-    } catch (error) {
-      Alert.alert("Resume Failed", "Could not get your current location.");
-    }
+    } catch (error) {}
   }
 
   function finishRun() {
@@ -780,9 +760,7 @@ export default function App() {
 
       Speech.speak("Run completed", { language: "en-IN", rate: 0.95 });
       Vibration.vibrate([0, 150, 100, 150]);
-    } catch (error) {
-      Alert.alert("Error", "Could not save the workout.");
-    }
+    } catch (error) {}
   }
 
   useEffect(() => {
@@ -847,11 +825,7 @@ export default function App() {
             }
           >
             <MemoizedSpectrumRoute points={route} prefix="live" />
-            
-            {/* START MARKER */}
             {route.length > 0 && <StartMarker coordinate={route[0]} />}
-
-            {/* LIVE LOCATION MARKER */}
             {running && location && <LiveMarker coordinate={location} />}
           </MapView>
 
@@ -937,7 +911,6 @@ export default function App() {
               <View style={styles.summaryMapCard} onLayout={() => setMapLayoutSet(true)}>
                 <MapView
                   ref={completionMapRef}
-                 
                   style={styles.summaryMap}
                   customMapStyle={darkMapStyle}
                   showsCompass={false}
@@ -947,7 +920,6 @@ export default function App() {
                   onMapReady={() => setMapRendered(true)}
                 >
                   <MemoizedSpectrumRoute points={summary.route} prefix="summary" />
-                  
                   {summary.route?.length > 0 && (
                     <>
                       <StartMarker coordinate={summary.route[0]} />
@@ -1100,15 +1072,12 @@ const styles = StyleSheet.create({
   legendText: { color: "#6B7280", fontSize: 8, fontWeight: "800" },
   mapControls: { position: "absolute", right: 14, bottom: 14, gap: 8 },
   mapControl: { width: 43, height: 43, borderRadius: 14, backgroundColor: "rgba(8,11,16,0.9)", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
-  
-  /* MARKER STYLES */
   liveMarker: { width: 27, height: 27, borderRadius: 14, backgroundColor: "rgba(34,197,94,0.25)", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(34,197,94,0.5)" },
   liveMarkerInner: { width: 12, height: 12, borderRadius: 6, backgroundColor: "#22C55E", borderWidth: 2, borderColor: "#FFFFFF" },
   startMarker: { width: 24, height: 24, borderRadius: 12, backgroundColor: "#22C55E", borderWidth: 3, borderColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },
   startMarkerDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: "#FFFFFF" },
   finishMarker: { width: 26, height: 26, borderRadius: 13, backgroundColor: "#2563EB", borderWidth: 3, borderColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },
   finishMarkerInner: { width: 8, height: 8, backgroundColor: "#FFFFFF", borderRadius: 2 },
-  
   bottomPanel: { backgroundColor: "#080B10", paddingHorizontal: 18, paddingTop: 15, paddingBottom: Platform.OS === "ios" ? 12 : 15 },
   primaryMetric: { alignItems: "center" },
   metricLabel: { color: "#6B7280", fontSize: 9, fontWeight: "900", letterSpacing: 1.5 },
