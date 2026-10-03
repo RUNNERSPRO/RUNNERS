@@ -18,7 +18,7 @@ import * as Location from "expo-location";
 import * as TaskManager from "expo-task-manager";
 import * as Speech from "expo-speech";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from "react-native-maps";
+import MapView, { Marker, Polyline } from "react-native-maps";
 import { Ionicons } from "@expo/vector-icons";
 
 const { width, height } = Dimensions.get("window");
@@ -822,7 +822,7 @@ export default function App() {
         <View style={styles.mapContainer}>
           <MapView
             ref={mapRef}
-            provider={PROVIDER_GOOGLE}
+            
             style={styles.map}
             mapType={mapType}
             customMapStyle={mapType === "standard" ? darkMapStyle : undefined}
@@ -928,7 +928,7 @@ export default function App() {
               <View style={styles.summaryMapCard} onLayout={() => setMapLayoutSet(true)}>
                 <MapView
                   ref={completionMapRef}
-                  provider={PROVIDER_GOOGLE}
+                 
                   style={styles.summaryMap}
                   customMapStyle={darkMapStyle}
                   showsCompass={false}
