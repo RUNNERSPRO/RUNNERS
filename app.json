@@ -4,10 +4,10 @@
     "slug": "shiva",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#080B10"
     },
@@ -17,7 +17,7 @@
     "android": {
       "package": "com.veer.runnerspro",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./icon.png",
         "backgroundColor": "#080B10"
       },
       "permissions": [
