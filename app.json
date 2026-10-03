@@ -1,36 +1,45 @@
 {
   "expo": {
-    "name": "Runners Pro",
-    "slug": "shiva",
+    "name": "runners-pro",
+    "slug": "runners-pro",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./icon.png",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
-
     "splash": {
-      "image": "./splash-icon.png",
+      "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#080B10"
     },
-
     "ios": {
       "supportsTablet": true
     },
-
     "android": {
-      "package": "com.shiva.runners",
-      "edgeToEdgeEnabled": true
-    },
-
-    "web": {
-      "favicon": "./favicon.png"
-    },
-
-    "extra": {
-      "eas": {
-        "projectId": "ed52e67d-d314-4a2a-ba69-07a582cfb792"
+      "package": "com.veer.runnerspro",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#080B10"
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyDbQS5NKULHYSuU77bx3bjLEeNliZhgRdc"
+        }
       }
-    }
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Runners Pro to use your location to track your runs in the background."
+        }
+      ]
+    ]
   }
 }
