@@ -1078,7 +1078,14 @@ const styles = StyleSheet.create({
   startMarkerDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: "#FFFFFF" },
   finishMarker: { width: 26, height: 26, borderRadius: 13, backgroundColor: "#2563EB", borderWidth: 3, borderColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },
   finishMarkerInner: { width: 8, height: 8, backgroundColor: "#FFFFFF", borderRadius: 2 },
-  bottomPanel: { backgroundColor: "#080B10", paddingHorizontal: 18, paddingTop: 15, paddingBottom: Platform.OS === "ios" ? 12 : 15 },
+    bottomPanel: { 
+    backgroundColor: "#080B10", 
+    paddingHorizontal: 18, 
+    paddingTop: 15, 
+    // Android ke liye padding 15 se badhakar 40 kar di hai taki overlap na ho
+    paddingBottom: Platform.OS === "ios" ? 20 : 40 
+  },
+
   primaryMetric: { alignItems: "center" },
   metricLabel: { color: "#6B7280", fontSize: 9, fontWeight: "900", letterSpacing: 1.5 },
   distanceText: { color: "#FFFFFF", fontSize: 43, fontWeight: "900", marginTop: -2 },
