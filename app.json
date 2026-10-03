@@ -32,9 +32,9 @@
     },
 
     "extra": {
-      "eas": {
-        "projectId":"ed52e67d-d314-4a2a-ba69-07a582c8fb792"
-      }
+  "eas": {
+    "projectId": "ed52e67d-d314-4a2a-ba69-07a582cfb792"
+  }
     }
   }
 }
