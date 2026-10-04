@@ -20,6 +20,7 @@ import * as Speech from "expo-speech";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import { Ionicons } from "@expo/vector-icons";
+import NetInfo from "@react-native-community/netinfo";
 
 const { width, height } = Dimensions.get("window");
 
@@ -450,6 +451,7 @@ export default function App() {
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [location, setLocation] = useState(null);
   const [accuracy, setAccuracy] = useState(null);
+  const [isConnected, setIsConnected] = useState(true);
 
   const [running, setRunning] = useState(false);
   const [paused, setPaused] = useState(false);
@@ -475,6 +477,12 @@ export default function App() {
 
   useEffect(() => {
     initializeApp();
+    
+    // Check Network Connection
+    const unsubscribe = NetInfo.addEventListener(state => {
+      setIsConnected(state.isConnected);
+    });
+    return () => unsubscribe();
   }, []);
 
   async function initializeApp() {
@@ -591,7 +599,7 @@ export default function App() {
           setLocation(point);
           setAccuracy(Number(session.lastPoint.accuracy));
 
-          if (followUser && mapRef.current) {
+          if (followUser && mapRef.current && isConnected) {
             mapRef.current.animateToRegion(
               { ...point, latitudeDelta: MAP_DELTA, longitudeDelta: MAP_DELTA },
               500
@@ -602,7 +610,7 @@ export default function App() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [running, followUser]);
+  }, [running, followUser, isConnected]);
 
   async function startRun() {
     let ready = permissionGranted;
@@ -764,7 +772,7 @@ export default function App() {
   }
 
   useEffect(() => {
-    if (summaryVisible && mapRendered && mapLayoutSet && summary && completionMapRef.current) {
+    if (summaryVisible && mapRendered && mapLayoutSet && summary && completionMapRef.current && isConnected) {
       const coordinates = Array.isArray(summary.route)
         ? summary.route.filter(isValidCoordinate).map(mapCoordinate)
         : [];
@@ -776,7 +784,7 @@ export default function App() {
         });
       }
     }
-  }, [summaryVisible, mapRendered, mapLayoutSet, summary]);
+  }, [summaryVisible, mapRendered, mapLayoutSet, summary, isConnected]);
 
   const gpsStatus = getGpsStatus(accuracy);
 
@@ -805,51 +813,73 @@ export default function App() {
           </TouchableOpacity>
         </View>
 
-        {/* LIVE MAP */}
+        {/* LIVE MAP OR OFFLINE DASHBOARD */}
         <View style={styles.mapContainer}>
-          <MapView
-            ref={mapRef}
-            
-            style={styles.map}
-            mapType={mapType}
-            customMapStyle={mapType === "standard" ? darkMapStyle : undefined}
-            showsCompass={false}
-            showsBuildings={false}
-            showsTraffic={false}
-            showsIndoors={false}
-            showsUserLocation={false}
-            initialRegion={
-              location
-                ? { ...location, latitudeDelta: MAP_DELTA, longitudeDelta: MAP_DELTA }
-                : { latitude: 28.6139, longitude: 77.209, latitudeDelta: 0.08, longitudeDelta: 0.08 }
-            }
-          >
-            <MemoizedSpectrumRoute points={route} prefix="live" />
-            {route.length > 0 && <StartMarker coordinate={route[0]} />}
-            {running && location && <LiveMarker coordinate={location} />}
-          </MapView>
+          {isConnected ? (
+            <>
+              <MapView
+                ref={mapRef}
+                style={styles.map}
+                mapType={mapType}
+                customMapStyle={mapType === "standard" ? darkMapStyle : undefined}
+                showsCompass={false}
+                showsBuildings={false}
+                showsTraffic={false}
+                showsIndoors={false}
+                showsUserLocation={false}
+                initialRegion={
+                  location
+                    ? { ...location, latitudeDelta: MAP_DELTA, longitudeDelta: MAP_DELTA }
+                    : { latitude: 28.6139, longitude: 77.209, latitudeDelta: 0.08, longitudeDelta: 0.08 }
+                }
+              >
+                <MemoizedSpectrumRoute points={route} prefix="live" />
+                {route.length > 0 && <StartMarker coordinate={route[0]} />}
+                {running && location && <LiveMarker coordinate={location} />}
+              </MapView>
 
-          <View style={styles.legend}>
-            <Text style={styles.legendTitle}>SPEED SPECTRUM</Text>
-            <View style={styles.legendBar}>
-              {SPEED_STOPS.map((stop) => (
-                <View key={stop.speed} style={[styles.legendColor, { backgroundColor: stop.color }]} />
-              ))}
-            </View>
-            <View style={styles.legendLabels}>
-              <Text style={styles.legendText}>SLOW</Text>
-              <Text style={styles.legendText}>FAST</Text>
-            </View>
-          </View>
+              <View style={styles.legend}>
+                <Text style={styles.legendTitle}>SPEED SPECTRUM</Text>
+                <View style={styles.legendBar}>
+                  {SPEED_STOPS.map((stop) => (
+                    <View key={stop.speed} style={[styles.legendColor, { backgroundColor: stop.color }]} />
+                  ))}
+                </View>
+                <View style={styles.legendLabels}>
+                  <Text style={styles.legendText}>SLOW</Text>
+                  <Text style={styles.legendText}>FAST</Text>
+                </View>
+              </View>
 
-          <View style={styles.mapControls}>
-            <TouchableOpacity style={styles.mapControl} onPress={() => setFollowUser((v) => !v)} activeOpacity={0.8}>
-              <Ionicons name={followUser ? "locate" : "locate-outline"} size={20} color={followUser ? "#22C55E" : "#FFFFFF"} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.mapControl} onPress={() => setMapType((c) => (c === "standard" ? "satellite" : "standard"))} activeOpacity={0.8}>
-              <Ionicons name="layers-outline" size={20} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
+              <View style={styles.mapControls}>
+                <TouchableOpacity style={styles.mapControl} onPress={() => setFollowUser((v) => !v)} activeOpacity={0.8}>
+                  <Ionicons name={followUser ? "locate" : "locate-outline"} size={20} color={followUser ? "#22C55E" : "#FFFFFF"} />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.mapControl} onPress={() => setMapType((c) => (c === "standard" ? "satellite" : "standard"))} activeOpacity={0.8}>
+                  <Ionicons name="layers-outline" size={20} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : (
+            <View style={styles.offlineFallback}>
+              <Ionicons name="cloud-offline" size={36} color="#4B5563" style={{ marginBottom: 8 }} />
+              <Text style={styles.offlineTitle}>OFFLINE MODE</Text>
+              
+              <Text style={styles.bigSpeedLabel}>LIVE SPEED</Text>
+              <Text style={styles.bigSpeedValue}>{speed.toFixed(1)}</Text>
+              <Text style={styles.bigSpeedUnit}>KM/H</Text>
+
+              <View style={styles.coordsBox}>
+                <Text style={styles.coordsLabel}>CURRENT COORDINATES</Text>
+                <Text style={styles.coordsText}>
+                  LAT: {location ? location.latitude.toFixed(6) : "SEARCHING..."}
+                </Text>
+                <Text style={styles.coordsText}>
+                  LON: {location ? location.longitude.toFixed(6) : "SEARCHING..."}
+                </Text>
+              </View>
+            </View>
+          )}
         </View>
 
         {/* BOTTOM STATS */}
@@ -909,27 +939,36 @@ export default function App() {
           {summary && (
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.summaryScroll}>
               <View style={styles.summaryMapCard} onLayout={() => setMapLayoutSet(true)}>
-                <MapView
-                  ref={completionMapRef}
-                  style={styles.summaryMap}
-                  customMapStyle={darkMapStyle}
-                  showsCompass={false}
-                  showsBuildings={false}
-                  showsTraffic={false}
-                  showsUserLocation={false}
-                  onMapReady={() => setMapRendered(true)}
-                >
-                  <MemoizedSpectrumRoute points={summary.route} prefix="summary" />
-                  {summary.route?.length > 0 && (
-                    <>
-                      <StartMarker coordinate={summary.route[0]} />
-                      <FinishMarker coordinate={summary.route[summary.route.length - 1]} />
-                    </>
-                  )}
-                </MapView>
-                <View style={styles.summaryMapLabel}>
-                  <Text style={styles.summaryMapLabelText}>SPEED SPECTRUM</Text>
-                </View>
+                {isConnected ? (
+                  <>
+                    <MapView
+                      ref={completionMapRef}
+                      style={styles.summaryMap}
+                      customMapStyle={darkMapStyle}
+                      showsCompass={false}
+                      showsBuildings={false}
+                      showsTraffic={false}
+                      showsUserLocation={false}
+                      onMapReady={() => setMapRendered(true)}
+                    >
+                      <MemoizedSpectrumRoute points={summary.route} prefix="summary" />
+                      {summary.route?.length > 0 && (
+                        <>
+                          <StartMarker coordinate={summary.route[0]} />
+                          <FinishMarker coordinate={summary.route[summary.route.length - 1]} />
+                        </>
+                      )}
+                    </MapView>
+                    <View style={styles.summaryMapLabel}>
+                      <Text style={styles.summaryMapLabelText}>SPEED SPECTRUM</Text>
+                    </View>
+                  </>
+                ) : (
+                  <View style={[styles.offlineFallback, { backgroundColor: '#11161E' }]}>
+                     <Ionicons name="map-outline" size={30} color="#4B5563" />
+                     <Text style={[styles.offlineTitle, { marginTop: 10 }]}>MAP UNAVAILABLE (OFFLINE)</Text>
+                  </View>
+                )}
               </View>
 
               <View style={styles.bigSummaryCard}>
@@ -1078,14 +1117,18 @@ const styles = StyleSheet.create({
   startMarkerDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: "#FFFFFF" },
   finishMarker: { width: 26, height: 26, borderRadius: 13, backgroundColor: "#2563EB", borderWidth: 3, borderColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },
   finishMarkerInner: { width: 8, height: 8, backgroundColor: "#FFFFFF", borderRadius: 2 },
-    bottomPanel: { 
-    backgroundColor: "#080B10", 
-    paddingHorizontal: 18, 
-    paddingTop: 15, 
-    // Android ke liye padding 15 se badhakar 40 kar di hai taki overlap na ho
-    paddingBottom: Platform.OS === "ios" ? 20 : 40 
-  },
+  
+  /* OFFLINE DASHBOARD STYLES */
+  offlineFallback: { flex: 1, backgroundColor: "#10151E", alignItems: "center", justifyContent: "center", padding: 20 },
+  offlineTitle: { color: "#6B7280", fontSize: 11, fontWeight: "900", letterSpacing: 2, marginBottom: 40 },
+  bigSpeedLabel: { color: '#6B7280', fontSize: 10, fontWeight: '900', letterSpacing: 1.5, marginBottom: 5 },
+  bigSpeedValue: { color: '#FFFFFF', fontSize: 80, fontWeight: '900', marginVertical: -10 },
+  bigSpeedUnit: { color: '#22C55E', fontSize: 15, fontWeight: '800', marginTop: 5 },
+  coordsBox: { marginTop: 40, padding: 16, backgroundColor: '#141922', borderRadius: 18, borderWidth: 1, borderColor: '#1B222D', alignItems: 'center', width: '100%' },
+  coordsLabel: { color: '#6B7280', fontSize: 8, fontWeight: '900', letterSpacing: 1.5, marginBottom: 8 },
+  coordsText: { color: '#9CA3AF', fontSize: 13, fontWeight: '700', fontVariant: ['tabular-nums'], marginBottom: 4 },
 
+  bottomPanel: { backgroundColor: "#080B10", paddingHorizontal: 18, paddingTop: 15, paddingBottom: Platform.OS === "ios" ? 20 : 40 },
   primaryMetric: { alignItems: "center" },
   metricLabel: { color: "#6B7280", fontSize: 9, fontWeight: "900", letterSpacing: 1.5 },
   distanceText: { color: "#FFFFFF", fontSize: 43, fontWeight: "900", marginTop: -2 },
