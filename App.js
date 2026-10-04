@@ -49,8 +49,15 @@ const SPEED_STOPS = [
 ];
 
 /* =========================================================
-   COLOR & MATH HELPERS
+   HELPERS
 ========================================================= */
+function getDirection(heading) {
+  if (heading === null || heading < 0) return "--";
+  const val = Math.floor((heading / 45) + 0.5);
+  const arr = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+  return arr[(val % 8)];
+}
+
 function hexToRgb(hex) {
   const clean = hex.replace("#", "");
   return {
@@ -80,28 +87,19 @@ function getSpectrumColor(speed) {
       const ratio = (s - current.speed) / (next.speed - current.speed || 1);
       const a = hexToRgb(current.color);
       const b = hexToRgb(next.color);
-
-      return rgbToHex(
-        a.r + (b.r - a.r) * ratio,
-        a.g + (b.g - a.g) * ratio,
-        a.b + (b.b - a.b) * ratio
-      );
+      return rgbToHex(a.r + (b.r - a.r) * ratio, a.g + (b.g - a.g) * ratio, a.b + (b.b - a.b) * ratio);
     }
   }
   return SPEED_STOPS[SPEED_STOPS.length - 1].color;
 }
 
-function toRad(value) {
-  return (value * Math.PI) / 180;
-}
+function toRad(value) { return (value * Math.PI) / 180; }
 
 function distanceMeters(lat1, lon1, lat2, lon2) {
   const R = 6371000;
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
   return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
@@ -110,10 +108,8 @@ function isValidCoordinate(point) {
   const latitude = Number(point.latitude);
   const longitude = Number(point.longitude);
   return (
-    Number.isFinite(latitude) &&
-    Number.isFinite(longitude) &&
-    latitude >= -90 && latitude <= 90 &&
-    longitude >= -180 && longitude <= 180
+    Number.isFinite(latitude) && Number.isFinite(longitude) &&
+    latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180
   );
 }
 
@@ -126,21 +122,13 @@ function mapCoordinate(point) {
   };
 }
 
-/* =========================================================
-   ROUTE COMPRESSION
-========================================================= */
 function compressSegment(segment, maxPoints) {
   if (!segment.length) return [];
   if (segment.length <= maxPoints) return segment;
   if (maxPoints <= 1) return [segment[segment.length - 1]];
-
   const result = [];
   const step = (segment.length - 1) / (maxPoints - 1);
-
-  for (let i = 0; i < maxPoints; i++) {
-    const index = Math.round(i * step);
-    result.push(segment[index]);
-  }
+  for (let i = 0; i < maxPoints; i++) result.push(segment[Math.round(i * step)]);
   return result;
 }
 
@@ -153,16 +141,11 @@ function compactRoute(points, maxPoints = MAX_ROUTE_POINTS) {
   let current = [];
 
   valid.forEach((point, index) => {
-    if (index === 0) {
-      current = [point];
-      return;
-    }
+    if (index === 0) { current = [point]; return; }
     if (point.breakBefore) {
       if (current.length) segments.push(current);
       current = [point];
-    } else {
-      current.push(point);
-    }
+    } else { current.push(point); }
   });
   if (current.length) segments.push(current);
   if (segments.length === 1) return compressSegment(segments[0], maxPoints);
@@ -179,14 +162,10 @@ function compactRoute(points, maxPoints = MAX_ROUTE_POINTS) {
   });
 
   while (remaining > 0) {
-    let largestIndex = -1;
-    let largestAvailable = 0;
+    let largestIndex = -1, largestAvailable = 0;
     segments.forEach((segment, index) => {
       const available = segment.length - allocation[index];
-      if (available > largestAvailable) {
-        largestAvailable = available;
-        largestIndex = index;
-      }
+      if (available > largestAvailable) { largestAvailable = available; largestIndex = index; }
     });
     if (largestIndex === -1 || largestAvailable <= 0) break;
     allocation[largestIndex]++;
@@ -196,9 +175,7 @@ function compactRoute(points, maxPoints = MAX_ROUTE_POINTS) {
   const result = [];
   segments.forEach((segment, index) => {
     const compressed = compressSegment(segment, Math.max(1, allocation[index]));
-    if (index > 0 && compressed.length) {
-      compressed[0] = { ...compressed[0], breakBefore: true };
-    }
+    if (index > 0 && compressed.length) compressed[0] = { ...compressed[0], breakBefore: true };
     result.push(...compressed);
   });
   return result;
@@ -209,24 +186,17 @@ function formatTime(seconds) {
   const hours = Math.floor(total / 3600);
   const minutes = Math.floor((total % 3600) / 60);
   const secs = total % 60;
-
-  if (hours > 0) {
-    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
-  }
+  if (hours > 0) return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
   return `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 }
 
 function getPace(distanceKm, seconds) {
   if (!distanceKm || distanceKm <= 0 || !seconds || seconds <= 0) return "--:--";
   const paceSeconds = seconds / distanceKm;
-  const minutes = Math.floor(paceSeconds / 60);
-  const secs = Math.floor(paceSeconds % 60);
-  return `${minutes}:${String(secs).padStart(2, "0")}`;
+  return `${Math.floor(paceSeconds / 60)}:${String(Math.floor(paceSeconds % 60)).padStart(2, "0")}`;
 }
 
-function estimatedCalories(distanceKm) {
-  return Math.round(Math.max(0, Number(distanceKm) || 0) * 65);
-}
+function estimatedCalories(distanceKm) { return Math.round(Math.max(0, Number(distanceKm) || 0) * 65); }
 
 function getGpsStatus(accuracy) {
   if (!Number.isFinite(Number(accuracy))) return { label: "SEARCHING", color: "#F59E0B" };
@@ -236,11 +206,7 @@ function getGpsStatus(accuracy) {
   return { label: "WEAK", color: "#EF4444" };
 }
 
-function smoothSpeed(previous, current) {
-  const p = Number(previous) || 0;
-  const c = Number(current) || 0;
-  return p * 0.85 + c * 0.15; 
-}
+function smoothSpeed(previous, current) { return (Number(previous) || 0) * 0.85 + (Number(current) || 0) * 0.15; }
 
 const darkMapStyle = [
   { elementType: "geometry", stylers: [{ color: "#111827" }] },
@@ -254,87 +220,49 @@ const darkMapStyle = [
   { featureType: "poi", elementType: "geometry", stylers: [{ color: "#18212F" }] },
 ];
 
-function splitRouteSegments(points) {
-  if (!Array.isArray(points)) return [];
-  const validPoints = points.filter(isValidCoordinate);
-  if (validPoints.length < 2) return [];
-
-  const segments = [];
-  let current = [];
-
-  validPoints.forEach((point, index) => {
-    if (index === 0) {
-      current = [point];
-      return;
-    }
-    if (point.breakBefore) {
-      if (current.length >= 2) segments.push(current);
-      current = [point];
-    } else {
-      current.push(point);
-    }
-  });
-  if (current.length >= 2) segments.push(current);
-  return segments;
-}
-
 /* =========================================================
    MEMOIZED COMPONENTS 
 ========================================================= */
 
 const MemoizedSpectrumRoute = React.memo(({ points, prefix = "route" }) => {
   if (!Array.isArray(points) || points.length < 2) return null;
-  const segments = splitRouteSegments(points);
+  const segments = (function splitRouteSegments(pts) {
+    const valid = pts.filter(isValidCoordinate);
+    if (valid.length < 2) return [];
+    const segs = [];
+    let cur = [];
+    valid.forEach((p, i) => {
+      if (i === 0) { cur = [p]; return; }
+      if (p.breakBefore) { if (cur.length >= 2) segs.push(cur); cur = [p]; } else cur.push(p);
+    });
+    if (cur.length >= 2) segs.push(cur);
+    return segs;
+  })(points);
 
   return (
     <>
       {segments.map((segment, segmentIndex) => {
         if (segment.length < 2) return null;
-
         const colorChunks = [];
         let currentChunk = [segment[0]];
         let currentColor = null;
-
         for (let i = 0; i < segment.length - 1; i++) {
-          const point = segment[i];
-          const next = segment[i + 1];
-          const avgSpeed = (Number(point.speedKmh || 0) + Number(next.speedKmh || 0)) / 2;
-          const color = getSpectrumColor(avgSpeed);
-
+          const point = segment[i], next = segment[i + 1];
+          const color = getSpectrumColor((Number(point.speedKmh || 0) + Number(next.speedKmh || 0)) / 2);
           if (currentColor === null) currentColor = color;
-
           if (color !== currentColor) {
             colorChunks.push({ color: currentColor, coordinates: [...currentChunk] });
             currentChunk = [point, next];
             currentColor = color;
-          } else {
-            currentChunk.push(next);
-          }
+          } else currentChunk.push(next);
         }
-        if (currentChunk.length > 1) {
-          colorChunks.push({ color: currentColor, coordinates: currentChunk });
-        }
+        if (currentChunk.length > 1) colorChunks.push({ color: currentColor, coordinates: currentChunk });
 
         return (
           <React.Fragment key={`${prefix}-segment-${segmentIndex}`}>
-            <Polyline
-              coordinates={segment.map(mapCoordinate)}
-              strokeColor="rgba(0,0,0,0.55)"
-              strokeWidth={11}
-              lineCap="round"
-              lineJoin="round"
-              zIndex={1}
-            />
+            <Polyline coordinates={segment.map(mapCoordinate)} strokeColor="rgba(0,0,0,0.55)" strokeWidth={11} lineCap="round" lineJoin="round" zIndex={1} />
             {colorChunks.map((chunk, chunkIndex) => (
-              <Polyline
-                key={`${prefix}-${segmentIndex}-${chunkIndex}`}
-                coordinates={chunk.coordinates.map(mapCoordinate)}
-                strokeColor={chunk.color}
-                strokeWidth={7}
-                lineCap="round"
-                lineJoin="round"
-                zIndex={2}
-              />
+              <Polyline key={`${prefix}-${segmentIndex}-${chunkIndex}`} coordinates={chunk.coordinates.map(mapCoordinate)} strokeColor={chunk.color} strokeWidth={7} lineCap="round" lineJoin="round" zIndex={2} />
             ))}
           </React.Fragment>
         );
@@ -347,9 +275,7 @@ const StartMarker = React.memo(({ coordinate }) => {
   if (!coordinate || !isValidCoordinate(coordinate)) return null;
   return (
     <Marker coordinate={mapCoordinate(coordinate)} anchor={{ x: 0.5, y: 0.5 }}>
-      <View style={styles.startMarker}>
-        <View style={styles.startMarkerDot} />
-      </View>
+      <View style={styles.startMarker}><View style={styles.startMarkerDot} /></View>
     </Marker>
   );
 });
@@ -358,9 +284,7 @@ const FinishMarker = React.memo(({ coordinate }) => {
   if (!coordinate || !isValidCoordinate(coordinate)) return null;
   return (
     <Marker coordinate={mapCoordinate(coordinate)} anchor={{ x: 0.5, y: 0.5 }}>
-      <View style={styles.finishMarker}>
-        <View style={styles.finishMarkerInner} />
-      </View>
+      <View style={styles.finishMarker}><View style={styles.finishMarkerInner} /></View>
     </Marker>
   );
 });
@@ -369,9 +293,7 @@ const LiveMarker = React.memo(({ coordinate }) => {
   if (!coordinate || !isValidCoordinate(coordinate)) return null;
   return (
     <Marker coordinate={mapCoordinate(coordinate)} anchor={{ x: 0.5, y: 0.5 }} zIndex={999}>
-      <View style={styles.liveMarker}>
-        <View style={styles.liveMarkerInner} />
-      </View>
+      <View style={styles.liveMarker}><View style={styles.liveMarkerInner} /></View>
     </Marker>
   );
 });
@@ -380,33 +302,23 @@ const LiveMarker = React.memo(({ coordinate }) => {
    BACKGROUND LOCATION TASK
 ========================================================= */
 TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
-  if (error) return;
-  if (!data || !Array.isArray(data.locations) || data.locations.length === 0) return;
-
+  if (error || !data?.locations?.length) return;
   try {
     const stored = await AsyncStorage.getItem(SESSION_KEY);
     if (!stored) return;
-
     const session = JSON.parse(stored);
-    if (!session || session.running !== true || session.paused) return;
+    if (!session || !session.running || session.paused) return;
 
     let updatedSession = { ...session };
-
     for (const locationData of data.locations) {
       const coords = locationData?.coords;
       if (!coords) continue;
-
-      const latitude = Number(coords.latitude);
-      const longitude = Number(coords.longitude);
-      const accuracy = Number(coords.accuracy);
-      const altitude = Number(coords.altitude) || 0;
-      const heading = Number(coords.heading) || -1;
-
-      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) continue;
-      if (Number.isFinite(accuracy) && accuracy > MAX_ACCURACY) continue; 
+      
+      const { latitude, longitude, accuracy, altitude, heading } = coords;
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || (Number.isFinite(accuracy) && accuracy > MAX_ACCURACY)) continue;
 
       const timestamp = Number(locationData.timestamp) || Date.now();
-      const currentPoint = { latitude, longitude, accuracy, timestamp, altitude, heading };
+      const currentPoint = { latitude, longitude, accuracy, timestamp, altitude: altitude || 0, heading: heading || -1 };
       const previous = updatedSession.lastPoint || updatedSession.route?.[updatedSession.route.length - 1];
 
       if (!previous) {
@@ -416,37 +328,24 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
       }
 
       const distance = distanceMeters(previous.latitude, previous.longitude, latitude, longitude);
-      const previousTimestamp = Number(previous.timestamp) || timestamp;
-      const deltaTime = Math.max(0.5, (timestamp - previousTimestamp) / 1000);
+      const deltaTime = Math.max(0.5, (timestamp - (Number(previous.timestamp) || timestamp)) / 1000);
       const calculatedSpeed = (distance / deltaTime) * 3.6;
 
-      if (calculatedSpeed > MAX_RUNNING_SPEED_KMH) continue; 
-      if (distance < MIN_MOVEMENT_METERS) continue;
+      if (calculatedSpeed > MAX_RUNNING_SPEED_KMH || distance < MIN_MOVEMENT_METERS) continue;
 
-      const validSpeed = Math.max(0, calculatedSpeed);
-      const smoothedSpeed = smoothSpeed(updatedSession.speedKmh || 0, validSpeed);
+      const smoothedSpeed = smoothSpeed(updatedSession.speedKmh || 0, Math.max(0, calculatedSpeed));
+      const newPoint = { ...currentPoint, speedKmh: Number(smoothedSpeed.toFixed(2)) };
 
-      const newPoint = {
-        ...currentPoint,
-        speedKmh: Number(smoothedSpeed.toFixed(2)),
-      };
+      if (updatedSession.routeBreakPending) { newPoint.breakBefore = true; updatedSession.routeBreakPending = false; }
 
-      if (updatedSession.routeBreakPending) {
-        newPoint.breakBefore = true;
-        updatedSession.routeBreakPending = false;
-      }
-
-      const route = [...(updatedSession.route || []), newPoint];
-
-      updatedSession.route = compactRoute(route, MAX_ROUTE_POINTS);
+      updatedSession.route = compactRoute([...(updatedSession.route || []), newPoint], MAX_ROUTE_POINTS);
       updatedSession.lastPoint = currentPoint;
       updatedSession.speedKmh = Number(smoothedSpeed.toFixed(2));
-      updatedSession.topSpeedKmh = Math.max(Number(updatedSession.topSpeedKmh || 0), validSpeed);
+      updatedSession.topSpeedKmh = Math.max(Number(updatedSession.topSpeedKmh || 0), Math.max(0, calculatedSpeed));
       updatedSession.distanceMeters = Number(updatedSession.distanceMeters || 0) + distance;
     }
-
     await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(updatedSession));
-  } catch (taskError) {}
+  } catch (err) {}
 });
 
 /* =========================================================
@@ -461,42 +360,41 @@ export default function App() {
   const [accuracy, setAccuracy] = useState(null);
   const [isConnected, setIsConnected] = useState(true);
 
+  // Run State
   const [running, setRunning] = useState(false);
   const [paused, setPaused] = useState(false);
-  
   const [timeData, setTimeData] = useState({ accumulatedMs: 0, lastResumeTime: 0 });
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-
   const [distance, setDistance] = useState(0);
   const [speed, setSpeed] = useState(0);
   const [topSpeed, setTopSpeed] = useState(0);
   const [route, setRoute] = useState([]);
 
+  // Challenge Mode State
+  const [targetDistance, setTargetDistance] = useState(null); // in KM
+  const [challengeCompleted, setChallengeCompleted] = useState(false);
+  const [missionModalVisible, setMissionModalVisible] = useState(false);
+
+  // UI State
   const [mapType, setMapType] = useState("standard");
   const [followUser, setFollowUser] = useState(true);
-  
   const [summaryVisible, setSummaryVisible] = useState(false);
   const [historyVisible, setHistoryVisible] = useState(false);
   const [summary, setSummary] = useState(null);
   const [history, setHistory] = useState([]);
-
   const [mapRendered, setMapRendered] = useState(false);
   const [mapLayoutSet, setMapLayoutSet] = useState(false);
 
-  // Animation Value for Running Man
+  // Animation for Runner
   const runAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     initializeApp();
-    
-    // Check Network Connection
-    const unsubscribe = NetInfo.addEventListener(state => {
-      setIsConnected(state.isConnected);
-    });
+    const unsubscribe = NetInfo.addEventListener(state => setIsConnected(state.isConnected));
     return () => unsubscribe();
   }, []);
 
-  // Trigger Animation when running
+  // Animation Loop
   useEffect(() => {
     if (running && !paused) {
       Animated.loop(
@@ -511,10 +409,27 @@ export default function App() {
     }
   }, [running, paused]);
 
-  const translateY = runAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, -12] // Bounces 12 pixels up
-  });
+  const translateY = runAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -12] });
+
+  // Challenge Completion Check
+  useEffect(() => {
+    if (running && targetDistance && !challengeCompleted) {
+      if (distance >= targetDistance) {
+        setChallengeCompleted(true);
+        Speech.speak("Mission completed", { language: "en-IN", rate: 0.95 });
+        Alert.alert("🎉 Mission Completed!", `Congratulations! You have successfully completed your ${targetDistance} KM mission.`);
+        
+        // Update storage to prevent repeating alert
+        AsyncStorage.getItem(SESSION_KEY).then(stored => {
+          if(stored) {
+             const s = JSON.parse(stored);
+             s.challengeCompleted = true;
+             AsyncStorage.setItem(SESSION_KEY, JSON.stringify(s));
+          }
+        });
+      }
+    }
+  }, [distance, running, targetDistance, challengeCompleted]);
 
   async function initializeApp() {
     await loadHistory();
@@ -532,11 +447,8 @@ export default function App() {
     let interval;
     if (running) {
       interval = setInterval(() => {
-        if (paused || !timeData.lastResumeTime) {
-          setElapsedSeconds(Math.floor(timeData.accumulatedMs / 1000));
-        } else {
-          setElapsedSeconds(Math.floor((timeData.accumulatedMs + (Date.now() - timeData.lastResumeTime)) / 1000));
-        }
+        if (paused || !timeData.lastResumeTime) setElapsedSeconds(Math.floor(timeData.accumulatedMs / 1000));
+        else setElapsedSeconds(Math.floor((timeData.accumulatedMs + (Date.now() - timeData.lastResumeTime)) / 1000));
       }, 1000);
     }
     return () => clearInterval(interval);
@@ -545,19 +457,14 @@ export default function App() {
   async function setupLocation() {
     try {
       const foreground = await Location.requestForegroundPermissionsAsync();
-      if (foreground.status !== "granted") {
-        Alert.alert("Location Required", "Location permission is required to track your run.");
-        return false;
-      }
+      if (foreground.status !== "granted") { Alert.alert("Location Required", "Location permission is required."); return false; }
       setPermissionGranted(true);
 
       const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
       if (current?.coords) {
         setLocation({ 
-          latitude: current.coords.latitude, 
-          longitude: current.coords.longitude,
-          altitude: current.coords.altitude,
-          heading: current.coords.heading
+          latitude: current.coords.latitude, longitude: current.coords.longitude,
+          altitude: current.coords.altitude, heading: current.coords.heading
         });
         setAccuracy(current.coords.accuracy);
       }
@@ -573,45 +480,30 @@ export default function App() {
           setSpeed(Number(session.speedKmh || 0));
           setTopSpeed(Number(session.topSpeedKmh || 0));
           setRoute(Array.isArray(session.route) ? session.route : []);
+          setTargetDistance(session.targetDistance || null);
+          setChallengeCompleted(session.challengeCompleted || false);
         }
       }
       return true;
-    } catch (error) {
-      return false;
-    }
+    } catch (error) { return false; }
   }
 
   async function startLocationService() {
     try {
       const enabled = await Location.hasServicesEnabledAsync();
-      if (!enabled) {
-        Alert.alert("Location Services Off", "Please turn on Location Services.");
-        return false;
-      }
-      
+      if (!enabled) { Alert.alert("Location Services Off", "Please turn on Location Services."); return false; }
       const background = await Location.requestBackgroundPermissionsAsync();
-      if (background.status !== "granted") {
-        Alert.alert("Background Location Required", "Allow 'Allow all the time' in App Settings to track when locked.");
-        return false;
-      }
+      if (background.status !== "granted") { Alert.alert("Background Location Required", "Allow 'Allow all the time' in settings."); return false; }
 
       const alreadyStarted = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME);
       if (!alreadyStarted) {
         await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
-          accuracy: Location.Accuracy.BestForNavigation,
-          timeInterval: 1000,
-          distanceInterval: 2,
-          showsBackgroundLocationIndicator: true,
-          foregroundService: {
-            notificationTitle: "Run Tracker",
-            notificationBody: "Your run is being tracked.",
-          },
+          accuracy: Location.Accuracy.BestForNavigation, timeInterval: 1000, distanceInterval: 2,
+          showsBackgroundLocationIndicator: true, foregroundService: { notificationTitle: "Run Tracker", notificationBody: "Your run is being tracked." },
         });
       }
       return true;
-    } catch (error) {
-      return false;
-    }
+    } catch (error) { return false; }
   }
 
   useEffect(() => {
@@ -625,30 +517,25 @@ export default function App() {
         setDistance(Number(session.distanceMeters || 0) / 1000);
         setSpeed(Number(session.speedKmh || 0));
         setTopSpeed(Number(session.topSpeedKmh || 0));
-
-        if (Array.isArray(session.route)) {
-          setRoute(prevRoute => prevRoute.length !== session.route.length ? session.route : prevRoute);
-        }
+        if (Array.isArray(session.route)) setRoute(prev => prev.length !== session.route.length ? session.route : prev);
 
         if (session.lastPoint && isValidCoordinate(session.lastPoint)) {
           const point = mapCoordinate(session.lastPoint);
           setLocation(point);
           setAccuracy(Number(session.lastPoint.accuracy));
-
           if (followUser && mapRef.current && isConnected) {
-            mapRef.current.animateToRegion(
-              { ...point, latitudeDelta: MAP_DELTA, longitudeDelta: MAP_DELTA },
-              500
-            );
+            mapRef.current.animateToRegion({ ...point, latitudeDelta: MAP_DELTA, longitudeDelta: MAP_DELTA }, 500);
           }
         }
       } catch (error) {}
     }, 1000);
-
     return () => clearInterval(interval);
   }, [running, followUser, isConnected]);
 
-  async function startRun() {
+  // Handle Mission Selection and Start
+  async function confirmMissionStart(targetKm) {
+    setMissionModalVisible(false);
+    
     let ready = permissionGranted;
     if (!ready) ready = await setupLocation();
     if (!ready) return;
@@ -660,31 +547,23 @@ export default function App() {
       const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.BestForNavigation });
       const now = Date.now();
       const firstPoint = {
-        latitude: current.coords.latitude,
-        longitude: current.coords.longitude,
-        accuracy: current.coords.accuracy,
-        altitude: current.coords.altitude || 0,
-        heading: current.coords.heading || -1,
-        timestamp: now,
-        speedKmh: 0,
+        latitude: current.coords.latitude, longitude: current.coords.longitude,
+        accuracy: current.coords.accuracy, altitude: current.coords.altitude || 0,
+        heading: current.coords.heading || -1, timestamp: now, speedKmh: 0,
       };
       
       const newTimeData = { accumulatedMs: 0, lastResumeTime: now };
       
       const newSession = {
-        running: true,
-        paused: false,
-        timeData: newTimeData,
-        distanceMeters: 0,
-        speedKmh: 0,
-        topSpeedKmh: 0,
-        route: [firstPoint],
-        lastPoint: firstPoint,
-        routeBreakPending: false,
+        running: true, paused: false, timeData: newTimeData, distanceMeters: 0,
+        speedKmh: 0, topSpeedKmh: 0, route: [firstPoint], lastPoint: firstPoint,
+        routeBreakPending: false, targetDistance: targetKm, challengeCompleted: false
       };
 
       await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(newSession));
 
+      setTargetDistance(targetKm);
+      setChallengeCompleted(false);
       setLocation(mapCoordinate(firstPoint));
       setAccuracy(firstPoint.accuracy);
       setTimeData(newTimeData);
@@ -696,67 +575,37 @@ export default function App() {
       setTopSpeed(0);
       setRoute([firstPoint]);
 
-      Speech.speak("Run started", { language: "en-IN", rate: 0.95 });
+      Speech.speak(targetKm ? `Mission ${targetKm} kilometers started` : "Free Run started", { language: "en-IN", rate: 0.95 });
       Vibration.vibrate(100);
-    } catch (error) {}
+    } catch (error) { Alert.alert("Error", "Could not start tracking."); }
   }
 
   async function pauseRun() {
-    const newAccumulated = timeData.accumulatedMs + (Date.now() - timeData.lastResumeTime);
-    const newTimeData = { accumulatedMs: newAccumulated, lastResumeTime: null };
-    
-    setPaused(true);
-    setSpeed(0);
-    setTimeData(newTimeData);
-
-    await AsyncStorage.mergeItem(SESSION_KEY, JSON.stringify({
-      paused: true,
-      speedKmh: 0,
-      routeBreakPending: true,
-      timeData: newTimeData
-    }));
-
-    Vibration.vibrate(100);
-    Speech.speak("Run paused", { language: "en-IN", rate: 0.95 });
+    const newTimeData = { accumulatedMs: timeData.accumulatedMs + (Date.now() - timeData.lastResumeTime), lastResumeTime: null };
+    setPaused(true); setSpeed(0); setTimeData(newTimeData);
+    await AsyncStorage.mergeItem(SESSION_KEY, JSON.stringify({ paused: true, speedKmh: 0, routeBreakPending: true, timeData: newTimeData }));
+    Vibration.vibrate(100); Speech.speak("Run paused", { language: "en-IN", rate: 0.95 });
   }
 
   async function resumeRun() {
     try {
       const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.BestForNavigation });
       const newTimeData = { accumulatedMs: timeData.accumulatedMs, lastResumeTime: Date.now() };
-      
       const point = {
-        latitude: current.coords.latitude,
-        longitude: current.coords.longitude,
-        accuracy: current.coords.accuracy,
-        altitude: current.coords.altitude || 0,
-        heading: current.coords.heading || -1,
-        timestamp: Date.now(),
-        speedKmh: 0,
-        breakBefore: true,
+        latitude: current.coords.latitude, longitude: current.coords.longitude,
+        accuracy: current.coords.accuracy, altitude: current.coords.altitude || 0,
+        heading: current.coords.heading || -1, timestamp: Date.now(), speedKmh: 0, breakBefore: true,
       };
-
-      setPaused(false);
-      setSpeed(0);
-      setTimeData(newTimeData);
-
-      const newRoute = [...route, point];
-      setRoute(newRoute);
-      setLocation(mapCoordinate(point));
-      setAccuracy(point.accuracy);
+      setPaused(false); setSpeed(0); setTimeData(newTimeData);
+      setRoute([...route, point]); setLocation(mapCoordinate(point)); setAccuracy(point.accuracy);
 
       const stored = await AsyncStorage.getItem(SESSION_KEY);
       if (stored) {
         const session = JSON.parse(stored);
-        session.paused = false;
-        session.speedKmh = 0;
-        session.timeData = newTimeData;
-        session.routeBreakPending = false;
-        session.route = [...(session.route || []), point];
-        session.lastPoint = point;
+        session.paused = false; session.speedKmh = 0; session.timeData = newTimeData;
+        session.routeBreakPending = false; session.route = [...(session.route || []), point]; session.lastPoint = point;
         await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(session));
       }
-
       Speech.speak("Run resumed", { language: "en-IN", rate: 0.95 });
       Vibration.vibrate(100);
     } catch (error) {}
@@ -775,15 +624,10 @@ export default function App() {
       const averageSpeed = elapsedSeconds > 0 ? distance / (elapsedSeconds / 3600) : 0;
 
       const workout = {
-        id: String(Date.now()),
-        date: new Date().toISOString(),
-        distanceKm: Number(distance.toFixed(3)),
-        durationSeconds: elapsedSeconds,
-        averageSpeedKmh: Number(averageSpeed.toFixed(2)),
-        topSpeedKmh: Number(topSpeed.toFixed(2)),
-        pace: getPace(distance, elapsedSeconds),
-        calories: estimatedCalories(distance),
-        route: finalRoute,
+        id: String(Date.now()), date: new Date().toISOString(), distanceKm: Number(distance.toFixed(3)),
+        durationSeconds: elapsedSeconds, averageSpeedKmh: Number(averageSpeed.toFixed(2)),
+        topSpeedKmh: Number(topSpeed.toFixed(2)), pace: getPace(distance, elapsedSeconds),
+        calories: estimatedCalories(distance), route: finalRoute, targetDistance: targetDistance
       };
 
       const updatedHistory = [workout, ...history].slice(0, 50);
@@ -791,20 +635,10 @@ export default function App() {
       await AsyncStorage.removeItem(SESSION_KEY);
 
       const started = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME);
-      if (started) {
-        await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
-      }
+      if (started) await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
 
-      setHistory(updatedHistory);
-      setSummary(workout);
-      
-      setMapRendered(false);
-      setMapLayoutSet(false);
-      setSummaryVisible(true);
-
-      setRunning(false);
-      setPaused(false);
-      setSpeed(0);
+      setHistory(updatedHistory); setSummary(workout); setMapRendered(false); setMapLayoutSet(false); setSummaryVisible(true);
+      setRunning(false); setPaused(false); setSpeed(0); setTargetDistance(null); setChallengeCompleted(false);
 
       Speech.speak("Run completed", { language: "en-IN", rate: 0.95 });
       Vibration.vibrate([0, 150, 100, 150]);
@@ -813,15 +647,9 @@ export default function App() {
 
   useEffect(() => {
     if (summaryVisible && mapRendered && mapLayoutSet && summary && completionMapRef.current && isConnected) {
-      const coordinates = Array.isArray(summary.route)
-        ? summary.route.filter(isValidCoordinate).map(mapCoordinate)
-        : [];
-        
+      const coordinates = Array.isArray(summary.route) ? summary.route.filter(isValidCoordinate).map(mapCoordinate) : [];
       if (coordinates.length >= 2) {
-        completionMapRef.current.fitToCoordinates(coordinates, {
-          edgePadding: { top: 80, right: 40, bottom: 150, left: 40 },
-          animated: true,
-        });
+        completionMapRef.current.fitToCoordinates(coordinates, { edgePadding: { top: 80, right: 40, bottom: 150, left: 40 }, animated: true });
       }
     }
   }, [summaryVisible, mapRendered, mapLayoutSet, summary, isConnected]);
@@ -832,6 +660,7 @@ export default function App() {
     <SafeAreaView style={styles.safe}>
       <StatusBar hidden={true} barStyle="light-content" backgroundColor="#080B10" />
       <View style={styles.container}>
+        
         {/* HEADER */}
         <View style={styles.header}>
           <View>
@@ -839,16 +668,10 @@ export default function App() {
             <View style={styles.gpsRow}>
               <View style={[styles.gpsDot, { backgroundColor: gpsStatus.color }]} />
               <Text style={styles.gpsText}>GPS {gpsStatus.label}</Text>
-              {Number.isFinite(Number(accuracy)) && (
-                <Text style={styles.accuracyText}>±{Math.round(accuracy)}m</Text>
-              )}
+              {Number.isFinite(Number(accuracy)) && <Text style={styles.accuracyText}>±{Math.round(accuracy)}m</Text>}
             </View>
           </View>
-          <TouchableOpacity
-            style={styles.headerButton}
-            onPress={() => setHistoryVisible(true)}
-            activeOpacity={0.8}
-          >
+          <TouchableOpacity style={styles.headerButton} onPress={() => setHistoryVisible(true)} activeOpacity={0.8}>
             <Ionicons name="time-outline" size={22} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
@@ -858,20 +681,10 @@ export default function App() {
           {isConnected ? (
             <>
               <MapView
-                ref={mapRef}
-                style={styles.map}
-                mapType={mapType}
+                ref={mapRef} style={styles.map} mapType={mapType}
                 customMapStyle={mapType === "standard" ? darkMapStyle : undefined}
-                showsCompass={false}
-                showsBuildings={false}
-                showsTraffic={false}
-                showsIndoors={false}
-                showsUserLocation={false}
-                initialRegion={
-                  location
-                    ? { ...location, latitudeDelta: MAP_DELTA, longitudeDelta: MAP_DELTA }
-                    : { latitude: 28.6139, longitude: 77.209, latitudeDelta: 0.08, longitudeDelta: 0.08 }
-                }
+                showsCompass={false} showsBuildings={false} showsTraffic={false} showsIndoors={false} showsUserLocation={false}
+                initialRegion={location ? { ...location, latitudeDelta: MAP_DELTA, longitudeDelta: MAP_DELTA } : { latitude: 28.6139, longitude: 77.209, latitudeDelta: 0.08, longitudeDelta: 0.08 }}
               >
                 <MemoizedSpectrumRoute points={route} prefix="live" />
                 {route.length > 0 && <StartMarker coordinate={route[0]} />}
@@ -881,13 +694,10 @@ export default function App() {
               <View style={styles.legend}>
                 <Text style={styles.legendTitle}>SPEED SPECTRUM</Text>
                 <View style={styles.legendBar}>
-                  {SPEED_STOPS.map((stop) => (
-                    <View key={stop.speed} style={[styles.legendColor, { backgroundColor: stop.color }]} />
-                  ))}
+                  {SPEED_STOPS.map((stop) => <View key={stop.speed} style={[styles.legendColor, { backgroundColor: stop.color }]} />)}
                 </View>
                 <View style={styles.legendLabels}>
-                  <Text style={styles.legendText}>SLOW</Text>
-                  <Text style={styles.legendText}>FAST</Text>
+                  <Text style={styles.legendText}>SLOW</Text><Text style={styles.legendText}>FAST</Text>
                 </View>
               </View>
 
@@ -902,7 +712,6 @@ export default function App() {
             </>
           ) : (
             <View style={styles.offlineFallback}>
-              
               {/* ANIMATED RUNNER OR OFFLINE ICON */}
               {running && !paused ? (
                 <Animated.View style={{ transform: [{ translateY }], marginBottom: 15 }}>
@@ -911,14 +720,24 @@ export default function App() {
               ) : (
                 <Ionicons name="cloud-offline" size={40} color="#4B5563" style={{ marginBottom: 15 }} />
               )}
-              
               <Text style={styles.offlineTitle}>{running && !paused ? "TRACKING OFFLINE" : "OFFLINE MODE"}</Text>
               
-              <Text style={styles.bigSpeedLabel}>LIVE SPEED</Text>
-              <Text style={styles.bigSpeedValue}>{speed.toFixed(1)}</Text>
-              <Text style={styles.bigSpeedUnit}>KM/H</Text>
+              {/* DYNAMIC CENTER METRIC - NEW UX */}
+              {targetDistance ? (
+                 <>
+                   <Text style={styles.bigMetricLabel}>DISTANCE REMAINING</Text>
+                   <Text style={styles.bigMetricValue}>{Math.max(0, targetDistance - distance).toFixed(2)}</Text>
+                   <Text style={styles.bigMetricUnit}>KM / {targetDistance} KM TARGET</Text>
+                 </>
+              ) : (
+                 <>
+                   <Text style={styles.bigMetricLabel}>ELAPSED TIME</Text>
+                   <Text style={styles.bigMetricValue}>{formatTime(elapsedSeconds)}</Text>
+                   <Text style={styles.bigMetricUnit}>HR : MIN : SEC</Text>
+                 </>
+              )}
 
-              {/* NEW USEFUL STATS BOX */}
+              {/* EXTRA STATS ROW (ALTITUDE & COMPASS DIRECTION) */}
               <View style={styles.offlineExtraStatsRow}>
                 <View style={styles.offlineExtraStat}>
                   <Ionicons name="triangle-outline" size={18} color="#6B7280" />
@@ -929,11 +748,17 @@ export default function App() {
                   </Text>
                 </View>
                 <View style={styles.offlineExtraStat}>
-                  <Ionicons name="compass-outline" size={18} color="#6B7280" />
-                  <Text style={styles.offlineExtraLabel}>HEADING</Text>
+                  {/* ROTATING COMPASS ICON */}
+                  <Ionicons 
+                    name="compass" 
+                    size={22} 
+                    color="#22C55E" 
+                    style={{ transform: [{ rotate: `${location?.heading && location.heading >= 0 ? location.heading : 0}deg` }], marginBottom: 2 }} 
+                  />
+                  <Text style={styles.offlineExtraLabel}>DIRECTION</Text>
                   <Text style={styles.offlineExtraValue}>
-                    {location?.heading && location.heading >= 0 ? Math.round(location.heading) : "--"}
-                    <Text style={styles.offlineExtraUnit}>°</Text>
+                    {getDirection(location?.heading)}
+                    <Text style={styles.offlineExtraUnit}>  {location?.heading >= 0 ? Math.round(location.heading) + "°" : ""}</Text>
                   </Text>
                 </View>
               </View>
@@ -964,9 +789,9 @@ export default function App() {
           </View>
 
           {!running ? (
-            <TouchableOpacity style={styles.startButton} onPress={startRun} activeOpacity={0.85}>
+            <TouchableOpacity style={styles.startButton} onPress={() => setMissionModalVisible(true)} activeOpacity={0.85}>
               <Ionicons name="play" size={23} color="#FFFFFF" />
-              <Text style={styles.startButtonText}>START RUN</Text>
+              <Text style={styles.startButtonText}>START MISSION</Text>
             </TouchableOpacity>
           ) : (
             <View style={styles.runningButtons}>
@@ -983,6 +808,46 @@ export default function App() {
         </View>
       </View>
 
+      {/* MISSION SELECTION MODAL */}
+      <Modal visible={missionModalVisible} animationType="slide" transparent={true} onRequestClose={() => setMissionModalVisible(false)}>
+        <View style={styles.missionModalOverlay}>
+           <View style={styles.missionModalContent}>
+             <View style={styles.missionModalHeader}>
+               <Text style={styles.missionModalTitle}>SELECT MISSION</Text>
+               <TouchableOpacity onPress={() => setMissionModalVisible(false)}>
+                 <Ionicons name="close-circle" size={28} color="#4B5563" />
+               </TouchableOpacity>
+             </View>
+             <Text style={styles.missionModalSub}>Choose a target distance for this run.</Text>
+             
+             <TouchableOpacity style={styles.missionOption} onPress={() => confirmMissionStart(null)}>
+                <Ionicons name="infinite-outline" size={24} color="#3B82F6" />
+                <Text style={styles.missionOptionText}>Free Run (No Target)</Text>
+             </TouchableOpacity>
+             
+             <TouchableOpacity style={styles.missionOption} onPress={() => confirmMissionStart(1)}>
+                <Ionicons name="medal-outline" size={24} color="#F59E0B" />
+                <Text style={styles.missionOptionText}>1 KM Sprint</Text>
+             </TouchableOpacity>
+
+             <TouchableOpacity style={styles.missionOption} onPress={() => confirmMissionStart(3)}>
+                <Ionicons name="flame-outline" size={24} color="#EF4444" />
+                <Text style={styles.missionOptionText}>3 KM Challenge</Text>
+             </TouchableOpacity>
+
+             <TouchableOpacity style={styles.missionOption} onPress={() => confirmMissionStart(5)}>
+                <Ionicons name="trophy-outline" size={24} color="#8B5CF6" />
+                <Text style={styles.missionOptionText}>5 KM Pro Mission</Text>
+             </TouchableOpacity>
+             
+             <TouchableOpacity style={styles.missionOption} onPress={() => confirmMissionStart(10)}>
+                <Ionicons name="star-outline" size={24} color="#22C55E" />
+                <Text style={styles.missionOptionText}>10 KM Endurance</Text>
+             </TouchableOpacity>
+           </View>
+        </View>
+      </Modal>
+
       {/* COMPLETION MODAL */}
       <Modal visible={summaryVisible} animationType="slide" transparent={false} onRequestClose={() => setSummaryVisible(false)}>
         <SafeAreaView style={styles.modalSafe}>
@@ -998,30 +863,29 @@ export default function App() {
 
           {summary && (
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.summaryScroll}>
+              
+              {/* TARGET ACHIEVEMENT BANNER */}
+              {summary.targetDistance && summary.distanceKm >= summary.targetDistance && (
+                <View style={styles.achievementBanner}>
+                  <Ionicons name="trophy" size={24} color="#FACC15" />
+                  <Text style={styles.achievementText}>MISSION ACCOMPLISHED</Text>
+                </View>
+              )}
+
               <View style={styles.summaryMapCard} onLayout={() => setMapLayoutSet(true)}>
                 {isConnected ? (
                   <>
                     <MapView
-                      ref={completionMapRef}
-                      style={styles.summaryMap}
-                      customMapStyle={darkMapStyle}
-                      showsCompass={false}
-                      showsBuildings={false}
-                      showsTraffic={false}
-                      showsUserLocation={false}
+                      ref={completionMapRef} style={styles.summaryMap} customMapStyle={darkMapStyle}
+                      showsCompass={false} showsBuildings={false} showsTraffic={false} showsUserLocation={false}
                       onMapReady={() => setMapRendered(true)}
                     >
                       <MemoizedSpectrumRoute points={summary.route} prefix="summary" />
                       {summary.route?.length > 0 && (
-                        <>
-                          <StartMarker coordinate={summary.route[0]} />
-                          <FinishMarker coordinate={summary.route[summary.route.length - 1]} />
-                        </>
+                        <><StartMarker coordinate={summary.route[0]} /><FinishMarker coordinate={summary.route[summary.route.length - 1]} /></>
                       )}
                     </MapView>
-                    <View style={styles.summaryMapLabel}>
-                      <Text style={styles.summaryMapLabelText}>SPEED SPECTRUM</Text>
-                    </View>
+                    <View style={styles.summaryMapLabel}><Text style={styles.summaryMapLabelText}>SPEED SPECTRUM</Text></View>
                   </>
                 ) : (
                   <View style={[styles.offlineFallback, { backgroundColor: '#11161E' }]}>
@@ -1033,10 +897,7 @@ export default function App() {
 
               <View style={styles.bigSummaryCard}>
                 <Text style={styles.bigSummaryLabel}>DISTANCE</Text>
-                <Text style={styles.bigSummaryValue}>
-                  {Number(summary.distanceKm || 0).toFixed(2)}
-                  <Text style={styles.bigSummaryUnit}> KM</Text>
-                </Text>
+                <Text style={styles.bigSummaryValue}>{Number(summary.distanceKm || 0).toFixed(2)}<Text style={styles.bigSummaryUnit}> KM</Text></Text>
                 <Text style={styles.bigSummaryTime}>{formatTime(summary.durationSeconds)}</Text>
               </View>
 
@@ -1050,13 +911,10 @@ export default function App() {
               <View style={styles.spectrumCard}>
                 <Text style={styles.spectrumTitle}>SPEED SPECTRUM</Text>
                 <View style={styles.spectrumGradient}>
-                  {SPEED_STOPS.map((stop, index) => (
-                    <View key={index} style={{ flex: 1, backgroundColor: stop.color }} />
-                  ))}
+                  {SPEED_STOPS.map((stop, index) => <View key={index} style={{ flex: 1, backgroundColor: stop.color }} />)}
                 </View>
                 <View style={styles.spectrumBottomLabels}>
-                  <Text style={styles.spectrumBottomText}>SLOW</Text>
-                  <Text style={styles.spectrumBottomText}>FAST</Text>
+                  <Text style={styles.spectrumBottomText}>SLOW</Text><Text style={styles.spectrumBottomText}>FAST</Text>
                 </View>
               </View>
 
@@ -1093,12 +951,12 @@ export default function App() {
                 <View key={item.id || `history-${index}`} style={styles.historyCard}>
                   <View style={styles.historyCardHeader}>
                     <View>
-                      <Text style={styles.historyDate}>
-                        {new Date(item.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
-                      </Text>
+                      <Text style={styles.historyDate}>{new Date(item.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</Text>
                       <Text style={styles.historyDistance}>{Number(item.distanceKm || 0).toFixed(2)} KM</Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={20} color="#4B5563" />
+                    {item.targetDistance && item.distanceKm >= item.targetDistance && (
+                      <Ionicons name="trophy" size={20} color="#FACC15" />
+                    )}
                   </View>
                   <View style={styles.historyStats}>
                     <HistoryStat label="TIME" value={formatTime(item.durationSeconds)} />
@@ -1181,16 +1039,28 @@ const styles = StyleSheet.create({
   /* OFFLINE DASHBOARD STYLES */
   offlineFallback: { flex: 1, backgroundColor: "#10151E", alignItems: "center", justifyContent: "center", padding: 20 },
   offlineTitle: { color: "#6B7280", fontSize: 11, fontWeight: "900", letterSpacing: 2, marginBottom: 40 },
-  bigSpeedLabel: { color: '#6B7280', fontSize: 10, fontWeight: '900', letterSpacing: 1.5, marginBottom: 5 },
-  bigSpeedValue: { color: '#FFFFFF', fontSize: 80, fontWeight: '900', marginVertical: -10 },
-  bigSpeedUnit: { color: '#22C55E', fontSize: 15, fontWeight: '800', marginTop: 5 },
+  bigMetricLabel: { color: '#6B7280', fontSize: 10, fontWeight: '900', letterSpacing: 1.5, marginBottom: 5 },
+  bigMetricValue: { color: '#FFFFFF', fontSize: 75, fontWeight: '900', marginVertical: -10, fontVariant: ["tabular-nums"] },
+  bigMetricUnit: { color: '#22C55E', fontSize: 14, fontWeight: '800', marginTop: 10 },
   
-  /* NEW EXTRA STATS ROW STYLES */
   offlineExtraStatsRow: { flexDirection: 'row', gap: 15, marginTop: 40, width: '100%' },
   offlineExtraStat: { flex: 1, backgroundColor: '#141922', borderRadius: 18, borderWidth: 1, borderColor: '#1B222D', padding: 15, alignItems: 'center' },
-  offlineExtraLabel: { color: '#6B7280', fontSize: 8, fontWeight: '900', letterSpacing: 1, marginTop: 6, marginBottom: 4 },
-  offlineExtraValue: { color: '#FFFFFF', fontSize: 16, fontWeight: '900' },
+  offlineExtraLabel: { color: '#6B7280', fontSize: 8, fontWeight: '900', letterSpacing: 1, marginTop: 4, marginBottom: 4 },
+  offlineExtraValue: { color: '#FFFFFF', fontSize: 18, fontWeight: '900' },
   offlineExtraUnit: { color: '#6B7280', fontSize: 10, fontWeight: '800' },
+
+  /* MISSION MODAL */
+  missionModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
+  missionModalContent: { backgroundColor: '#11161E', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 25, paddingBottom: Platform.OS === 'ios' ? 40 : 25, borderWidth: 1, borderColor: '#1B222D' },
+  missionModalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 },
+  missionModalTitle: { color: '#FFFFFF', fontSize: 18, fontWeight: '900', letterSpacing: 1 },
+  missionModalSub: { color: '#9CA3AF', fontSize: 12, marginBottom: 20 },
+  missionOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#141922', padding: 16, borderRadius: 16, marginBottom: 10, borderWidth: 1, borderColor: '#1B222D' },
+  missionOptionText: { color: '#FFFFFF', fontSize: 15, fontWeight: '800', marginLeft: 15 },
+
+  /* ACHIEVEMENT BANNER */
+  achievementBanner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(250, 204, 21, 0.15)', padding: 12, borderRadius: 16, marginBottom: 15, borderWidth: 1, borderColor: 'rgba(250, 204, 21, 0.4)' },
+  achievementText: { color: '#FACC15', fontSize: 13, fontWeight: '900', letterSpacing: 1, marginLeft: 8 },
 
   bottomPanel: { backgroundColor: "#080B10", paddingHorizontal: 18, paddingTop: 15, paddingBottom: Platform.OS === "ios" ? 20 : 40 },
   primaryMetric: { alignItems: "center" },
