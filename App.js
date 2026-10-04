@@ -12,6 +12,7 @@ import {
   Vibration,
   ScrollView,
   Platform,
+  Animated,
 } from "react-native";
 
 import * as Location from "expo-location";
@@ -19,7 +20,7 @@ import * as TaskManager from "expo-task-manager";
 import * as Speech from "expo-speech";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import MapView, { Marker, Polyline } from "react-native-maps";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
 import NetInfo from "@react-native-community/netinfo";
 
 const { width, height } = Dimensions.get("window");
@@ -117,7 +118,12 @@ function isValidCoordinate(point) {
 }
 
 function mapCoordinate(point) {
-  return { latitude: Number(point.latitude), longitude: Number(point.longitude) };
+  return { 
+    latitude: Number(point.latitude), 
+    longitude: Number(point.longitude),
+    altitude: point.altitude,
+    heading: point.heading
+  };
 }
 
 /* =========================================================
@@ -393,12 +399,14 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
       const latitude = Number(coords.latitude);
       const longitude = Number(coords.longitude);
       const accuracy = Number(coords.accuracy);
+      const altitude = Number(coords.altitude) || 0;
+      const heading = Number(coords.heading) || -1;
 
       if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) continue;
       if (Number.isFinite(accuracy) && accuracy > MAX_ACCURACY) continue; 
 
       const timestamp = Number(locationData.timestamp) || Date.now();
-      const currentPoint = { latitude, longitude, accuracy, timestamp };
+      const currentPoint = { latitude, longitude, accuracy, timestamp, altitude, heading };
       const previous = updatedSession.lastPoint || updatedSession.route?.[updatedSession.route.length - 1];
 
       if (!previous) {
@@ -475,6 +483,9 @@ export default function App() {
   const [mapRendered, setMapRendered] = useState(false);
   const [mapLayoutSet, setMapLayoutSet] = useState(false);
 
+  // Animation Value for Running Man
+  const runAnim = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
     initializeApp();
     
@@ -484,6 +495,26 @@ export default function App() {
     });
     return () => unsubscribe();
   }, []);
+
+  // Trigger Animation when running
+  useEffect(() => {
+    if (running && !paused) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(runAnim, { toValue: 1, duration: 350, useNativeDriver: true }),
+          Animated.timing(runAnim, { toValue: 0, duration: 350, useNativeDriver: true })
+        ])
+      ).start();
+    } else {
+      runAnim.stopAnimation();
+      runAnim.setValue(0);
+    }
+  }, [running, paused]);
+
+  const translateY = runAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -12] // Bounces 12 pixels up
+  });
 
   async function initializeApp() {
     await loadHistory();
@@ -522,7 +553,12 @@ export default function App() {
 
       const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
       if (current?.coords) {
-        setLocation({ latitude: current.coords.latitude, longitude: current.coords.longitude });
+        setLocation({ 
+          latitude: current.coords.latitude, 
+          longitude: current.coords.longitude,
+          altitude: current.coords.altitude,
+          heading: current.coords.heading
+        });
         setAccuracy(current.coords.accuracy);
       }
 
@@ -627,6 +663,8 @@ export default function App() {
         latitude: current.coords.latitude,
         longitude: current.coords.longitude,
         accuracy: current.coords.accuracy,
+        altitude: current.coords.altitude || 0,
+        heading: current.coords.heading || -1,
         timestamp: now,
         speedKmh: 0,
       };
@@ -691,6 +729,8 @@ export default function App() {
         latitude: current.coords.latitude,
         longitude: current.coords.longitude,
         accuracy: current.coords.accuracy,
+        altitude: current.coords.altitude || 0,
+        heading: current.coords.heading || -1,
         timestamp: Date.now(),
         speedKmh: 0,
         breakBefore: true,
@@ -862,22 +902,42 @@ export default function App() {
             </>
           ) : (
             <View style={styles.offlineFallback}>
-              <Ionicons name="cloud-offline" size={36} color="#4B5563" style={{ marginBottom: 8 }} />
-              <Text style={styles.offlineTitle}>OFFLINE MODE</Text>
+              
+              {/* ANIMATED RUNNER OR OFFLINE ICON */}
+              {running && !paused ? (
+                <Animated.View style={{ transform: [{ translateY }], marginBottom: 15 }}>
+                  <FontAwesome5 name="running" size={45} color="#22C55E" />
+                </Animated.View>
+              ) : (
+                <Ionicons name="cloud-offline" size={40} color="#4B5563" style={{ marginBottom: 15 }} />
+              )}
+              
+              <Text style={styles.offlineTitle}>{running && !paused ? "TRACKING OFFLINE" : "OFFLINE MODE"}</Text>
               
               <Text style={styles.bigSpeedLabel}>LIVE SPEED</Text>
               <Text style={styles.bigSpeedValue}>{speed.toFixed(1)}</Text>
               <Text style={styles.bigSpeedUnit}>KM/H</Text>
 
-              <View style={styles.coordsBox}>
-                <Text style={styles.coordsLabel}>CURRENT COORDINATES</Text>
-                <Text style={styles.coordsText}>
-                  LAT: {location ? location.latitude.toFixed(6) : "SEARCHING..."}
-                </Text>
-                <Text style={styles.coordsText}>
-                  LON: {location ? location.longitude.toFixed(6) : "SEARCHING..."}
-                </Text>
+              {/* NEW USEFUL STATS BOX */}
+              <View style={styles.offlineExtraStatsRow}>
+                <View style={styles.offlineExtraStat}>
+                  <Ionicons name="triangle-outline" size={18} color="#6B7280" />
+                  <Text style={styles.offlineExtraLabel}>ALTITUDE</Text>
+                  <Text style={styles.offlineExtraValue}>
+                    {location?.altitude ? Math.round(location.altitude) : "--"}
+                    <Text style={styles.offlineExtraUnit}> m</Text>
+                  </Text>
+                </View>
+                <View style={styles.offlineExtraStat}>
+                  <Ionicons name="compass-outline" size={18} color="#6B7280" />
+                  <Text style={styles.offlineExtraLabel}>HEADING</Text>
+                  <Text style={styles.offlineExtraValue}>
+                    {location?.heading && location.heading >= 0 ? Math.round(location.heading) : "--"}
+                    <Text style={styles.offlineExtraUnit}>°</Text>
+                  </Text>
+                </View>
               </View>
+
             </View>
           )}
         </View>
@@ -1124,9 +1184,13 @@ const styles = StyleSheet.create({
   bigSpeedLabel: { color: '#6B7280', fontSize: 10, fontWeight: '900', letterSpacing: 1.5, marginBottom: 5 },
   bigSpeedValue: { color: '#FFFFFF', fontSize: 80, fontWeight: '900', marginVertical: -10 },
   bigSpeedUnit: { color: '#22C55E', fontSize: 15, fontWeight: '800', marginTop: 5 },
-  coordsBox: { marginTop: 40, padding: 16, backgroundColor: '#141922', borderRadius: 18, borderWidth: 1, borderColor: '#1B222D', alignItems: 'center', width: '100%' },
-  coordsLabel: { color: '#6B7280', fontSize: 8, fontWeight: '900', letterSpacing: 1.5, marginBottom: 8 },
-  coordsText: { color: '#9CA3AF', fontSize: 13, fontWeight: '700', fontVariant: ['tabular-nums'], marginBottom: 4 },
+  
+  /* NEW EXTRA STATS ROW STYLES */
+  offlineExtraStatsRow: { flexDirection: 'row', gap: 15, marginTop: 40, width: '100%' },
+  offlineExtraStat: { flex: 1, backgroundColor: '#141922', borderRadius: 18, borderWidth: 1, borderColor: '#1B222D', padding: 15, alignItems: 'center' },
+  offlineExtraLabel: { color: '#6B7280', fontSize: 8, fontWeight: '900', letterSpacing: 1, marginTop: 6, marginBottom: 4 },
+  offlineExtraValue: { color: '#FFFFFF', fontSize: 16, fontWeight: '900' },
+  offlineExtraUnit: { color: '#6B7280', fontSize: 10, fontWeight: '800' },
 
   bottomPanel: { backgroundColor: "#080B10", paddingHorizontal: 18, paddingTop: 15, paddingBottom: Platform.OS === "ios" ? 20 : 40 },
   primaryMetric: { alignItems: "center" },
