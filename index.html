@@ -32,7 +32,7 @@ a{text-decoration:none;color:inherit}.wrap{width:min(1160px,92%);margin:auto}
 }
 .logo{font:700 22px "Space Grotesk";letter-spacing:-.065em}.logo i{font-style:normal;color:var(--lime)}
 .navlinks{display:flex;gap:30px;color:#777d7a;font-size:13px}.navlinks a{transition:.3s}.navlinks a:hover{color:#fff}
-.nav-btn{background:#f5f5f2;color:#080908;padding:13px 18px;border-radius:16px;font-size:13px;font-weight:700;transition:.3s}
+.nav-btn{background:#f5f5f2;color:#080908;padding:13px 18px;border-radius:16px;font-size:13px;font-weight:700;transition:.3s;cursor:pointer}
 .nav-btn:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(255,255,255,.1)}
 
 .hero{position:relative;min-height:920px;padding:180px 0 80px;overflow:hidden}
@@ -50,7 +50,7 @@ a{text-decoration:none;color:inherit}.wrap{width:min(1160px,92%);margin:auto}
 .hero h1 .green{color:var(--lime);text-shadow:0 0 55px rgba(184,255,53,.13)}
 .hero-copy{max-width:610px;margin:auto;color:#8f9592;font-size:17px;line-height:1.7}
 .hero-actions{display:flex;justify-content:center;gap:10px;margin-top:30px;flex-wrap:wrap}
-.btn{padding:15px 21px;border-radius:16px;font-size:13px;font-weight:700;transition:.35s var(--ease);display:inline-flex;align-items:center;gap:10px}
+.btn{padding:15px 21px;border-radius:16px;font-size:13px;font-weight:700;transition:.35s var(--ease);display:inline-flex;align-items:center;gap:10px;cursor:pointer}
 .btn-main{background:var(--lime);color:#081005;box-shadow:0 18px 60px rgba(184,255,53,.16)}
 .btn-main:hover{transform:translateY(-4px) scale(1.01);box-shadow:0 24px 70px rgba(184,255,53,.25)}
 .btn-dark{border:1px solid var(--line);background:rgba(255,255,255,.025);color:#e7e9e7}
@@ -550,7 +550,7 @@ html,body{overflow-x:hidden;max-width:100%;}
     <a href="#tracking">Tracking</a>
     <a href="#how">How it works</a>
   </div>
-  <a class="nav-btn" href="https://github.com/RUNNERSPRO/RUNNERS/releases/download/v1.0.0/Raftaar.apk" target="_blank">Get APK ↗</a>
+  <a class="nav-btn" onclick="window.location.href='https://github.com/RUNNERSPRO/RUNNERS/releases/download/v1.0.0/Raftaar.apk'; return false;">Get APK ↗</a>
 </nav>
 
 <main>
@@ -561,7 +561,7 @@ html,body{overflow-x:hidden;max-width:100%;}
     <h1 class="reveal">Run with <span class="green">purpose.</span><br>Move faster.</h1>
     <p class="hero-copy reveal">Raftaar turns every run into a focused experience. Track your route, distance, pace and progress — beautifully, privately and without clutter.</p>
     <div class="hero-actions reveal">
-      <a href="https://github.com/RUNNERSPRO/RUNNERS/releases/download/v1.0.0/Raftaar.apk" class="btn btn-main" target="_blank">Download APK ↓</a>
+      <a onclick="window.location.href='https://github.com/RUNNERSPRO/RUNNERS/releases/download/v1.0.0/Raftaar.apk'; return false;" class="btn btn-main">Download APK ↓</a>
       <a href="#features" class="btn btn-dark">Explore features →</a>
     </div>
     <div class="hero-note reveal"><span>✓ <strong>100% Free</strong></span><span>✓ <strong>GPS Powered</strong></span><span>✓ <strong>No Clutter</strong></span></div>
@@ -691,7 +691,7 @@ html,body{overflow-x:hidden;max-width:100%;}
       <div class="kicker">Ready when you are</div>
       <h2>Run your way.<br><span class="green">Raftaar.</span></h2>
       <p>Download the free Android APK and turn your next run into a cleaner, smarter experience.</p>
-      <a class="btn btn-main" href="https://github.com/RUNNERSPRO/RUNNERS/releases/download/v1.0.0/Raftaar.apk" target="_blank">Download APK ↓</a>
+      <a class="btn btn-main" onclick="window.location.href='https://github.com/RUNNERSPRO/RUNNERS/releases/download/v1.0.0/Raftaar.apk'; return false;">Download APK ↓</a>
     </div>
   </div>
 </section>
