@@ -50,7 +50,7 @@ a{text-decoration:none;color:inherit}.wrap{width:min(1160px,92%);margin:auto}
 .hero h1 .green{color:var(--lime);text-shadow:0 0 55px rgba(184,255,53,.13)}
 .hero-copy{max-width:610px;margin:auto;color:#8f9592;font-size:17px;line-height:1.7}
 .hero-actions{display:flex;justify-content:center;gap:10px;margin-top:30px;flex-wrap:wrap}
-.btn{padding:15px 21px;border-radius:16px;font-size:13px;font-weight:700;transition:.35s var(--ease);display:inline-flex;align-items:center;gap:10px}
+.btn{padding:15px 21px;border-radius:16px;font-size:13px;font-weight:700;transition:.35s var(--ease);display:inline-flex;align-items:center;gap:10px;position:relative;z-index:10;pointer-events:auto;}
 .btn-main{background:var(--lime);color:#081005;box-shadow:0 18px 60px rgba(184,255,53,.16)}
 .btn-main:hover{transform:translateY(-4px) scale(1.01);box-shadow:0 24px 70px rgba(184,255,53,.25)}
 .btn-dark{border:1px solid var(--line);background:rgba(255,255,255,.025);color:#e7e9e7}
@@ -121,8 +121,11 @@ section{padding:125px 0}
 
 .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.step{padding:28px;border-top:1px solid var(--line);position:relative}.num{color:var(--lime);font:500 12px "Space Grotesk"}.step h3{font:600 25px "Space Grotesk";margin:28px 0 10px;letter-spacing:-.04em}.step p{color:#747b78;font-size:13px;line-height:1.7}
 
-.cta{padding:50px 0 120px}.cta-box{position:relative;overflow:hidden;text-align:center;padding:90px 25px;border-radius:36px;border:1px solid rgba(184,255,53,.18);
- background:radial-gradient(circle at 50% 0,rgba(184,255,53,.15),transparent 42%),linear-gradient(145deg,#0c100d,#080909)}
+.cta{padding:50px 0 120px}
+.cta-box{position:relative;overflow:hidden;text-align:center;padding:90px 25px;border-radius:36px;border:1px solid rgba(184,255,53,.18);
+ background:radial-gradient(circle at 50% 0,rgba(184,255,53,.15),transparent 42%),linear-gradient(145deg,#0c100d,#080909);pointer-events:none;}
+.cta-box *{pointer-events:none;}
+.cta-box a.btn{pointer-events:auto;}
 .cta-box:before{content:"";position:absolute;width:420px;height:420px;left:50%;top:50%;transform:translate(-50%,-50%);border:1px solid rgba(184,255,53,.07);border-radius:50%;animation:spin 20s linear infinite}
 .cta h2{position:relative;font:600 clamp(45px,7vw,82px)/.9 "Space Grotesk";letter-spacing:-.08em}.cta p{position:relative;max-width:550px;margin:18px auto 28px;color:#777e7b;line-height:1.7}
 footer{padding:28px 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;color:#555d5a;font-size:11px}footer strong{color:#c7cbc8}
@@ -632,7 +635,7 @@ html,body{overflow-x:hidden;max-width:100%;}
         <div class="map-grid"></div>
 
         
-        <center-progress" aria-hidden="true"></div>
+        <div class="center-progress" aria-hidden="true"></div>
 
         <div class="center-run">
           <div class="running-badge"><i></i> RUNNING</div>
