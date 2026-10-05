@@ -664,7 +664,7 @@ export default function App() {
         {/* HEADER */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.appTitle}>RUNNER</Text>
+            <Text style={styles.appTitle}>Raftaar</Text>
             <View style={styles.gpsRow}>
               <View style={[styles.gpsDot, { backgroundColor: gpsStatus.color }]} />
               <Text style={styles.gpsText}>GPS {gpsStatus.label}</Text>
