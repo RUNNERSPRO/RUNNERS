@@ -1,0 +1,733 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#050505">
+<title>Raftaar — Run, Your Way.</title>
+<meta name="description" content="Raftaar is a free GPS run and distance tracker built for focused movement.">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+:root{
+  --bg:#050505;--bg2:#090a0a;--card:#0d0f0f;--text:#f7f7f4;--muted:#858987;
+  --soft:#b4b8b5;--lime:#b8ff35;--lime2:#d7ff85;--line:rgba(255,255,255,.09);
+  --ease:cubic-bezier(.22,1,.36,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:"DM Sans",sans-serif;overflow-x:hidden}
+body:before{
+ content:"";position:fixed;inset:0;z-index:100;pointer-events:none;opacity:.025;
+ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")
+}
+a{text-decoration:none;color:inherit}.wrap{width:min(1160px,92%);margin:auto}
+.nav{
+ position:fixed;z-index:50;top:14px;left:50%;transform:translateX(-50%);
+ width:min(1120px,92%);height:66px;padding:8px 10px 8px 21px;
+ display:flex;align-items:center;justify-content:space-between;
+ border:1px solid var(--line);border-radius:22px;background:rgba(8,9,9,.66);
+ backdrop-filter:blur(28px) saturate(140%);-webkit-backdrop-filter:blur(28px);
+ box-shadow:0 20px 80px rgba(0,0,0,.38)
+}
+.logo{font:700 22px "Space Grotesk";letter-spacing:-.065em}.logo i{font-style:normal;color:var(--lime)}
+.navlinks{display:flex;gap:30px;color:#777d7a;font-size:13px}.navlinks a{transition:.3s}.navlinks a:hover{color:#fff}
+.nav-btn{background:#f5f5f2;color:#080908;padding:13px 18px;border-radius:16px;font-size:13px;font-weight:700;transition:.3s}
+.nav-btn:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(255,255,255,.1)}
+
+.hero{position:relative;min-height:920px;padding:180px 0 80px;overflow:hidden}
+.hero-glow{position:absolute;width:720px;height:720px;left:50%;top:260px;transform:translateX(-50%);
+ background:radial-gradient(circle,rgba(184,255,53,.15),rgba(184,255,53,.035) 35%,transparent 68%);filter:blur(12px);animation:glow 7s ease-in-out infinite}
+.hero-grid{position:absolute;inset:0;opacity:.16;
+ background-image:linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px);
+ background-size:80px 80px;mask-image:linear-gradient(to bottom,#000 0%,#000 45%,transparent 88%)}
+.hero-inner{position:relative;z-index:2;text-align:center}
+.pill{display:inline-flex;align-items:center;gap:9px;padding:8px 12px;border-radius:999px;
+ border:1px solid rgba(184,255,53,.2);background:rgba(184,255,53,.055);color:#c8dbb0;
+ font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase}
+.pill b{width:6px;height:6px;border-radius:50%;background:var(--lime);box-shadow:0 0 14px var(--lime);animation:pulse 1.8s infinite}
+.hero h1{font:600 clamp(68px,10vw,132px)/.87 "Space Grotesk";letter-spacing:-.09em;margin:25px auto 25px;max-width:1050px}
+.hero h1 .green{color:var(--lime);text-shadow:0 0 55px rgba(184,255,53,.13)}
+.hero-copy{max-width:610px;margin:auto;color:#8f9592;font-size:17px;line-height:1.7}
+.hero-actions{display:flex;justify-content:center;gap:10px;margin-top:30px;flex-wrap:wrap}
+.btn{padding:15px 21px;border-radius:16px;font-size:13px;font-weight:700;transition:.35s var(--ease);display:inline-flex;align-items:center;gap:10px}
+.btn-main{background:var(--lime);color:#081005;box-shadow:0 18px 60px rgba(184,255,53,.16)}
+.btn-main:hover{transform:translateY(-4px) scale(1.01);box-shadow:0 24px 70px rgba(184,255,53,.25)}
+.btn-dark{border:1px solid var(--line);background:rgba(255,255,255,.025);color:#e7e9e7}
+.btn-dark:hover{transform:translateY(-4px);background:rgba(255,255,255,.055)}
+.hero-note{display:flex;justify-content:center;gap:24px;margin-top:25px;color:#606663;font-size:11px}
+.hero-note strong{color:#bfc5c2;font-weight:600}
+
+.phone-wrap{height:575px;margin:55px auto 0;position:relative;max-width:480px;perspective:1200px}
+.phone-shadow{position:absolute;left:50%;bottom:25px;width:330px;height:70px;transform:translateX(-50%);background:rgba(184,255,53,.14);filter:blur(50px);border-radius:50%}
+.phone{position:absolute;left:50%;top:0;width:300px;height:575px;transform:translateX(-50%) rotateX(3deg) rotateY(-8deg);
+ border:8px solid #191b1b;border-radius:48px;background:#070909;box-shadow:0 55px 100px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.09),inset 0 0 0 1px rgba(255,255,255,.04);
+ overflow:hidden;transition:transform 1s var(--ease)}
+.phone-wrap:hover .phone{transform:translateX(-50%) rotateX(0) rotateY(0) translateY(-8px)}
+.dynamic{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:92px;height:25px;background:#000;border-radius:20px;z-index:4}
+.screen{position:absolute;inset:0;padding:42px 17px 18px;background:
+ radial-gradient(circle at 50% 38%,rgba(184,255,53,.13),transparent 36%),
+ linear-gradient(180deg,#0a0d0c,#050606 72%)}
+.screen-top{display:flex;justify-content:space-between;align-items:center;color:#737a77;font-size:8px;letter-spacing:.08em}
+.screen-title{margin-top:32px;text-align:left;font-size:10px;color:#727a76;letter-spacing:.15em}
+.big-time{font:600 55px/1 "Space Grotesk";letter-spacing:-.08em;margin-top:6px}
+.live-route{height:180px;margin-top:24px;position:relative;border-radius:25px;border:1px solid rgba(255,255,255,.06);overflow:hidden;background:rgba(255,255,255,.018)}
+.live-route:before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:35px 35px}
+.route-svg{position:absolute;inset:20px 10px;width:calc(100% - 20px);height:calc(100% - 40px)}
+.route-base{fill:none;stroke:rgba(184,255,53,.12);stroke-width:12}
+.route-line{fill:none;stroke:var(--lime);stroke-width:3;stroke-linecap:round;stroke-dasharray:450;stroke-dashoffset:450;animation:routeDraw 4.2s ease-in-out infinite}
+.route-dot{fill:#fff;filter:drop-shadow(0 0 7px var(--lime));animation:dotMove 4.2s linear infinite}
+.phone-metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:11px}
+.pmetric{padding:12px;border-radius:17px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.025);text-align:left}
+.pmetric small{display:block;color:#646b68;font-size:7px;letter-spacing:.12em}.pmetric strong{display:block;font:500 19px "Space Grotesk";margin-top:5px}.pmetric span{font-size:7px;color:var(--lime)}
+.gps-line{margin-top:9px;padding:10px 12px;border-radius:15px;background:rgba(184,255,53,.06);border:1px solid rgba(184,255,53,.12);display:flex;align-items:center;justify-content:space-between;font-size:8px;color:#9ca69f}
+.gps-live{color:var(--lime);display:flex;align-items:center;gap:6px}.gps-live i{width:5px;height:5px;border-radius:50%;background:var(--lime);box-shadow:0 0 10px var(--lime)}
+
+section{padding:125px 0}
+.section-top{display:flex;justify-content:space-between;gap:35px;align-items:end;margin-bottom:50px}
+.kicker{color:var(--lime);font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase}
+.section-title{font:600 clamp(42px,6vw,72px)/.92 "Space Grotesk";letter-spacing:-.075em;margin-top:12px}
+.section-title span{color:#6e7471}
+.section-copy{max-width:380px;color:#777e7b;line-height:1.7;font-size:14px}
+
+.stats{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.stat{padding:32px 20px;border-right:1px solid var(--line);text-align:center}.stat:last-child{border-right:0}
+.stat strong{font:500 clamp(34px,4vw,52px) "Space Grotesk";letter-spacing:-.06em}.stat span{display:block;color:#69706d;font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-top:7px}
+
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.card{position:relative;min-height:320px;padding:27px;border:1px solid var(--line);border-radius:28px;background:linear-gradient(145deg,rgba(255,255,255,.045),rgba(255,255,255,.012));overflow:hidden;transition:.55s var(--ease)}
+.card:hover{transform:translateY(-10px);border-color:rgba(184,255,53,.22);box-shadow:0 35px 80px rgba(0,0,0,.3)}
+.card:after{content:"";position:absolute;width:230px;height:230px;right:-130px;top:-130px;background:radial-gradient(circle,rgba(184,255,53,.13),transparent 68%)}
+.icon{width:46px;height:46px;border:1px solid rgba(184,255,53,.18);border-radius:15px;background:rgba(184,255,53,.055);display:grid;place-items:center;color:var(--lime);font:600 17px "Space Grotesk"}
+.card h3{font:600 24px "Space Grotesk";letter-spacing:-.04em;margin:35px 0 9px}.card p{color:#747b78;font-size:13px;line-height:1.7}
+.card-line{position:absolute;left:27px;right:27px;bottom:26px;height:1px;background:var(--line)}.card-line i{display:block;width:35%;height:1px;background:var(--lime);box-shadow:0 0 10px var(--lime)}
+
+.dashboard{border:1px solid var(--line);border-radius:32px;overflow:hidden;background:#080a0a;box-shadow:0 45px 100px rgba(0,0,0,.35)}
+.dash-head{height:62px;padding:0 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:7px}
+.dash-head i{width:7px;height:7px;border-radius:50%;background:#303634}.dash-head span{margin-left:auto;color:#535b58;font-size:9px;letter-spacing:.15em}
+.dash-body{display:grid;grid-template-columns:1.3fr .7fr;min-height:480px}
+.dash-map{position:relative;overflow:hidden;background:
+ radial-gradient(circle at 48% 52%,rgba(184,255,53,.14),transparent 26%),
+ #050706}
+.dash-map:before,.dash-map:after{content:"";position:absolute;inset:-20%;background:repeating-linear-gradient(17deg,transparent 0 43px,rgba(255,255,255,.035) 44px 45px);transform:rotate(-8deg)}
+.dash-map:after{transform:rotate(72deg);opacity:.45}
+.map-route{position:absolute;width:72%;height:45%;left:14%;top:26%;border:3px solid var(--lime);border-left-color:transparent;border-bottom-color:rgba(184,255,53,.65);border-radius:48% 60% 45% 60%;transform:rotate(-15deg);filter:drop-shadow(0 0 14px rgba(184,255,53,.65));animation:mapFloat 6s ease-in-out infinite}
+.map-route:before{content:"";position:absolute;left:34%;top:44%;width:22px;height:22px;border-radius:50%;background:var(--lime);box-shadow:0 0 0 12px rgba(184,255,53,.09),0 0 35px var(--lime);animation:pulse 2s infinite}
+.map-route:after{content:"";position:absolute;right:7%;top:10%;width:10px;height:10px;border-radius:50%;background:#fff;box-shadow:0 0 20px var(--lime)}
+.dash-side{padding:25px;border-left:1px solid var(--line);display:flex;flex-direction:column;justify-content:center}
+.dmetric{padding:22px 0;border-bottom:1px solid var(--line)}.dmetric:last-child{border:0}
+.dmetric small{color:#626a67;font-size:9px;letter-spacing:.13em}.dmetric strong{display:block;font:500 34px "Space Grotesk";letter-spacing:-.05em;margin:5px 0}.dmetric span{color:var(--lime);font-size:10px}
+.signal{height:4px;margin-top:10px;background:#202522;border-radius:9px;overflow:hidden}.signal i{display:block;width:84%;height:100%;background:var(--lime);box-shadow:0 0 12px var(--lime);animation:signal 2.4s ease-in-out infinite}
+
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.step{padding:28px;border-top:1px solid var(--line);position:relative}.num{color:var(--lime);font:500 12px "Space Grotesk"}.step h3{font:600 25px "Space Grotesk";margin:28px 0 10px;letter-spacing:-.04em}.step p{color:#747b78;font-size:13px;line-height:1.7}
+
+.cta{padding:50px 0 120px}.cta-box{position:relative;overflow:hidden;text-align:center;padding:90px 25px;border-radius:36px;border:1px solid rgba(184,255,53,.18);
+ background:radial-gradient(circle at 50% 0,rgba(184,255,53,.15),transparent 42%),linear-gradient(145deg,#0c100d,#080909)}
+.cta-box:before{content:"";position:absolute;width:420px;height:420px;left:50%;top:50%;transform:translate(-50%,-50%);border:1px solid rgba(184,255,53,.07);border-radius:50%;animation:spin 20s linear infinite}
+.cta h2{position:relative;font:600 clamp(45px,7vw,82px)/.9 "Space Grotesk";letter-spacing:-.08em}.cta p{position:relative;max-width:550px;margin:18px auto 28px;color:#777e7b;line-height:1.7}
+footer{padding:28px 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;color:#555d5a;font-size:11px}footer strong{color:#c7cbc8}
+
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .9s var(--ease),transform .9s var(--ease)}.reveal.show{opacity:1;transform:none}
+@keyframes pulse{50%{transform:scale(1.35);opacity:.65}}
+@keyframes glow{50%{transform:translateX(-50%) scale(1.08);opacity:.75}}
+@keyframes routeDraw{0%,8%{stroke-dashoffset:450}58%,100%{stroke-dashoffset:0}}
+@keyframes dotMove{0%{offset-distance:0%}100%{offset-distance:100%}}
+@keyframes mapFloat{50%{transform:rotate(-12deg) translateY(-8px)}}
+@keyframes signal{50%{width:58%}}
+@keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+
+@media(max-width:850px){
+ .navlinks{display:none}.nav{height:60px}.hero{padding-top:145px;min-height:820px}
+ .hero h1{font-size:66px}.hero-copy{font-size:15px}.phone-wrap{height:525px}.phone{width:275px;height:525px}
+ .stats{grid-template-columns:1fr 1fr}.stat:nth-child(2){border-right:0}.stat:nth-child(-n+2){border-bottom:1px solid var(--line)}
+ .cards,.steps{grid-template-columns:1fr}.section-top{display:block}.section-copy{margin-top:18px}
+ .dash-body{grid-template-columns:1fr}.dash-map{height:370px}.dash-side{border-left:0;border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:0 20px}.dmetric{padding:18px 0}.dmetric:last-child{border-bottom:0}
+}
+@media(max-width:520px){
+ .wrap{width:90%}.hero{padding-top:135px}.hero h1{font-size:55px;line-height:.91}.hero-copy{font-size:14px}
+ .hero-note{gap:13px;flex-wrap:wrap}.hero-actions .btn{width:100%}
+ .phone-wrap{height:485px;margin-top:42px}.phone{width:260px;height:485px;border-radius:43px}.big-time{font-size:47px}
+ .live-route{height:160px}.stats .stat{padding:25px 10px}.stat strong{font-size:32px}
+ section{padding:95px 0}.section-title{font-size:45px}.cards{gap:10px}.card{min-height:275px}
+ .dashboard{border-radius:25px}.dash-map{height:330px}.dash-side{grid-template-columns:1fr 1fr;padding:15px}.dmetric strong{font-size:28px}
+ .cta-box{padding:72px 20px}.cta h2{font-size:50px}footer{display:block;line-height:2}
+}
+
+@media(max-width:850px){
+  .run-card{border-radius:27px}
+  .run-visual{height:390px}
+  .run-metrics{grid-template-columns:1fr 1fr}
+  .run-metric:nth-child(2){border-right:0}
+  .run-metric:nth-child(-n+2){border-bottom:1px solid var(--line)}
+}
+@media(max-width:520px){
+  .run-card{border-radius:24px}
+  .run-card-head{height:56px;padding:0 16px}
+  .run-card-head>span{display:none}
+  .run-card-head>b{font-size:8px}
+  .run-visual{height:365px}.center-progress{width:250px;height:250px}
+  .route{left:8%;top:17%;width:84%;height:67%}
+  .route-two{left:16%;width:68%}
+  .route-dot.start{left:12%;top:68%}
+  .route-dot.finish{right:12%;top:26%}
+  .label-start{left:8%;bottom:14%}
+  .label-finish{right:8%;top:16%}
+  .center-run strong{font-size:58px}
+  .run-metric{min-height:125px;padding:19px 15px}
+  .run-metric strong{font-size:25px}
+}
+
+@media(prefers-reduced-motion:reduce){
+ *,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}
+
+/* ===== THIN BACKGROUND ROUTE ===== */
+.run-route-bg{
+  position:absolute;
+  z-index:1;
+  inset:7% 7% 7% 7%;
+  width:86%;
+  height:86%;
+  pointer-events:none;
+  overflow:visible;
+  opacity:.72;
+}
+.run-route-bg path{
+  fill:none;
+  stroke:rgba(184,255,53,.58);
+  stroke-width:1.15;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  stroke-dasharray:5 4;
+  filter:drop-shadow(0 0 5px rgba(184,255,53,.25));
+  animation:bgRouteDraw 7s ease-in-out infinite;
+}
+.run-route-bg .route-start-dot,
+.run-route-bg .route-end-dot{
+  fill:var(--lime);
+  filter:drop-shadow(0 0 6px rgba(184,255,53,.65));
+}
+.run-route-bg .route-end-dot{animation:routeEndPulse 2s ease-in-out infinite}
+@keyframes bgRouteDraw{
+  0%,10%{stroke-dashoffset:170}
+  55%,100%{stroke-dashoffset:0}
+}
+@keyframes routeEndPulse{
+  50%{opacity:.45;transform:scale(1.35);transform-origin:center}
+}
+
+/* Clean premium live-run card */
+.run-card{
+  position:relative;overflow:hidden;border:1px solid var(--line);border-radius:32px;
+  background:#080a09;box-shadow:0 40px 100px rgba(0,0,0,.36);
+}
+.run-card-head{
+  height:62px;padding:0 22px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;color:#505854;font-size:9px;letter-spacing:.17em;
+}
+.run-card-head>span{position:absolute;left:50%;transform:translateX(-50%)}
+.run-card-head>b{margin-left:auto;font-weight:500;color:#7f8a84;letter-spacing:.08em}
+.run-card-head b i{
+  display:inline-block;width:6px;height:6px;margin-right:7px;border-radius:50%;
+  background:var(--lime);box-shadow:0 0 12px var(--lime);animation:pulse 1.8s infinite;
+}
+.head-dots{display:flex;gap:7px}.head-dots i{width:7px;height:7px;border-radius:50%;background:#2d3330}
+
+.run-visual{
+  position:relative;height:430px;overflow:hidden;
+  background:radial-gradient(circle at 50% 52%,rgba(184,255,53,.12),transparent 27%),#060807;
+}
+.map-grid{
+  position:absolute;inset:-20%;
+  background-image:linear-gradient(rgba(255,255,255,.032) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.032) 1px,transparent 1px);
+  background-size:54px 54px;transform:rotate(-5deg);opacity:.8;
+}
+.map-grid:after{
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(circle at center,transparent 18%,#060807 78%);
+}
+.center-progress{
+  position:absolute;z-index:3;left:50%;top:50%;width:292px;height:292px;
+  transform:translate(-50%,-50%) rotate(-90deg);border-radius:50%;
+  background:conic-gradient(from 0deg,var(--lime) 0deg,var(--lime) 274deg,rgba(255,255,255,.075) 274deg,rgba(255,255,255,.075) 360deg);
+  box-shadow:0 0 28px rgba(184,255,53,.16),inset 0 0 20px rgba(184,255,53,.025);
+  animation:ringBreath 4s ease-in-out infinite;
+}
+.center-progress:after{
+  content:"";position:absolute;inset:12px;border-radius:50%;
+  background:#060807;box-shadow:inset 0 0 40px rgba(184,255,53,.045);
+}
+.route{display:none;position:absolute;left:21%;top:16%;width:58%;height:67%;
+  border:3px solid var(--lime);border-left-color:transparent;
+  border-bottom-color:rgba(184,255,53,.5);border-radius:52% 58% 44% 62%;
+  transform:rotate(-13deg);filter:drop-shadow(0 0 13px rgba(184,255,53,.5));
+}
+.route-one{animation:routeClean 6s ease-in-out infinite}
+.route-two{
+  display:none;left:27%;top:25%;width:46%;height:49%;border-width:1px;
+  border-color:rgba(184,255,53,.12);border-left-color:transparent;
+  filter:none;transform:rotate(-13deg) scale(1.05);
+}
+.route-dot{display:none;position:absolute;border-radius:50%;z-index:3}
+.route-dot.start{left:26%;top:67%;width:7px;height:7px;background:#fff;box-shadow:0 0 12px #fff}
+.route-dot.live{left:51%;top:47%;width:16px;height:16px;background:var(--lime);
+  box-shadow:0 0 0 10px rgba(184,255,53,.07),0 0 30px var(--lime);animation:livePulse 2s infinite}
+.route-dot.finish{right:27%;top:25%;width:7px;height:7px;background:#fff;box-shadow:0 0 15px rgba(184,255,53,.9)}
+.center-run{
+  position:absolute;z-index:5;left:50%;top:50%;transform:translate(-50%,-50%);
+  text-align:center;pointer-events:none;
+}
+.running-badge{
+  display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border-radius:999px;
+  border:1px solid rgba(184,255,53,.16);background:rgba(184,255,53,.05);
+  color:#9aa68f;font-size:8px;letter-spacing:.17em;
+}
+.running-badge i{width:5px;height:5px;border-radius:50%;background:var(--lime);box-shadow:0 0 10px var(--lime)}
+.center-run strong{
+  display:block;margin-top:15px;font:500 clamp(62px,8vw,92px)/.9 "Space Grotesk";
+  letter-spacing:-.095em;text-shadow:0 0 45px rgba(255,255,255,.07)
+}
+.center-run span{display:block;margin-top:9px;color:#4f5752;font-size:8px;letter-spacing:.2em}
+.map-label{
+  position:absolute;padding:6px 9px;border:1px solid rgba(255,255,255,.08);
+  border-radius:999px;background:rgba(7,9,8,.72);backdrop-filter:blur(12px);
+  color:#68716b;font-size:7px;letter-spacing:.14em;z-index:5;
+}
+.label-start{left:18%;bottom:17%}
+.label-finish{right:19%;top:16%}
+
+.run-metrics{
+  display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);
+}
+.run-metric{min-height:150px;padding:25px 25px;border-right:1px solid var(--line)}
+.run-metric:last-child{border-right:0}
+.run-metric small{display:block;color:#606864;font-size:8px;letter-spacing:.14em}
+.run-metric strong{display:block;margin:7px 0 6px;font:500 31px "Space Grotesk";letter-spacing:-.06em}
+.run-metric strong em{font:500 10px "DM Sans";color:#737c76;font-style:normal;letter-spacing:0}
+.run-metric span{display:block;color:var(--lime);font-size:9px}
+.accuracy{height:4px;margin-top:12px;background:#202522;border-radius:10px;overflow:hidden}
+.accuracy i{display:block;width:88%;height:100%;background:var(--lime);box-shadow:0 0 10px var(--lime);animation:signal 2.4s ease-in-out infinite}
+@keyframes cleanGlow{50%{transform:translate(-50%,-50%) scale(1.13);opacity:.7}}
+@keyframes ringBreath{50%{box-shadow:0 0 38px rgba(184,255,53,.23),inset 0 0 22px rgba(184,255,53,.035);transform:translate(-50%,-50%) rotate(-88deg)}}
+@keyframes routeClean{50%{transform:rotate(-10deg) scale(1.025);filter:drop-shadow(0 0 20px rgba(184,255,53,.62))}}
+@keyframes livePulse{50%{box-shadow:0 0 0 18px rgba(184,255,53,.03),0 0 38px var(--lime)}}
+
+
+/* Mobile overflow + typography fix */
+@media (max-width: 700px){
+  .cards{
+    grid-template-columns:1fr !important;
+    gap:12px;
+    width:100%;
+    min-width:0;
+  }
+  .card{
+    width:100%;
+    min-width:0;
+    min-height:300px;
+    box-sizing:border-box;
+    padding:25px;
+  }
+  .card h3{
+    font-size:clamp(25px,7vw,32px);
+    line-height:1.08;
+    letter-spacing:-.045em;
+    max-width:100%;
+    white-space:normal;
+    overflow-wrap:anywhere;
+  }
+  .card p{
+    max-width:100%;
+    font-size:13px;
+    line-height:1.65;
+    overflow-wrap:anywhere;
+  }
+}
+@media (max-width:380px){
+  .card h3{font-size:27px}
+}
+
+
+/* ===== FINAL MOBILE POLISH ===== */
+html,body{overflow-x:hidden;max-width:100%;}
+@media (max-width:700px){
+  .wrap{width:min(92%, 560px);max-width:100%;}
+  section{overflow:hidden;}
+  .section-top{width:100%;max-width:100%;}
+  .section-title{font-size:clamp(38px,11vw,52px);line-height:.94;letter-spacing:-.07em;max-width:100%;}
+  .section-copy{font-size:13px;line-height:1.65;max-width:100%;overflow-wrap:anywhere;}
+
+  /* Feature cards: clean full-width mobile cards, no clipped text */
+  .cards{display:grid!important;grid-template-columns:1fr!important;width:100%!important;gap:12px;}
+  .card{width:100%!important;min-width:0!important;box-sizing:border-box;min-height:260px;padding:24px!important;overflow:hidden;}
+  .card h3{font-size:29px;line-height:1.05;max-width:100%;}
+  .card p{font-size:13px;line-height:1.65;max-width:100%;}
+
+  /* Premium run dashboard */
+  .run-card{width:100%;max-width:100%;box-sizing:border-box;border-radius:24px;overflow:hidden;}
+  .run-card-head{height:54px;padding:0 15px;box-sizing:border-box;}
+  .run-card-head>span{display:block;position:static;transform:none;margin:0 auto;font-size:7px;letter-spacing:.12em;}
+  .run-card-head>b{font-size:7px;white-space:nowrap;}
+  .head-dots{gap:5px;flex:0 0 auto;}
+  .head-dots i{width:6px;height:6px;}
+
+  .run-visual{height:330px;min-height:330px;width:100%;}
+  .center-progress{width:235px;height:235px;}
+  .center-progress:after{inset:10px;}
+  .center-run{width:100%;}
+  .center-run strong{font-size:54px;letter-spacing:-.085em;margin-top:12px;}
+  .running-badge{font-size:7px;padding:7px 10px;}
+  .center-run span{font-size:7px;margin-top:8px;}
+  .map-label{font-size:6px;padding:5px 7px;}
+  .label-start{left:10%;bottom:12%;}
+  .label-finish{right:9%;top:13%;}
+
+  /* 2x2 metrics — never horizontally clip on phones */
+  .run-metrics{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;width:100%!important;min-width:0!important;}
+  .run-metric{min-width:0!important;width:auto!important;min-height:118px;padding:18px 14px!important;box-sizing:border-box;border-right:1px solid var(--line);border-bottom:1px solid var(--line);overflow:hidden;}
+  .run-metric:nth-child(2n){border-right:0;}
+  .run-metric:nth-child(n+3){border-bottom:0;}
+  .run-metric small{font-size:7px;white-space:nowrap;}
+  .run-metric strong{font-size:25px;white-space:nowrap;line-height:1;}
+  .run-metric strong em{font-size:8px;}
+  .run-metric span{font-size:8px;line-height:1.35;max-width:100%;overflow-wrap:anywhere;}
+  .accuracy{margin-top:10px;width:100%;}
+
+  /* Phone navigation — clean, centered and never clipped */
+  .nav{
+    left:12px!important;
+    right:12px!important;
+    width:auto!important;
+    max-width:none!important;
+    box-sizing:border-box!important;
+    min-height:58px;
+    padding:8px 10px 8px 14px!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:space-between!important;
+    gap:10px;
+    overflow:hidden;
+  }
+  .nav .logo{
+    display:block!important;
+    flex:0 0 auto;
+    font-size:17px;
+    white-space:nowrap;
+  }
+  .navlinks{display:none!important;}
+  .nav-btn{
+    display:flex!important;
+    align-items:center;
+    justify-content:center;
+    flex:0 0 auto;
+    width:auto!important;
+    min-width:112px;
+    height:42px;
+    padding:0 18px!important;
+    box-sizing:border-box;
+    white-space:nowrap;
+    margin-left:auto;
+    border-radius:14px;
+  }
+
+  .hero{min-height:auto;padding-top:125px;padding-bottom:70px;overflow:hidden;}
+  .hero h1{font-size:clamp(48px,14vw,62px);max-width:100%;}
+  .hero-copy{max-width:100%;line-height:1.65;}
+  .hero-actions{width:100%;}
+  .hero-actions .btn{width:100%;box-sizing:border-box;}
+  .phone-wrap{max-width:100%;overflow:hidden;}
+}
+@media (max-width:380px){
+  .wrap{width:90%;}
+  .section-title{font-size:37px;}
+  .run-visual{height:300px;min-height:300px;}
+  .center-progress{width:210px;height:210px;}
+  .center-run strong{font-size:48px;}
+  .run-metric{padding:16px 12px!important;min-height:112px;}
+  .run-metric strong{font-size:22px;}
+  .run-card-head>span{font-size:6px;}
+}
+
+
+/* ===== MOBILE NAV / HEADER FINAL ALIGNMENT ===== */
+@media (max-width:700px){
+  .nav{
+    top:max(10px, env(safe-area-inset-top)) !important;
+    left:12px !important;
+    right:12px !important;
+    width:calc(100% - 24px) !important;
+    height:64px !important;
+    min-height:64px !important;
+    padding:7px 8px 7px 16px !important;
+    border-radius:22px !important;
+    background:rgba(7,8,8,.88) !important;
+    backdrop-filter:blur(24px) saturate(150%);
+    -webkit-backdrop-filter:blur(24px) saturate(150%);
+    display:flex !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    gap:10px !important;
+  }
+  .nav .logo{
+    font-size:18px !important;
+    line-height:1 !important;
+    flex:0 0 auto !important;
+  }
+  .nav-btn{
+    min-width:118px !important;
+    width:118px !important;
+    height:46px !important;
+    padding:0 14px !important;
+    margin:0 !important;
+    border-radius:15px !important;
+    font-size:13px !important;
+    line-height:1 !important;
+    flex:0 0 118px !important;
+  }
+  .hero{
+    padding-top:152px !important;
+  }
+}
+@media (max-width:380px){
+  .nav{
+    left:10px !important;
+    right:10px !important;
+    width:calc(100% - 20px) !important;
+    padding-left:14px !important;
+  }
+  .nav-btn{
+    min-width:112px !important;
+    width:112px !important;
+    flex-basis:112px !important;
+    font-size:12px !important;
+  }
+  .hero{padding-top:148px !important;}
+}
+
+
+/* ===== MOBILE: CLEAN HEADER + HERO SPACING ===== */
+@media (max-width:700px){
+  /* Remove the floating top header completely on phones.
+     The hero already contains the primary Download APK action. */
+  .nav{
+    display:none !important;
+  }
+
+  .hero{
+    padding-top:72px !important;
+    padding-bottom:78px !important;
+  }
+
+  .hero-copy{
+    margin:0 auto 24px !important;
+    line-height:1.7 !important;
+    max-width:100% !important;
+  }
+
+  .hero-actions{
+    margin-top:0 !important;
+    gap:12px !important;
+  }
+
+  .hero-note{
+    margin-top:22px !important;
+  }
+
+  .phone-wrap{
+    margin-top:46px !important;
+  }
+}
+
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="#" class="logo">Raftaar<span>.</span></a>
+  <div class="navlinks">
+    <a href="#features">Features</a>
+    <a href="#tracking">Tracking</a>
+    <a href="#how">How it works</a>
+  </div>
+  <a class="nav-btn" href="#download">Get APK ↗</a>
+</nav>
+
+<main>
+<section class="hero">
+  <div class="hero-glow"></div><div class="hero-grid"></div>
+  <div class="wrap hero-inner">
+    <div class="pill reveal"><b></b> Free GPS run & distance tracker</div>
+    <h1 class="reveal">Run with <span class="green">purpose.</span><br>Move faster.</h1>
+    <p class="hero-copy reveal">Raftaar turns every run into a focused experience. Track your route, distance, pace and progress — beautifully, privately and without clutter.</p>
+    <div class="hero-actions reveal">
+      <a href="#download" class="btn btn-main">Download APK ↓</a>
+      <a href="#features" class="btn btn-dark">Explore features →</a>
+    </div>
+    <div class="hero-note reveal"><span>✓ <strong>100% Free</strong></span><span>✓ <strong>GPS Powered</strong></span><span>✓ <strong>No Clutter</strong></span></div>
+
+    <div class="phone-wrap reveal">
+      <div class="phone-shadow"></div>
+      <div class="phone">
+        <div class="dynamic"></div>
+        <div class="screen">
+          <div class="screen-top"><span>RAFTAAR</span><span>GPS LIVE</span></div>
+          <div class="screen-title">CURRENT RUN</div>
+          <div class="big-time">38:42</div>
+          <div class="live-route">
+            <svg class="route-svg" viewBox="0 0 250 150">
+              <path class="route-base" d="M15 115 C45 90 42 40 83 48 C125 57 102 122 145 105 C185 89 164 28 215 42 C230 46 232 67 238 78"/>
+              <path id="phoneRoute" class="route-line" d="M15 115 C45 90 42 40 83 48 C125 57 102 122 145 105 C185 89 164 28 215 42 C230 46 232 67 238 78"/>
+              <circle class="route-dot" r="4">
+                <animateMotion dur="4.2s" repeatCount="indefinite"><mpath href="#phoneRoute"/></animateMotion>
+              </circle>
+            </svg>
+          </div>
+          <div class="phone-metrics">
+            <div class="pmetric"><small>DISTANCE</small><strong>7.42</strong><span>KM</span></div>
+            <div class="pmetric"><small>PACE</small><strong>5:18</strong><span>/ KM</span></div>
+            <div class="pmetric"><small>SPEED</small><strong>12.6</strong><span>KM/H</span></div>
+            <div class="pmetric"><small>AVG SPEED</small><strong>10.9</strong><span>KM/H</span></div>
+          </div>
+          <div class="gps-line"><span>GPS accuracy</span><span class="gps-live"><i></i>4.2 m</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="wrap">
+    <div class="section-top reveal">
+      <div><div class="kicker">Built for movement</div><h2 class="section-title">Everything you need.<br><span>Nothing you don't.</span></h2></div>
+      <p class="section-copy">Fast, minimal and focused. The important numbers stay visible while the rest stays out of your way.</p>
+    </div>
+    <div class="cards">
+      <article class="card reveal"><div class="icon">GPS</div><h3>Accurate tracking</h3><p>Follow your real route with live GPS updates, distance and location precision built for outdoor runs.</p><div class="card-line"><i></i></div></article>
+      <article class="card reveal"><div class="icon">↗</div><h3>Speedometer</h3><p>See current speed, average speed and pace at a glance without digging through complicated screens.</p><div class="card-line"><i></i></div></article>
+      <article class="card reveal"><div class="icon">◷</div><h3>Live timer</h3><p>A clean run timer keeps your session focused while your metrics update smoothly in real time.</p><div class="card-line"><i></i></div></article>
+    </div>
+  </div>
+</section>
+
+
+<section id="tracking" class="tracking-clean">
+  <div class="wrap">
+    <div class="section-top reveal">
+      <div>
+        <div class="kicker">Your run, visualized</div>
+        <h2 class="section-title">A calmer way<br><span>to see your run.</span></h2>
+      </div>
+      <p class="section-copy">One focused live view. Your route stays central, while the important numbers stay clean and readable.</p>
+    </div>
+
+    <div class="run-card reveal">
+      <div class="run-card-head">
+        <div class="head-dots"><i></i><i></i><i></i></div>
+        <span>RAFTAAR / LIVE SESSION</span>
+        <b><i></i> GPS LIVE</b>
+      </div>
+
+      <div class="run-visual">
+        <div class="map-grid"></div>
+
+        
+        <div class="center-progress" aria-hidden="true"></div>
+
+        <div class="center-run">
+          <div class="running-badge"><i></i> RUNNING</div>
+          <strong>38:42</strong>
+          <span>CURRENT SESSION</span>
+        </div>
+
+        <div class="map-label label-start">START</div>
+        <div class="map-label label-finish">7.42 KM</div>
+      </div>
+
+      <div class="run-metrics">
+        <div class="run-metric">
+          <small>DISTANCE</small>
+          <strong>7.42 <em>km</em></strong>
+          <span>↑ 12.8% this week</span>
+        </div>
+        <div class="run-metric">
+          <small>LIVE PACE</small>
+          <strong>5:18 <em>/km</em></strong>
+          <span>Steady pace</span>
+        </div>
+        <div class="run-metric">
+          <small>TOP SPEED</small>
+          <strong>16.8 <em>km/h</em></strong>
+          <span>Personal pace insight</span>
+        </div>
+        <div class="run-metric">
+          <small>GPS ACCURACY</small>
+          <strong>4.2 <em>m</em></strong>
+          <span>High precision signal</span>
+          <div class="accuracy"><i></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <div class="section-top reveal">
+      <div><div class="kicker">Simple by design</div><h2 class="section-title">Start running.<br><span>That's it.</span></h2></div>
+      <p class="section-copy">No accounts. No clutter. No learning curve. Open Raftaar and get moving.</p>
+    </div>
+    <div class="steps">
+      <div class="step reveal"><div class="num">01 / OPEN</div><h3>Launch Raftaar</h3><p>Open the app and start a new run in seconds. The interface keeps the action obvious.</p></div>
+      <div class="step reveal"><div class="num">02 / MOVE</div><h3>Run naturally</h3><p>GPS quietly records your route, distance, speed, pace and elapsed time as you move.</p></div>
+      <div class="step reveal"><div class="num">03 / IMPROVE</div><h3>Know your numbers</h3><p>Finish with a clean snapshot of your run and use the numbers to move better next time.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="cta" id="download">
+  <div class="wrap">
+    <div class="cta-box reveal">
+      <div class="kicker">Ready when you are</div>
+      <h2>Run your way.<br><span class="green">Raftaar.</span></h2>
+      <p>Download the free Android APK and turn your next run into a cleaner, smarter experience.</p>
+      <a class="btn btn-main" href="Raftaar.apk" download>Download APK ↓</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap" style="display:flex;justify-content:space-between;width:90%">
+    <span>© 2026 <strong>Raftaar</strong></span><span>Free GPS Run & Distance Tracker</span>
+  </div>
+</footer>
+
+<script>
+const observer = new IntersectionObserver((entries)=>{
+  entries.forEach((entry)=>{
+    if(entry.isIntersecting){ entry.target.classList.add('show'); observer.unobserve(entry.target); }
+  });
+},{threshold:.12});
+document.querySelectorAll('.reveal').forEach((el,i)=>{
+  el.style.transitionDelay = Math.min(i*35,280)+'ms';
+  observer.observe(el);
+});
+
+const phone = document.querySelector('.phone');
+document.addEventListener('pointermove',(e)=>{
+  if(!phone || window.innerWidth < 900) return;
+  const x=(e.clientX/window.innerWidth-.5), y=(e.clientY/window.innerHeight-.5);
+  phone.style.transform=`translateX(-50%) rotateX(${3-y*7}deg) rotateY(${-8+x*10}deg)`;
+});
+document.addEventListener('pointerleave',()=>{ if(phone) phone.style.transform='translateX(-50%) rotateX(3deg) rotateY(-8deg)' });
+
+document.querySelectorAll('a[href^="#"]').forEach(a=>{
+  a.addEventListener('click',e=>{
+    const target=document.querySelector(a.getAttribute('href'));
+    if(target){e.preventDefault();target.scrollIntoView({behavior:'smooth',block:'start'});}
+  });
+});
+</script>
+</body>
+</html>
