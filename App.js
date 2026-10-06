@@ -33,11 +33,12 @@ import {
 } from "@expo/vector-icons";
 import NetInfo from "@react-native-community/netinfo";
 import * as NavigationBar from "expo-navigation-bar";
+import { LinearGradient } from "expo-linear-gradient";
 
 const { width, height } = Dimensions.get("window");
 
 /* =========================================================
-   RAFTAAR 2.0 — DESIGN SYSTEM
+   RAFTAAR — DESIGN SYSTEM
 ========================================================= */
 
 const C = {
@@ -53,16 +54,17 @@ const C = {
   muted2: "#64756D",
   line: "rgba(190,255,218,0.11)",
 
-  lime: "#5CFF8A",
+  lime: "#9DFF18",
   lime2: "#B8FF27",
   limeDark: "rgba(92,255,138,0.10)",
-  cyan: "#27E8FF",
-  teal: "#00BFAE",
-  blue: "#4D7CFF",
-  blue2: "#24C6FF",
+  cyan: "#25C6FF",
+  teal: "#53E6A2",
+  blue: "#2C9BFF",
+  blue2: "#25C6FF",
   purple: "#8B7CFF",
-  gradientStart: "#27E8FF",
-  gradientEnd: "#5CFF8A",
+  gradientStart: "#9DFF18",
+  gradientMid: "#25C6FF",
+  gradientEnd: "#FFD84D",
 
   red: "#FF5A68",
   orange: "#FF9D4D",
@@ -1915,22 +1917,73 @@ export default function App() {
   function renderRun() {
     const currentPace = getPace(distance, elapsedSeconds);
     const displayPace = currentPace === "--:--" ? "--:--" : currentPace;
+
     return (
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.refScroll}>
-        <View style={styles.refRunHeader}>
-          <View><Text style={styles.refGpsPill}>{running ? (paused ? "PAUSED" : "● GPS") : "● GPS READY"}</Text><Text style={styles.refRunTitle}>{running ? "Running" : "Ready to run"}</Text><Text style={styles.refRunSub}>{running ? (paused ? "Take a breath." : "Keep going!") : "Move at your own pace."}</Text></View>
-          <Ionicons name="lock-closed-outline" size={18} color={C.muted} />
+        <View style={styles.watchHeader}>
+          <View>
+            <View style={styles.watchStatusRow}>
+              <View style={styles.watchStatusDot} />
+              <Text style={styles.watchStatus}>GPS READY</Text>
+            </View>
+            <Text style={styles.watchTitle}>{running ? "RUNNING" : "READY TO RUN"}</Text>
+            <Text style={styles.watchSub}>{running ? (paused ? "Paused · take a breath" : "Live performance tracking") : "Your smart running watch"}</Text>
+          </View>
+          <View style={styles.watchTopIcon}>
+            <Ionicons name="watch-outline" size={19} color={C.muted} />
+          </View>
         </View>
 
-        <View style={styles.refLiveCard}>
-          <Text style={styles.refLiveLabel}>TIME</Text>
-          <Text style={styles.refLiveTime}>{formatTime(elapsedSeconds)}</Text>
-          <View style={styles.refLiveStats}>
-            <View><Text style={styles.refLiveValue}>{distance.toFixed(2)}</Text><Text style={styles.refLiveUnit}>DISTANCE · KM</Text></View>
-            <View><Text style={styles.refLiveValue}>{displayPace}</Text><Text style={styles.refLiveUnit}>PACE · /KM</Text></View>
+        <LinearGradient
+          colors={["#0B1512", "#101A18", "#0B1512"]}
+          start={{x: 0, y: 0}}
+          end={{x: 1, y: 1}}
+          style={styles.smartWatch}
+        >
+          <View style={styles.watchTopMeta}>
+            <Text style={styles.watchTiny}>RAFTAAR</Text>
+            <Text style={styles.watchTiny}>{running ? "LIVE" : "SMART RUN"}</Text>
           </View>
-          <LiveGraph values={paceHistory.map(v => Number(v) || 0)} />
-        </View>
+
+          <View style={styles.watchFace}>
+            <LinearGradient
+              colors={[C.gradientStart, C.gradientMid, C.gradientEnd]}
+              start={{x: 0, y: 0}}
+              end={{x: 1, y: 1}}
+              style={styles.watchRingOuter}
+            >
+              <View style={styles.watchRingInner}>
+                <Text style={styles.watchTime}>{formatTime(elapsedSeconds)}</Text>
+                <Text style={styles.watchTimeLabel}>{running ? "RUN TIME" : "READY"}</Text>
+              </View>
+            </LinearGradient>
+          </View>
+
+          <View style={styles.watchMetrics}>
+            <View style={styles.watchMetric}>
+              <Text style={styles.watchMetricLabel}>DISTANCE</Text>
+              <Text style={styles.watchMetricValue}>{distance.toFixed(2)}</Text>
+              <Text style={styles.watchMetricUnit}>KM</Text>
+            </View>
+            <View style={styles.watchMetricDivider} />
+            <View style={styles.watchMetric}>
+              <Text style={styles.watchMetricLabel}>PACE</Text>
+              <Text style={styles.watchMetricValue}>{displayPace}</Text>
+              <Text style={styles.watchMetricUnit}>MIN / KM</Text>
+            </View>
+            <View style={styles.watchMetricDivider} />
+            <View style={styles.watchMetric}>
+              <Text style={styles.watchMetricLabel}>SPEED</Text>
+              <Text style={styles.watchMetricValue}>{Number(speedKmh || 0).toFixed(1)}</Text>
+              <Text style={styles.watchMetricUnit}>KM / H</Text>
+            </View>
+          </View>
+
+          <View style={styles.watchPulse}>
+            <View style={styles.watchPulseLine} />
+            <Text style={styles.watchPulseText}>{running ? "TRACKING YOUR RUN" : "READY WHEN YOU ARE"}</Text>
+          </View>
+        </LinearGradient>
 
         <View style={styles.refMapCard}>
           {route.length > 1 ? (
@@ -1942,20 +1995,49 @@ export default function App() {
               showsMyLocationButton={false}
               initialRegion={{latitude: route[0].latitude, longitude: route[0].longitude, latitudeDelta: MAP_DELTA, longitudeDelta: MAP_DELTA}}
             >
-              <Polyline coordinates={route.map(mapCoordinate)} strokeColor={C.lime2} strokeWidth={5} />
+              <Polyline coordinates={route.map(mapCoordinate)} strokeColor={C.gradientMid} strokeWidth={5} />
               <Marker coordinate={mapCoordinate(route[0])}><View style={styles.refMapDotStart} /></Marker>
               <Marker coordinate={mapCoordinate(route[route.length-1])}><View style={styles.refMapDotEnd} /></Marker>
             </MapView>
           ) : (
-            <View style={styles.refMapEmpty}><Ionicons name="map-outline" size={38} color={C.lime2}/><Text style={styles.refMapEmptyTitle}>Your route appears here</Text><Text style={styles.refMapEmptySub}>Start running to see live GPS tracking.</Text></View>
+            <View style={styles.refMapEmpty}>
+              <LinearGradient
+                colors={[C.gradientStart, C.gradientMid, C.gradientEnd]}
+                start={{x: 0, y: 0}}
+                end={{x: 1, y: 1}}
+                style={styles.watchMapIcon}
+              >
+                <Ionicons name="map-outline" size={25} color={C.black} />
+              </LinearGradient>
+              <Text style={styles.refMapEmptyTitle}>Your route appears here</Text>
+              <Text style={styles.refMapEmptySub}>Start running to see live GPS tracking.</Text>
+            </View>
           )}
-          <View style={styles.refMapBadge}><Ionicons name="navigate" size={13} color={C.lime2}/><Text style={styles.refMapBadgeText}>{accuracy ? `${Math.round(accuracy)}m GPS` : "GPS"}</Text></View>
+          <View style={styles.refMapBadge}><Ionicons name="navigate" size={13} color={C.gradientMid}/><Text style={styles.refMapBadgeText}>{accuracy ? `${Math.round(accuracy)}m GPS` : "GPS"}</Text></View>
         </View>
 
         {!running ? (
-          <TouchableOpacity style={styles.refMainButton} onPress={() => setMissionVisible(true)} activeOpacity={0.88}><Ionicons name="play" size={19} color={C.black}/><Text style={styles.refMainButtonText}>START RUN</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.refMainButton} onPress={() => setMissionVisible(true)} activeOpacity={0.88}>
+            <LinearGradient
+              colors={[C.gradientStart, C.gradientMid, C.gradientEnd]}
+              start={{x: 0, y: 0}}
+              end={{x: 1, y: 0}}
+              style={styles.gradientButtonInner}
+            >
+              <Ionicons name="play" size={19} color={C.black}/>
+              <Text style={styles.refMainButtonText}>START RUN</Text>
+            </LinearGradient>
+          </TouchableOpacity>
         ) : (
-          <View style={styles.refRunControls}><TouchableOpacity style={styles.refCircleControl} onPress={paused ? resumeRun : pauseRun}><Ionicons name={paused ? "play" : "pause"} size={25} color={C.black}/></TouchableOpacity><TouchableOpacity style={styles.refStopButton} onPress={finishRun}><Ionicons name="stop" size={19} color={C.white}/><Text style={styles.refStopText}>FINISH</Text></TouchableOpacity></View>
+          <View style={styles.refRunControls}>
+            <TouchableOpacity style={styles.refCircleControl} onPress={paused ? resumeRun : pauseRun}>
+              <Ionicons name={paused ? "play" : "pause"} size={25} color={C.black}/>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.refStopButton} onPress={finishRun}>
+              <Ionicons name="stop" size={19} color={C.white}/>
+              <Text style={styles.refStopText}>FINISH</Text>
+            </TouchableOpacity>
+          </View>
         )}
         <Text style={styles.refSwipeHint}>{running ? "Tap FINISH when you're done" : "Choose a goal or start a free run"}</Text>
       </ScrollView>
@@ -2020,20 +2102,107 @@ export default function App() {
 
   function renderStats() {
     const valid = history.filter(x => Number(x.distanceKm) > 0);
-    const avgPaceSeconds = valid.length ? valid.reduce((a,x)=>a + (Number(x.durationSeconds||0)/Number(x.distanceKm||1)),0) / valid.length : 0;
+    const avgPaceSeconds = valid.length ? valid.reduce((a,x) => a + (Number(x.durationSeconds||0)/Number(x.distanceKm||1)),0) / valid.length : 0;
     const avgPace = avgPaceSeconds ? `${Math.floor(avgPaceSeconds/60)}:${String(Math.floor(avgPaceSeconds%60)).padStart(2,"0")}` : "--:--";
+
+    const dayNames = ["S","M","T","W","T","F","S"];
     const values = [0.18,0.34,0.27,0.48,0.62,0.54,Math.min(1,Math.max(0.2,weeklyDistance/10))];
+    const dayLabels = values.map((_, i) => dayNames[new Date(Date.now() - (6-i)*86400000).getDay()]);
+
     return (
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.refScroll}>
-        <View style={styles.refPageHeader}><View><Text style={styles.refGreetingSmall}>YOUR PERFORMANCE</Text><Text style={styles.refPageTitle}>Analyze your run</Text></View><Ionicons name="stats-chart" size={24} color={C.lime2}/></View>
-        <View style={styles.refStatsHero}><Text style={styles.refCardEyebrow}>ALL-TIME DISTANCE</Text><Text style={styles.refStatsHeroValue}>{totalDistance.toFixed(2)} <Text style={styles.refStatsHeroUnit}>KM</Text></Text><Text style={styles.refCardSub}>Keep building your momentum.</Text></View>
-        <View style={styles.refChartCard}><View style={styles.refChartHead}><View><Text style={styles.refCardEyebrow}>LAST 7 DAYS</Text><Text style={styles.refChartTitle}>Distance</Text></View><Text style={styles.refChartTotal}>{weeklyDistance.toFixed(1)} km</Text></View><View style={styles.refBars}>{values.map((v,i)=><View key={i} style={styles.refChartSlot}><View style={styles.refChartTrack}><View style={[styles.refChartBar,{height:`${Math.max(10,v*100)}%`}]} /></View><Text style={styles.refChartDay}>["S","M","T","W","T","F","S"][new Date(Date.now()-(6-i)*86400000).getDay()]}</Text></View>)}</View></View>
-        <View style={styles.refStatsGrid}><View style={styles.refStatCard}><Text style={styles.refStatLabel}>AVG PACE</Text><Text style={styles.refStatValue}>{avgPace}</Text><Text style={styles.refStatUnit}>MIN / KM</Text></View><View style={styles.refStatCard}><Text style={styles.refStatLabel}>BEST PACE</Text><Text style={styles.refStatValue}>{personalBests.fastestPace}</Text><Text style={styles.refStatUnit}>MIN / KM</Text></View><View style={styles.refStatCard}><Text style={styles.refStatLabel}>LONGEST</Text><Text style={styles.refStatValue}>{personalBests.longestRun.toFixed(1)}</Text><Text style={styles.refStatUnit}>KM</Text></View><View style={styles.refStatCard}><Text style={styles.refStatLabel}>TOP SPEED</Text><Text style={styles.refStatValue}>{personalBests.topSpeed.toFixed(1)}</Text><Text style={styles.refStatUnit}>KM / H</Text></View></View>
-        <View style={styles.refInsight}><View style={styles.refInsightIcon}><Ionicons name="flash" size={17} color={C.black}/></View><View style={{flex:1}}><Text style={styles.refInsightTitle}>PERSONAL BESTS</Text><Text style={styles.refInsightText}>{history.length ? `Longest run ${personalBests.longestRun.toFixed(2)} km · Fastest pace ${personalBests.fastestPace}/km` : "Complete a run to unlock your personal performance data."}</Text></View></View>
+        <View style={styles.refPageHeader}>
+          <View>
+            <Text style={styles.refGreetingSmall}>YOUR PERFORMANCE</Text>
+            <Text style={styles.refPageTitle}>Analyze your run</Text>
+          </View>
+          <LinearGradient
+            colors={[C.gradientStart, C.gradientMid, C.gradientEnd]}
+            start={{x:0,y:0}}
+            end={{x:1,y:1}}
+            style={styles.statsGradientIcon}
+          >
+            <Ionicons name="stats-chart" size={21} color={C.black}/>
+          </LinearGradient>
+        </View>
+
+        <LinearGradient
+          colors={["#0B1713", "#10221A", "#0B1512"]}
+          start={{x:0,y:0}}
+          end={{x:1,y:1}}
+          style={styles.refStatsHero}
+        >
+          <Text style={styles.refCardEyebrow}>ALL-TIME DISTANCE</Text>
+          <Text style={styles.refStatsHeroValue}>{totalDistance.toFixed(2)} <Text style={styles.refStatsHeroUnit}>KM</Text></Text>
+          <Text style={styles.refCardSub}>Keep building your momentum.</Text>
+        </LinearGradient>
+
+        <View style={styles.refChartCard}>
+          <View style={styles.refChartHead}>
+            <View>
+              <Text style={styles.refCardEyebrow}>LAST 7 DAYS</Text>
+              <Text style={styles.refChartTitle}>Distance</Text>
+            </View>
+            <Text style={styles.refChartTotal}>{weeklyDistance.toFixed(1)} km</Text>
+          </View>
+
+          <View style={styles.refBars}>
+            {values.map((v,i) => (
+              <View key={i} style={styles.refChartSlot}>
+                <View style={styles.refChartTrack}>
+                  <LinearGradient
+                    colors={[C.gradientStart, C.gradientMid, C.gradientEnd]}
+                    start={{x:0,y:1}}
+                    end={{x:0,y:0}}
+                    style={[styles.refChartBar,{height:`${Math.max(10,v*100)}%`}]}
+                  />
+                </View>
+                <Text style={styles.refChartDay}>{dayLabels[i]}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.refStatsGrid}>
+          <LinearGradient colors={["#0D1915","#111D1A"]} style={styles.refStatCard}>
+            <Text style={styles.refStatLabel}>AVG PACE</Text>
+            <Text style={styles.refStatValue}>{avgPace}</Text>
+            <Text style={styles.refStatUnit}>MIN / KM</Text>
+          </LinearGradient>
+          <LinearGradient colors={["#0D1915","#111D1A"]} style={styles.refStatCard}>
+            <Text style={styles.refStatLabel}>BEST PACE</Text>
+            <Text style={styles.refStatValue}>{personalBests.fastestPace}</Text>
+            <Text style={styles.refStatUnit}>MIN / KM</Text>
+          </LinearGradient>
+          <LinearGradient colors={["#0D1915","#111D1A"]} style={styles.refStatCard}>
+            <Text style={styles.refStatLabel}>LONGEST</Text>
+            <Text style={styles.refStatValue}>{personalBests.longestRun.toFixed(1)}</Text>
+            <Text style={styles.refStatUnit}>KM</Text>
+          </LinearGradient>
+          <LinearGradient colors={["#0D1915","#111D1A"]} style={styles.refStatCard}>
+            <Text style={styles.refStatLabel}>TOP SPEED</Text>
+            <Text style={styles.refStatValue}>{personalBests.topSpeed.toFixed(1)}</Text>
+            <Text style={styles.refStatUnit}>KM / H</Text>
+          </LinearGradient>
+        </View>
+
+        <LinearGradient
+          colors={[C.gradientStart, C.gradientMid, C.gradientEnd]}
+          start={{x:0,y:0}}
+          end={{x:1,y:0}}
+          style={styles.refInsightGradient}
+        >
+          <View style={styles.refInsight}>
+            <View style={styles.refInsightIcon}><Ionicons name="flash" size={17} color={C.black}/></View>
+            <View style={{flex:1}}>
+              <Text style={styles.refInsightTitle}>PERSONAL BESTS</Text>
+              <Text style={styles.refInsightText}>{history.length ? `Longest run ${personalBests.longestRun.toFixed(2)} km · Fastest pace ${personalBests.fastestPace}/km` : "Complete a run to unlock your personal performance data."}</Text>
+            </View>
+          </View>
+        </LinearGradient>
       </ScrollView>
     );
   }
-
 
   /* =========================================================
      ROOT
@@ -2045,7 +2214,7 @@ export default function App() {
     >
       <StatusBar
         hidden={false}
-        barStyle="dark-content"
+        barStyle="light-content"
         backgroundColor={C.bg}
         translucent={false}
       />
@@ -2068,8 +2237,7 @@ export default function App() {
           {activeTab === "stats" &&
             renderStats()}
 
-          {activeTab === "profile" &&
-            renderProfile()}
+
         </View>
 
         {/* BOTTOM NAV */}
@@ -2088,7 +2256,7 @@ export default function App() {
       <Modal visible={onboarding} animationType="fade" transparent={false}>
         <SafeAreaView style={styles.refOnboarding}>
           <View style={styles.refOnboardTop}>
-            <Text style={styles.refOnboardLogo}>Raftaar<Text style={{color:C.lime2}}>.</Text></Text>
+            <View><Text style={styles.refOnboardLogo}>Raftaar<Text style={{color:C.lime2}}>.</Text></Text><Text style={styles.refOnboardBrandSub}>RUN  ·  TRACK  ·  IMPROVE</Text></View>
             {onboardingPage > 0 ? <Text style={styles.refOnboardCount}>{onboardingPage}/3</Text> : null}
           </View>
           <View style={styles.refOnboardCenter}>
@@ -2818,20 +2986,51 @@ function BottomNav({ active, onChange, running }) {
   const items = [
     { id: "home", icon: "home-outline", activeIcon: "home", label: "Home" },
     { id: "stats", icon: "stats-chart-outline", activeIcon: "stats-chart", label: "Stats" },
-    { id: "run", icon: "play-circle-outline", activeIcon: "play-circle", label: "Run" },
+    { id: "run", icon: "play", activeIcon: "play", label: "Run" },
     { id: "history", icon: "footsteps-outline", activeIcon: "footsteps", label: "Routes" },
-    { id: "profile", icon: "person-outline", activeIcon: "person", label: "Profile" },
   ];
+
   return (
     <View style={styles.refBottomNav}>
       {items.map((item) => {
         const selected = active === item.id;
+        const isRun = item.id === "run";
+
         return (
-          <TouchableOpacity key={item.id} style={styles.refNavItem} onPress={() => onChange(item.id)} activeOpacity={0.8}>
-            <View style={[styles.refNavIconWrap, selected && styles.refNavIconActive]}>
-              <Ionicons name={selected ? item.activeIcon : item.icon} size={selected ? 22 : 20} color={selected ? C.black : C.muted} />
-            </View>
-            <Text style={[styles.refNavLabel, selected && styles.refNavLabelActive]}>{item.label}</Text>
+          <TouchableOpacity
+            key={item.id}
+            style={styles.refNavItem}
+            onPress={() => onChange(item.id)}
+            activeOpacity={0.82}
+          >
+            {isRun ? (
+              <LinearGradient
+                colors={[C.gradientStart, C.gradientMid, C.gradientEnd]}
+                start={{x:0,y:0}}
+                end={{x:1,y:1}}
+                style={styles.refRunNavButton}
+              >
+                <Ionicons name="play" size={19} color={C.black} />
+              </LinearGradient>
+            ) : (
+              selected ? (
+                <LinearGradient
+                  colors={[C.gradientStart, C.gradientMid, C.gradientEnd]}
+                  start={{x:0,y:0}}
+                  end={{x:1,y:1}}
+                  style={styles.refNavIconWrap}
+                >
+                  <Ionicons name={item.activeIcon} size={21} color={C.black} />
+                </LinearGradient>
+              ) : (
+                <View style={styles.refNavIconWrap}>
+                  <Ionicons name={item.icon} size={19} color={C.muted} />
+                </View>
+              )
+            )}
+            <Text style={[styles.refNavLabel, selected && !isRun && styles.refNavLabelActive]}>
+              {item.label}
+            </Text>
           </TouchableOpacity>
         );
       })}
@@ -5515,17 +5714,17 @@ const styles = StyleSheet.create({
   refCardSub: { color: C.muted2, fontSize: 11, marginTop: 4 },
   refStartPill: { backgroundColor: C.lime2, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 11 },
   refStartText: { color: C.black, fontSize: 12, fontWeight: "900" },
-  refGoalCard: { minHeight: 310, borderRadius: 25, borderWidth: 1, borderColor: "rgba(184,255,39,0.13)", backgroundColor: "#07100D", alignItems: "center", justifyContent: "center", overflow: "hidden", marginBottom: 14 },
+  refGoalCard: { minHeight: 330, borderRadius: 25, borderWidth: 1, borderColor: "rgba(184,255,39,0.13)", backgroundColor: "#07100D", alignItems: "center", justifyContent: "center", overflow: "hidden", marginBottom: 14 },
   refGlow: { position: "absolute", width: 280, height: 280, borderRadius: 140, backgroundColor: "rgba(184,255,39,0.055)", top: 18 },
-  refGoalRing: { width: 190, height: 190, borderRadius: 95, borderWidth: 3, borderColor: C.lime2, alignItems: "center", justifyContent: "center", shadowColor: C.lime2, shadowOpacity: 0.25, shadowRadius: 20, shadowOffset: {width:0,height:0}, elevation: 7 },
-  refGoalRingInner: { width: 166, height: 166, borderRadius: 83, borderWidth: 1, borderColor: "rgba(184,255,39,0.17)", alignItems: "center", justifyContent: "center" },
+  refGoalRing: { width: 204, height: 204, borderRadius: 95, borderWidth: 3, borderColor: C.lime2, alignItems: "center", justifyContent: "center", shadowColor: C.lime2, shadowOpacity: 0.25, shadowRadius: 20, shadowOffset: {width:0,height:0}, elevation: 7 },
+  refGoalRingInner: { width: 180, height: 180, borderRadius: 83, borderWidth: 1, borderColor: "rgba(184,255,39,0.17)", alignItems: "center", justifyContent: "center" },
   refGoalNumber: { color: C.white, fontSize: 31, fontWeight: "900" },
   refGoalUnit: { color: C.lime2, fontSize: 11, fontWeight: "900", letterSpacing: 1 },
   refGoalHint: { color: C.muted2, fontSize: 9, marginTop: 7 },
   refGoalLabel: { color: C.muted, fontSize: 9, fontWeight: "900", letterSpacing: 2, marginTop: 16 },
   refGoalCaption: { color: C.muted2, fontSize: 10, marginTop: 5 },
   refStatsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 18 },
-  refStatCard: { flex: 1, minWidth: "47%", minHeight: 82, borderRadius: 15, borderWidth: 1, borderColor: C.line, backgroundColor: C.card2, padding: 13 },
+  refStatCard: { flex: 1, minWidth: "47%", minHeight: 82, borderRadius: 15, overflow: "hidden", borderWidth: 1, borderColor: C.line, backgroundColor: C.card2, padding: 13 },
   refStatLabel: { color: C.muted2, fontSize: 8, fontWeight: "900", letterSpacing: 1.3 },
   refStatValue: { color: C.white, fontSize: 21, fontWeight: "900", marginTop: 7 },
   refStatUnit: { color: C.muted2, fontSize: 8, marginTop: 1 },
@@ -5543,6 +5742,34 @@ const styles = StyleSheet.create({
   refRunIcon: { width: 45, height: 45, borderRadius: 14, backgroundColor: "rgba(184,255,39,0.08)", alignItems: "center", justifyContent: "center", marginRight: 12 },
   refRunDistance: { color: C.white, fontSize: 15, fontWeight: "800" },
   refRunMeta: { color: C.muted2, fontSize: 10, marginTop: 5 },
+  watchHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 },
+  watchStatusRow: { flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 7 },
+  watchStatusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.gradientStart, shadowColor: C.gradientStart, shadowOpacity: 0.8, shadowRadius: 6, shadowOffset: {width:0,height:0}, elevation: 4 },
+  watchStatus: { color: C.gradientStart, fontSize: 9, fontWeight: "900", letterSpacing: 1.7 },
+  watchTitle: { color: C.white, fontSize: 29, fontWeight: "900", letterSpacing: -1 },
+  watchSub: { color: C.muted2, fontSize: 10, marginTop: 3 },
+  watchTopIcon: { width: 40, height: 40, borderRadius: 14, borderWidth: 1, borderColor: C.line, alignItems: "center", justifyContent: "center" },
+  smartWatch: { borderRadius: 32, borderWidth: 1, borderColor: "rgba(37,198,255,0.18)", padding: 17, marginBottom: 14, overflow: "hidden", shadowColor: C.gradientMid, shadowOpacity: 0.12, shadowRadius: 25, shadowOffset: {width:0,height:8}, elevation: 8 },
+  watchTopMeta: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  watchTiny: { color: C.muted2, fontSize: 7, fontWeight: "900", letterSpacing: 1.5 },
+  watchFace: { alignItems: "center", justifyContent: "center", marginVertical: 15 },
+  watchRingOuter: { width: 196, height: 196, borderRadius: 98, padding: 5, alignItems: "center", justifyContent: "center", shadowColor: C.gradientMid, shadowOpacity: 0.25, shadowRadius: 25, shadowOffset: {width:0,height:0}, elevation: 8 },
+  watchRingInner: { width: 186, height: 186, borderRadius: 93, backgroundColor: "#07100D", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", alignItems: "center", justifyContent: "center" },
+  watchTime: { color: C.white, fontSize: 43, lineHeight: 49, fontWeight: "900", letterSpacing: -2 },
+  watchTimeLabel: { color: C.gradientMid, fontSize: 8, fontWeight: "900", letterSpacing: 2, marginTop: 4 },
+  watchMetrics: { flexDirection: "row", alignItems: "stretch", borderTopWidth: 1, borderBottomWidth: 1, borderColor: "rgba(255,255,255,0.07)", paddingVertical: 13 },
+  watchMetric: { flex: 1, alignItems: "center" },
+  watchMetricDivider: { width: 1, backgroundColor: "rgba(255,255,255,0.07)" },
+  watchMetricLabel: { color: C.muted2, fontSize: 7, fontWeight: "900", letterSpacing: 1 },
+  watchMetricValue: { color: C.white, fontSize: 17, fontWeight: "900", marginTop: 5 },
+  watchMetricUnit: { color: C.muted2, fontSize: 6.5, marginTop: 2, fontWeight: "800" },
+  watchPulse: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingTop: 12 },
+  watchPulseLine: { width: 38, height: 2, backgroundColor: C.gradientStart, borderRadius: 2, shadowColor: C.gradientStart, shadowOpacity: 0.7, shadowRadius: 5, shadowOffset: {width:0,height:0} },
+  watchPulseText: { color: C.muted, fontSize: 7, fontWeight: "900", letterSpacing: 1.2 },
+  watchMapIcon: { width: 54, height: 54, borderRadius: 17, alignItems: "center", justifyContent: "center", marginBottom: 8 },
+  gradientButtonInner: { flex: 1, width: "100%", borderRadius: 17, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 9 },
+  statsGradientIcon: { width: 42, height: 42, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  refInsightGradient: { borderRadius: 18, padding: 1, marginBottom: 18 },
   refRunHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 15 },
   refGpsPill: { color: C.lime2, fontSize: 9, fontWeight: "900", letterSpacing: 1.4, marginBottom: 7 },
   refRunTitle: { color: C.white, fontSize: 25, fontWeight: "900" },
@@ -5562,7 +5789,7 @@ const styles = StyleSheet.create({
   refMapBadgeText: { color: C.white, fontSize: 9, fontWeight: "800" },
   refMapDotStart: { width: 12, height: 12, borderRadius: 6, backgroundColor: C.cyan, borderWidth: 2, borderColor: C.white },
   refMapDotEnd: { width: 14, height: 14, borderRadius: 7, backgroundColor: C.lime2, borderWidth: 2, borderColor: C.black },
-  refMainButton: { height: 57, borderRadius: 17, backgroundColor: C.lime2, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 9, shadowColor: C.lime2, shadowOpacity: 0.25, shadowRadius: 16, shadowOffset: {width:0,height:6}, elevation: 6 },
+  refMainButton: { height: 57, borderRadius: 17, backgroundColor: "transparent", alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 9, shadowColor: C.lime2, shadowOpacity: 0.25, shadowRadius: 16, shadowOffset: {width:0,height:6}, elevation: 6 },
   refMainButtonText: { color: C.black, fontSize: 14, fontWeight: "900", letterSpacing: 1 },
   refRunControls: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12 },
   refCircleControl: { width: 66, height: 66, borderRadius: 33, backgroundColor: C.lime2, alignItems: "center", justifyContent: "center" },
@@ -5615,23 +5842,25 @@ const styles = StyleSheet.create({
   refChartSlot: { flex: 1, height: "100%", alignItems: "center", justifyContent: "flex-end" },
   refChartTrack: { width: "100%", height: 112, justifyContent: "flex-end", backgroundColor: "rgba(255,255,255,0.02)", borderRadius: 6, overflow: "hidden" },
   refChartBar: { width: "100%", backgroundColor: C.lime2, borderRadius: 6 },
-  refChartDay: { color: C.muted2, fontSize: 8, marginTop: 8, fontWeight: "800" },
+  refChartDay: { color: C.white, fontSize: 9, marginTop: 9, fontWeight: "900", textAlign: "center" },
   refInsight: { flexDirection: "row", alignItems: "center", gap: 11, backgroundColor: "rgba(184,255,39,0.07)", borderWidth: 1, borderColor: "rgba(184,255,39,0.13)", borderRadius: 17, padding: 14 },
   refInsightIcon: { width: 34, height: 34, borderRadius: 10, backgroundColor: C.lime2, alignItems: "center", justifyContent: "center" },
   refInsightTitle: { color: C.lime2, fontSize: 8, fontWeight: "900", letterSpacing: 1.2 },
   refInsightText: { color: C.muted, fontSize: 10, lineHeight: 15, marginTop: 3 },
-  refBottomNav: { position: "absolute", left: 12, right: 12, bottom: Platform.OS === "android" ? 8 : 12, height: 68, borderRadius: 22, borderWidth: 1, borderColor: "rgba(190,255,218,0.13)", backgroundColor: "rgba(8,14,12,0.98)", flexDirection: "row", alignItems: "center", justifyContent: "space-around", paddingHorizontal: 4, elevation: 12 },
+  refBottomNav: { position: "absolute", left: 12, right: 12, bottom: Platform.OS === "android" ? 8 : 12, height: 70, borderRadius: 22, borderWidth: 1, borderColor: "rgba(190,255,218,0.13)", backgroundColor: "rgba(5,9,7,0.98)", flexDirection: "row", alignItems: "center", justifyContent: "space-around", paddingHorizontal: 4, elevation: 12, shadowColor: C.lime2, shadowOpacity: 0.06, shadowRadius: 18, shadowOffset: {width:0,height:4} },
   refNavItem: { flex: 1, alignItems: "center", justifyContent: "center", height: "100%" },
   refNavIconWrap: { width: 34, height: 30, borderRadius: 11, alignItems: "center", justifyContent: "center" },
   refNavIconActive: { backgroundColor: C.lime2 },
   refNavLabel: { color: C.muted2, fontSize: 7, fontWeight: "800", marginTop: 2 },
   refNavLabelActive: { color: C.lime2 },
+  refRunNavButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.lime2, alignItems: "center", justifyContent: "center", marginTop: -8, shadowColor: C.lime2, shadowOpacity: 0.42, shadowRadius: 12, shadowOffset: {width:0,height:0}, elevation: 8 },
   refOnboarding: { flex: 1, backgroundColor: C.bg, paddingHorizontal: 25 },
   refOnboardTop: { height: 65, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   refOnboardLogo: { color: C.white, fontSize: 28, fontWeight: "900", letterSpacing: -1 },
+  refOnboardBrandSub: { color: C.muted2, fontSize: 7, fontWeight: "900", letterSpacing: 1.8, marginTop: 1 },
   refOnboardCount: { color: C.muted, fontSize: 10, fontWeight: "900" },
   refOnboardCenter: { flex: 1, justifyContent: "center" },
-  refOnboardHero: { width: 220, height: 280, alignSelf: "center", borderRadius: 34, borderWidth: 1, borderColor: "rgba(184,255,39,0.16)", backgroundColor: "#07110D", alignItems: "center", justifyContent: "center", shadowColor: C.lime2, shadowOpacity: .12, shadowRadius: 30, shadowOffset: {width:0,height:0}, elevation: 7 },
+  refOnboardHero: { width: Math.min(width - 76, 250), height: 300, alignSelf: "center", borderRadius: 38, borderWidth: 1.5, borderColor: "rgba(184,255,39,0.24)", backgroundColor: "#050B08", alignItems: "center", justifyContent: "center", shadowColor: C.lime2, shadowOpacity: .18, shadowRadius: 30, shadowOffset: {width:0,height:0}, elevation: 9 },
   refOnboardKicker: { color: C.muted, fontSize: 11, fontWeight: "900", letterSpacing: 2, marginBottom: 4 },
   refOnboardTitle: { color: C.white, fontSize: 33, lineHeight: 37, fontWeight: "900", letterSpacing: -1.3, marginTop: 22 },
   refOnboardSub: { color: C.muted, fontSize: 12, lineHeight: 18, marginTop: 10, maxWidth: 310 },
