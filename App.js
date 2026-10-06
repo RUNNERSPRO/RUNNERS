@@ -26,7 +26,6 @@ import * as TaskManager from "expo-task-manager";
 import * as Speech from "expo-speech";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import MapView, { Marker, Polyline } from "react-native-maps";
-import Svg, { Defs, LinearGradient as SvgLinearGradient, Stop, Path, Circle, Rect } from "react-native-svg";
 import {
   Ionicons,
   FontAwesome5,
@@ -1904,15 +1903,8 @@ export default function App() {
               setMissionVisible(true)
             }
           >
-            <Svg pointerEvents="none" style={StyleSheet.absoluteFill} width="100%" height="100%">
-              <Defs>
-                <SvgLinearGradient id="startGradient" x1="0" y1="0" x2="1" y2="1">
-                  <Stop offset="0" stopColor={C.gradientStart} />
-                  <Stop offset="1" stopColor={C.gradientEnd} />
-                </SvgLinearGradient>
-              </Defs>
-              <Rect x="0" y="0" width="100%" height="100%" rx="18" fill="url(#startGradient)" />
-            </Svg>
+            <View pointerEvents="none" style={styles.startGradientBase} />
+            <View pointerEvents="none" style={styles.startGradientGlow} />
             <Ionicons
               name="play"
               size={18}
@@ -4022,21 +4014,23 @@ function ScreenHeader({
 function HomeHeroVisual() {
   return (
     <View pointerEvents="none" style={styles.heroVisual}>
-      <Svg width="190" height="150" viewBox="0 0 190 150">
-        <Defs>
-          <SvgLinearGradient id="heroGradient" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor={C.gradientStart} />
-            <Stop offset="1" stopColor={C.gradientEnd} />
-          </SvgLinearGradient>
-        </Defs>
-        <Circle cx="128" cy="70" r="52" fill="none" stroke="rgba(39,232,255,0.12)" strokeWidth="16" />
-        <Circle cx="128" cy="70" r="43" fill="none" stroke="url(#heroGradient)" strokeWidth="3" strokeDasharray="110 35" strokeLinecap="round" />
-        <Path d="M22 112 C48 88 62 124 86 101 S124 72 168 42" fill="none" stroke="url(#heroGradient)" strokeWidth="3" strokeLinecap="round" />
-        <Circle cx="22" cy="112" r="4" fill={C.cyan} />
-        <Circle cx="168" cy="42" r="5" fill={C.lime} />
-        <Path d="M113 50 l12 -10 11 7 8 17 -10 6 -8 -12 -9 8 -9 -6z" fill="url(#heroGradient)" opacity="0.95" />
-        <Circle cx="111" cy="31" r="7" fill={C.white} opacity="0.95" />
-      </Svg>
+      <View style={styles.heroGlowA} />
+      <View style={styles.heroGlowB} />
+      <View style={styles.heroRingOuter} />
+      <View style={styles.heroRing}>
+        <View style={styles.heroRingInner} />
+      </View>
+      <View style={[styles.routeSeg, styles.routeSeg1]} />
+      <View style={[styles.routeSeg, styles.routeSeg2]} />
+      <View style={[styles.routeSeg, styles.routeSeg3]} />
+      <View style={styles.routeDotStart} />
+      <View style={styles.routeDotEnd} />
+      <View style={styles.runnerMark}>
+        <View style={styles.runnerHead} />
+        <View style={[styles.runnerLimb, styles.runnerArm]} />
+        <View style={[styles.runnerLimb, styles.runnerLegA]} />
+        <View style={[styles.runnerLimb, styles.runnerLegB]} />
+      </View>
     </View>
   );
 }
@@ -4765,6 +4759,58 @@ const styles = StyleSheet.create({
     opacity: 0.96,
   },
 
+  heroGlowA: {
+    position: "absolute", width: 120, height: 120, borderRadius: 60,
+    right: 20, top: 10, backgroundColor: "rgba(39,232,255,0.10)",
+  },
+  heroGlowB: {
+    position: "absolute", width: 95, height: 95, borderRadius: 48,
+    right: 2, top: 44, backgroundColor: "rgba(92,255,138,0.08)",
+  },
+  heroRingOuter: {
+    position: "absolute", width: 104, height: 104, borderRadius: 52,
+    right: 8, top: 18, borderWidth: 14, borderColor: "rgba(39,232,255,0.08)",
+  },
+  heroRing: {
+    position: "absolute", width: 88, height: 88, borderRadius: 44,
+    right: 16, top: 26, borderWidth: 3, borderStyle: "dashed",
+    borderColor: C.cyan, transform: [{ rotate: "-22deg" }],
+    alignItems: "center", justifyContent: "center",
+  },
+  heroRingInner: {
+    width: 72, height: 72, borderRadius: 36, borderWidth: 2,
+    borderColor: "rgba(92,255,138,0.55)",
+  },
+  routeSeg: {
+    position: "absolute", height: 3, borderRadius: 2,
+    backgroundColor: C.cyan, shadowColor: C.cyan, shadowOpacity: 0.8, shadowRadius: 8,
+  },
+  routeSeg1: { width: 55, left: 14, top: 105, transform: [{ rotate: "-24deg" }] },
+  routeSeg2: { width: 47, left: 61, top: 92, transform: [{ rotate: "24deg" }] },
+  routeSeg3: { width: 55, left: 101, top: 68, transform: [{ rotate: "-28deg" }], backgroundColor: C.lime },
+  routeDotStart: {
+    position: "absolute", width: 9, height: 9, borderRadius: 5, left: 18, top: 108,
+    backgroundColor: C.cyan, borderWidth: 2, borderColor: C.white,
+  },
+  routeDotEnd: {
+    position: "absolute", width: 10, height: 10, borderRadius: 5, right: 17, top: 39,
+    backgroundColor: C.lime, borderWidth: 2, borderColor: C.white,
+  },
+  runnerMark: {
+    position: "absolute", right: 55, top: 48, width: 42, height: 48,
+  },
+  runnerHead: {
+    position: "absolute", width: 10, height: 10, borderRadius: 5, left: 17, top: 0,
+    backgroundColor: C.white, shadowColor: C.cyan, shadowOpacity: 0.8, shadowRadius: 6,
+  },
+  runnerLimb: {
+    position: "absolute", height: 4, borderRadius: 2, backgroundColor: C.gradientEnd,
+  },
+  runnerArm: { width: 25, left: 11, top: 17, transform: [{ rotate: "-28deg" }] },
+  runnerLegA: { width: 28, left: 8, top: 35, transform: [{ rotate: "35deg" }] },
+  runnerLegB: { width: 25, left: 17, top: 31, transform: [{ rotate: "-42deg" }], backgroundColor: C.cyan },
+
+
   heroTop: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -4809,6 +4855,19 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginTop: 24,
     maxWidth: 255,
+  },
+
+  startGradientBase: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 18,
+    backgroundColor: C.gradientEnd,
+  },
+  startGradientGlow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 18,
+    width: "58%",
+    backgroundColor: C.gradientStart,
+    opacity: 0.92,
   },
 
   heroStart: {
