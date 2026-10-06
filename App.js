@@ -1,2754 +1,3554 @@
-'use strict';
-
 import React, {
-  useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
-} from 'react';
+} from "react";
+
 import {
-  ActivityIndicator,
+  Alert,
   Animated,
-  Easing,
-  KeyboardAvoidingView,
+  Dimensions,
   Modal,
   Platform,
-  Pressable,
   SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
-  Switch,
   Text,
-  TextInput,
-  useWindowDimensions,
+  TouchableOpacity,
+  Vibration,
   View,
-} from 'react-native';
+} from "react-native";
 
-let Haptics = null;
+import * as Location from "expo-location";
+import * as TaskManager from "expo-task-manager";
+import * as Speech from "expo-speech";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import MapView, { Marker, Polyline } from "react-native-maps";
+import {
+  Ionicons,
+  FontAwesome5,
+  MaterialCommunityIcons,
+} from "@expo/vector-icons";
+import NetInfo from "@react-native-community/netinfo";
+import * as NavigationBar from "expo-navigation-bar";
 
-try {
-  // Optional: the app still works if expo-haptics is unavailable.
-  Haptics = require('expo-haptics');
-} catch (e) {
-  Haptics = null;
+const { width, height } = Dimensions.get("window");
+
+/* =========================================================
+   RAFTAAR 2.0 — DESIGN SYSTEM
+========================================================= */
+
+const C = {
+  bg: "#050807",
+  bg2: "#08110F",
+  card: "rgba(14,24,21,0.94)",
+  card2: "#0D1714",
+  card3: "#12211C",
+
+  white: "#F7FFF4",
+  ink: "#F4FAF1",
+  muted: "#93A49B",
+  muted2: "#64756D",
+  line: "rgba(190,255,218,0.11)",
+
+  lime: "#5CFF8A",
+  lime2: "#B8FF27",
+  limeDark: "rgba(92,255,138,0.10)",
+  cyan: "#27E8FF",
+  teal: "#00BFAE",
+  blue: "#4D7CFF",
+  blue2: "#24C6FF",
+  purple: "#8B7CFF",
+  gradientStart: "#27E8FF",
+  gradientEnd: "#5CFF8A",
+
+  red: "#FF5A68",
+  orange: "#FF9D4D",
+  yellow: "#FFD75A",
+
+  black: "#030504",
+};
+
+const RADIUS = {
+  sm: 12,
+  md: 18,
+  lg: 24,
+  xl: 30,
+};
+
+const LOCATION_TASK_NAME = "RUNNER_BACKGROUND_LOCATION";
+const SESSION_KEY = "@raftaar_active_session_v7";
+const HISTORY_KEY = "@raftaar_workout_history_v7";
+const ONBOARDING_KEY = "@raftaar_onboarding_v2";
+
+const MAX_ACCURACY = 25;
+const MIN_MOVEMENT_METERS = 2;
+const MAX_RUNNING_SPEED_KMH = 22;
+const MAX_ROUTE_POINTS = 6000;
+const MAP_DELTA = 0.0045;
+
+const SPEED_STOPS = [
+  { speed: 0, color: "#FF4D4D" },
+  { speed: 4, color: "#FF9F43" },
+  { speed: 7, color: "#F8D94E" },
+  { speed: 10, color: "#5CFF8A" },
+  { speed: 13, color: "#27E8FF" },
+  { speed: 16, color: "#4D7CFF" },
+  { speed: 20, color: "#8B7CFF" },
+];
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function toRad(value) {
+  return (value * Math.PI) / 180;
 }
 
-/* -------------------------------------------------------------------------- */
-/*                                    DATA                                    */
-/* -------------------------------------------------------------------------- */
+function distanceMeters(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
 
-const COLORS = {
-  bg: '#050807',
-  bg2: '#08110F',
-  surface: '#0D1513',
-  elevated: '#121C19',
-  elevated2: '#17221F',
-  green: '#5CFF8A',
-  lime: '#B8FF27',
-  blue: '#4D7CFF',
-  cyan: '#27E8FF',
-  white: '#F7FFF9',
-  secondary: '#9AA8A2',
-  muted: '#65736D',
-  border: 'rgba(255,255,255,0.07)',
-  borderStrong: 'rgba(255,255,255,0.12)',
-  danger: '#FF667A',
-  orange: '#FFB55C',
-  purple: '#A67CFF',
-};
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
 
-const INITIAL_ACTIVITIES = [
-  {
-    id: '1',
-    title: 'Morning Run',
-    type: 'Runs',
-    date: 'Today',
-    dayIndex: 1,
-    distance: 5.42,
-    duration: 1938,
-    pace: 5.96,
-    calories: 412,
-    heartRate: 148,
-  },
-  {
-    id: '2',
-    title: 'Evening Run',
-    type: 'Runs',
-    date: 'Yesterday',
-    dayIndex: 0,
-    distance: 3.21,
-    duration: 1182,
-    pace: 6.08,
-    calories: 246,
-    heartRate: 142,
-  },
-  {
-    id: '3',
-    title: 'Tempo Session',
-    type: 'Runs',
-    date: 'Sat, Oct 3',
-    dayIndex: 6,
-    distance: 4.1,
-    duration: 1400,
-    pace: 5.69,
-    calories: 321,
-    heartRate: 154,
-  },
-  {
-    id: '4',
-    title: 'Recovery Run',
-    type: 'Runs',
-    date: 'Thu, Oct 1',
-    dayIndex: 4,
-    distance: 2.7,
-    duration: 1014,
-    pace: 6.25,
-    calories: 203,
-    heartRate: 136,
-  },
-  {
-    id: '5',
-    title: 'Sunrise Run',
-    type: 'Runs',
-    date: 'Tue, Sep 29',
-    dayIndex: 2,
-    distance: 2.97,
-    duration: 1105,
-    pace: 6.18,
-    calories: 228,
-    heartRate: 139,
-  },
-];
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) ** 2;
 
-const INITIAL_NOTIFICATIONS = [
-  {
-    id: '1',
-    title: 'Weekly goal',
-    message: 'Your weekly goal is 74% complete.',
-    time: 'Now',
-    unread: true,
-  },
-  {
-    id: '2',
-    title: 'Great job!',
-    message: 'You ran 5.4 km today.',
-    time: '1h ago',
-    unread: true,
-  },
-  {
-    id: '3',
-    title: 'Streak alert',
-    message: "You're on a 4-day streak.",
-    time: '3h ago',
-    unread: false,
-  },
-];
+  return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
-const INITIAL_SETTINGS = {
-  notifications: true,
-  sound: true,
-  haptics: true,
-  darkMode: true,
-  distanceUnit: 'km',
-  paceUnit: '/km',
-};
+function isValidCoordinate(point) {
+  if (!point) return false;
 
-const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const latitude = Number(point.latitude);
+  const longitude = Number(point.longitude);
 
-/* -------------------------------------------------------------------------- */
-/*                                  HELPERS                                   */
-/* -------------------------------------------------------------------------- */
+  return (
+    Number.isFinite(latitude) &&
+    Number.isFinite(longitude) &&
+    latitude >= -90 &&
+    latitude <= 90 &&
+    longitude >= -180 &&
+    longitude <= 180
+  );
+}
 
-const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+function mapCoordinate(point) {
+  return {
+    latitude: Number(point.latitude),
+    longitude: Number(point.longitude),
+  };
+}
 
-const formatDuration = (seconds = 0) => {
-  const safe = Math.max(0, Math.floor(Number(seconds) || 0));
-  const hours = Math.floor(safe / 3600);
-  const minutes = Math.floor((safe % 3600) / 60);
-  const secs = safe % 60;
+function formatTime(seconds) {
+  const total = Math.max(0, Math.floor(Number(seconds) || 0));
+
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const secs = total % 60;
 
   if (hours > 0) {
-    return `${hours}:${String(minutes).padStart(2, '0')}:${String(
-      secs
-    ).padStart(2, '0')}`;
+    return `${String(hours).padStart(2, "0")}:${String(
+      minutes
+    ).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
   }
 
-  return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-};
+  return `${String(minutes).padStart(2, "0")}:${String(secs).padStart(
+    2,
+    "0"
+  )}`;
+}
 
-const formatPace = (pace = 0) => {
-  const value = Number(pace) || 0;
-
-  if (value <= 0) return '0:00';
-
-  const minutes = Math.floor(value);
-  const seconds = Math.round((value - minutes) * 60);
-
-  if (seconds >= 60) {
-    return `${minutes + 1}:00`;
+function getPace(distanceKm, seconds) {
+  if (!distanceKm || distanceKm <= 0 || !seconds || seconds <= 0) {
+    return "--:--";
   }
 
-  return `${minutes}:${String(seconds).padStart(2, '0')}`;
-};
+  const paceSeconds = seconds / distanceKm;
 
-const formatDistance = (distance = 0) =>
-  `${(Number(distance) || 0).toFixed(2)}`;
+  return `${Math.floor(paceSeconds / 60)}:${String(
+    Math.floor(paceSeconds % 60)
+  ).padStart(2, "0")}`;
+}
 
-const getPace = (distance, seconds) => {
-  if (!distance || !seconds) return 0;
-  return seconds / 60 / distance;
-};
+function estimatedCalories(distanceKm) {
+  return Math.round(Math.max(0, Number(distanceKm) || 0) * 65);
+}
 
-const getActivityTotal = (activities, key) =>
-  activities.reduce((sum, item) => sum + (Number(item[key]) || 0), 0);
+function smoothSpeed(previous, current) {
+  return (
+    (Number(previous) || 0) * 0.85 +
+    (Number(current) || 0) * 0.15
+  );
+}
 
-const triggerHaptic = (settings, type = 'selection') => {
-  if (!settings?.haptics || !Haptics) return;
+function getGpsStatus(accuracy) {
+  if (!Number.isFinite(Number(accuracy))) {
+    return {
+      label: "SEARCHING",
+      color: C.orange,
+    };
+  }
 
-  try {
-    if (type === 'success' && Haptics.notificationAsync) {
-      Haptics.notificationAsync(
-        Haptics.NotificationFeedbackType?.Success ||
-          Haptics.NotificationFeedbackType.Success
+  if (accuracy <= 10) {
+    return {
+      label: "EXCELLENT",
+      color: C.lime,
+    };
+  }
+
+  if (accuracy <= 20) {
+    return {
+      label: "GOOD",
+      color: "#7DEB38",
+    };
+  }
+
+  if (accuracy <= 30) {
+    return {
+      label: "FAIR",
+      color: C.orange,
+    };
+  }
+
+  return {
+    label: "WEAK",
+    color: C.red,
+  };
+}
+
+function getDirection(heading) {
+  if (heading === null || heading === undefined || heading < 0) {
+    return "--";
+  }
+
+  const value = Math.floor(heading / 45 + 0.5);
+
+  const directions = [
+    "N",
+    "NE",
+    "E",
+    "SE",
+    "S",
+    "SW",
+    "W",
+    "NW",
+  ];
+
+  return directions[value % 8];
+}
+
+function compactRoute(points, maxPoints = MAX_ROUTE_POINTS) {
+  if (!Array.isArray(points)) return [];
+
+  const valid = points.filter(isValidCoordinate);
+
+  if (valid.length <= maxPoints) {
+    return valid;
+  }
+
+  const result = [];
+
+  const step = (valid.length - 1) / (maxPoints - 1);
+
+  for (let i = 0; i < maxPoints; i++) {
+    result.push(valid[Math.round(i * step)]);
+  }
+
+  return result;
+}
+
+function hexToRgb(hex) {
+  const clean = hex.replace("#", "");
+
+  return {
+    r: parseInt(clean.substring(0, 2), 16),
+    g: parseInt(clean.substring(2, 4), 16),
+    b: parseInt(clean.substring(4, 6), 16),
+  };
+}
+
+function rgbToHex(r, g, b) {
+  return (
+    "#" +
+    [r, g, b]
+      .map((v) =>
+        Math.round(v)
+          .toString(16)
+          .padStart(2, "0")
+          .toUpperCase()
+      )
+      .join("")
+  );
+}
+
+function getSpectrumColor(speed) {
+  const s = Math.max(
+    0,
+    Math.min(20, Number(speed) || 0)
+  );
+
+  for (let i = 0; i < SPEED_STOPS.length - 1; i++) {
+    const a = SPEED_STOPS[i];
+    const b = SPEED_STOPS[i + 1];
+
+    if (s >= a.speed && s <= b.speed) {
+      const ratio =
+        (s - a.speed) / (b.speed - a.speed || 1);
+
+      const ca = hexToRgb(a.color);
+      const cb = hexToRgb(b.color);
+
+      return rgbToHex(
+        ca.r + (cb.r - ca.r) * ratio,
+        ca.g + (cb.g - ca.g) * ratio,
+        ca.b + (cb.b - ca.b) * ratio
       );
-    } else if (type === 'impact' && Haptics.impactAsync) {
-      Haptics.impactAsync(
-        Haptics.ImpactFeedbackStyle?.Medium ||
-          Haptics.ImpactFeedbackStyle.Medium
-      );
-    } else if (Haptics.selectionAsync) {
-      Haptics.selectionAsync();
     }
-  } catch (e) {
-    // Haptics are intentionally non-critical.
-  }
-};
-
-/* -------------------------------------------------------------------------- */
-/*                               ICON PRIMITIVES                              */
-/* -------------------------------------------------------------------------- */
-
-function Icon({ name, size = 20, color = COLORS.white, stroke = 2 }) {
-  const common = {
-    width: size,
-    height: size,
-    borderColor: color,
-  };
-
-  if (name === 'home') {
-    return (
-      <View style={[styles.iconBox, common]}>
-        <View
-          style={[
-            styles.homeRoof,
-            {
-              borderColor: color,
-              borderBottomWidth: stroke,
-              borderLeftWidth: stroke,
-            },
-          ]}
-        />
-        <View
-          style={[
-            styles.homeBody,
-            {
-              borderColor: color,
-              borderWidth: stroke,
-              borderTopWidth: 0,
-            },
-          ]}
-        />
-      </View>
-    );
   }
 
-  if (name === 'run') {
-    return (
-      <View style={[styles.iconBox, common]}>
-        <View
-          style={[
-            styles.runnerHead,
-            { backgroundColor: color, width: size * 0.2, height: size * 0.2 },
-          ]}
-        />
-        <View
-          style={[
-            styles.runnerBody,
-            {
-              backgroundColor: color,
-              width: stroke,
-              height: size * 0.38,
-              left: size * 0.47,
-              top: size * 0.28,
-            },
-          ]}
-        />
-        <View
-          style={[
-            styles.runnerArm,
-            {
-              backgroundColor: color,
-              width: size * 0.32,
-              height: stroke,
-              left: size * 0.33,
-              top: size * 0.37,
-              transform: [{ rotate: '-25deg' }],
-            },
-          ]}
-        />
-        <View
-          style={[
-            styles.runnerLeg,
-            {
-              backgroundColor: color,
-              width: size * 0.38,
-              height: stroke,
-              left: size * 0.45,
-              top: size * 0.64,
-              transform: [{ rotate: '42deg' }],
-            },
-          ]}
-        />
-        <View
-          style={[
-            styles.runnerLeg,
-            {
-              backgroundColor: color,
-              width: size * 0.35,
-              height: stroke,
-              left: size * 0.23,
-              top: size * 0.68,
-              transform: [{ rotate: '-48deg' }],
-            },
-          ]}
-        />
-      </View>
-    );
-  }
-
-  if (name === 'activity') {
-    return (
-      <View style={[styles.iconBox, common, styles.rowIcon]}>
-        {[0.35, 0.6, 0.85, 0.5].map((h, i) => (
-          <View
-            key={i}
-            style={{
-              width: Math.max(2, size * 0.1),
-              height: size * h,
-              borderRadius: 5,
-              backgroundColor: color,
-              marginHorizontal: size * 0.045,
-            }}
-          />
-        ))}
-      </View>
-    );
-  }
-
-  if (name === 'stats') {
-    return (
-      <View style={[styles.iconBox, common]}>
-        <View
-          style={{
-            position: 'absolute',
-            bottom: size * 0.15,
-            left: size * 0.12,
-            right: size * 0.12,
-            height: stroke,
-            backgroundColor: color,
-            borderRadius: 4,
-          }}
-        />
-        {[0.35, 0.58, 0.82].map((h, i) => (
-          <View
-            key={i}
-            style={{
-              position: 'absolute',
-              bottom: size * 0.15,
-              left: size * (0.2 + i * 0.22),
-              width: size * 0.11,
-              height: size * h,
-              borderRadius: 4,
-              backgroundColor: color,
-            }}
-          />
-        ))}
-      </View>
-    );
-  }
-
-  if (name === 'profile') {
-    return (
-      <View
-        style={[
-          styles.iconBox,
-          common,
-          {
-            borderWidth: stroke,
-            borderRadius: size,
-            justifyContent: 'center',
-            alignItems: 'center',
-          },
-        ]}
-      >
-        <View
-          style={{
-            width: size * 0.22,
-            height: size * 0.22,
-            borderRadius: size,
-            backgroundColor: color,
-            marginBottom: size * 0.08,
-          }}
-        />
-        <View
-          style={{
-            width: size * 0.48,
-            height: size * 0.24,
-            borderRadius: size,
-            backgroundColor: color,
-          }}
-        />
-      </View>
-    );
-  }
-
-  if (name === 'bell') {
-    return (
-      <View style={[styles.iconBox, common]}>
-        <View
-          style={{
-            position: 'absolute',
-            width: size * 0.55,
-            height: size * 0.6,
-            borderWidth: stroke,
-            borderColor: color,
-            borderRadius: size * 0.3,
-            top: size * 0.14,
-            left: size * 0.22,
-          }}
-        />
-        <View
-          style={{
-            position: 'absolute',
-            width: size * 0.18,
-            height: stroke,
-            backgroundColor: color,
-            bottom: size * 0.1,
-            left: size * 0.41,
-            borderRadius: 4,
-          }}
-        />
-      </View>
-    );
-  }
-
-  if (name === 'search') {
-    return (
-      <View style={[styles.iconBox, common]}>
-        <View
-          style={{
-            position: 'absolute',
-            width: size * 0.52,
-            height: size * 0.52,
-            borderWidth: stroke,
-            borderColor: color,
-            borderRadius: size,
-            top: size * 0.1,
-            left: size * 0.08,
-          }}
-        />
-        <View
-          style={{
-            position: 'absolute',
-            width: size * 0.35,
-            height: stroke,
-            backgroundColor: color,
-            borderRadius: 4,
-            transform: [{ rotate: '45deg' }],
-            right: size * 0.02,
-            bottom: size * 0.18,
-          }}
-        />
-      </View>
-    );
-  }
-
-  if (name === 'chevron') {
-    return (
-      <View
-        style={[
-          styles.iconBox,
-          common,
-          {
-            justifyContent: 'center',
-            alignItems: 'center',
-          },
-        ]}
-      >
-        <View
-          style={{
-            width: size * 0.3,
-            height: size * 0.3,
-            borderRightWidth: stroke,
-            borderTopWidth: stroke,
-            borderColor: color,
-            transform: [{ rotate: '45deg' }],
-            marginLeft: -size * 0.1,
-          }}
-        />
-      </View>
-    );
-  }
-
-  if (name === 'back') {
-    return (
-      <View
-        style={[
-          styles.iconBox,
-          common,
-          {
-            justifyContent: 'center',
-            alignItems: 'center',
-          },
-        ]}
-      >
-        <View
-          style={{
-            width: size * 0.45,
-            height: size * 0.45,
-            borderLeftWidth: stroke,
-            borderBottomWidth: stroke,
-            borderColor: color,
-            transform: [{ rotate: '45deg' }],
-            marginLeft: size * 0.08,
-          }}
-        />
-      </View>
-    );
-  }
-
-  if (name === 'close') {
-    return (
-      <View style={[styles.iconBox, common]}>
-        <View
-          style={{
-            position: 'absolute',
-            width: size * 0.65,
-            height: stroke,
-            backgroundColor: color,
-            top: size * 0.47,
-            left: size * 0.18,
-            transform: [{ rotate: '45deg' }],
-            borderRadius: 4,
-          }}
-        />
-        <View
-          style={{
-            position: 'absolute',
-            width: size * 0.65,
-            height: stroke,
-            backgroundColor: color,
-            top: size * 0.47,
-            left: size * 0.18,
-            transform: [{ rotate: '-45deg' }],
-            borderRadius: 4,
-          }}
-        />
-      </View>
-    );
-  }
-
-  if (name === 'play') {
-    return (
-      <View
-        style={{
-          width: 0,
-          height: 0,
-          borderTopWidth: size * 0.3,
-          borderBottomWidth: size * 0.3,
-          borderLeftWidth: size * 0.46,
-          borderTopColor: 'transparent',
-          borderBottomColor: 'transparent',
-          borderLeftColor: color,
-          marginLeft: size * 0.08,
-        }}
-      />
-    );
-  }
-
-  if (name === 'pause') {
-    return (
-      <View style={{ flexDirection: 'row', gap: size * 0.17 }}>
-        <View
-          style={{
-            width: size * 0.2,
-            height: size * 0.6,
-            borderRadius: 4,
-            backgroundColor: color,
-          }}
-        />
-        <View
-          style={{
-            width: size * 0.2,
-            height: size * 0.6,
-            borderRadius: 4,
-            backgroundColor: color,
-          }}
-        />
-      </View>
-    );
-  }
-
-  if (name === 'check') {
-    return (
-      <View style={[styles.iconBox, common]}>
-        <View
-          style={{
-            width: size * 0.58,
-            height: size * 0.3,
-            borderLeftWidth: stroke,
-            borderBottomWidth: stroke,
-            borderColor: color,
-            transform: [{ rotate: '-45deg' }],
-            marginTop: -size * 0.08,
-          }}
-        />
-      </View>
-    );
-  }
-
-  if (name === 'target') {
-    return (
-      <View
-        style={[
-          styles.iconBox,
-          common,
-          {
-            borderWidth: stroke,
-            borderColor: color,
-            borderRadius: size,
-            justifyContent: 'center',
-            alignItems: 'center',
-          },
-        ]}
-      >
-        <View
-          style={{
-            width: size * 0.45,
-            height: size * 0.45,
-            borderWidth: stroke,
-            borderColor: color,
-            borderRadius: size,
-          }}
-        />
-        <View
-          style={{
-            width: size * 0.16,
-            height: size * 0.16,
-            borderRadius: size,
-            backgroundColor: color,
-            position: 'absolute',
-          }}
-        />
-      </View>
-    );
-  }
-
-  if (name === 'clock') {
-    return (
-      <View
-        style={[
-          styles.iconBox,
-          common,
-          {
-            borderWidth: stroke,
-            borderColor: color,
-            borderRadius: size,
-          },
-        ]}
-      >
-        <View
-          style={{
-            position: 'absolute',
-            width: stroke,
-            height: size * 0.28,
-            backgroundColor: color,
-            top: size * 0.2,
-            left: size * 0.48,
-            borderRadius: 4,
-          }}
-        />
-        <View
-          style={{
-            position: 'absolute',
-            width: size * 0.24,
-            height: stroke,
-            backgroundColor: color,
-            top: size * 0.47,
-            left: size * 0.48,
-            transform: [{ rotate: '25deg' }],
-            borderRadius: 4,
-          }}
-        />
-      </View>
-    );
-  }
-
-  if (name === 'flame') {
-    return (
-      <View style={[styles.iconBox, common, { alignItems: 'center' }]}>
-        <View
-          style={{
-            width: size * 0.5,
-            height: size * 0.68,
-            borderRadius: size * 0.3,
-            backgroundColor: color,
-            transform: [{ rotate: '12deg' }],
-            marginTop: size * 0.12,
-          }}
-        />
-        <View
-          style={{
-            position: 'absolute',
-            width: size * 0.18,
-            height: size * 0.3,
-            borderRadius: size,
-            backgroundColor: COLORS.surface,
-            bottom: size * 0.09,
-          }}
-        />
-      </View>
-    );
-  }
-
-  if (name === 'heart') {
-    return (
-      <View style={[styles.iconBox, common]}>
-        <Text
-          style={{
-            color,
-            fontSize: size * 0.9,
-            lineHeight: size,
-            fontWeight: '800',
-          }}
-        >
-          ♥
-        </Text>
-      </View>
-    );
-  }
-
-  return <View style={[styles.iconBox, common]} />;
+  return C.lime;
 }
 
-/* -------------------------------------------------------------------------- */
-/*                                ANIMATIONS                                  */
-/* -------------------------------------------------------------------------- */
+function getWeekStart(date = new Date()) {
+  const d = new Date(date);
+  const day = d.getDay();
 
-function AnimatedPressable({
-  children,
-  onPress,
-  style,
-  disabled = false,
-  accessibilityLabel,
-}) {
-  const scale = useRef(new Animated.Value(1)).current;
+  const diff = day === 0 ? -6 : 1 - day;
 
-  const pressIn = () => {
-    Animated.spring(scale, {
-      toValue: 0.965,
-      friction: 7,
-      tension: 180,
-      useNativeDriver: true,
-    }).start();
-  };
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
 
-  const pressOut = () => {
-    Animated.spring(scale, {
-      toValue: 1,
-      friction: 5,
-      tension: 180,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  return (
-    <Pressable
-      onPress={onPress}
-      onPressIn={pressIn}
-      onPressOut={pressOut}
-      disabled={disabled}
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
-    >
-      <Animated.View style={[style, { transform: [{ scale }] }]}>
-        {children}
-      </Animated.View>
-    </Pressable>
-  );
+  return d;
 }
 
-function FadeSlideIn({ children, delay = 0, style }) {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translate = useRef(new Animated.Value(18)).current;
+function getWeeklyDistance(history) {
+  const start = getWeekStart();
 
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(opacity, {
-        toValue: 1,
-        duration: 480,
-        delay,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.spring(translate, {
-        toValue: 0,
-        delay,
-        friction: 9,
-        tension: 70,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [delay, opacity, translate]);
+  return history.reduce((total, run) => {
+    const date = new Date(run.date);
 
-  return (
-    <Animated.View
-      style={[
-        style,
-        {
-          opacity,
-          transform: [{ translateY: translate }],
-        },
-      ]}
-    >
-      {children}
-    </Animated.View>
-  );
+    if (date >= start) {
+      return total + Number(run.distanceKm || 0);
+    }
+
+    return total;
+  }, 0);
 }
 
-/* -------------------------------------------------------------------------- */
-/*                                  COMMON UI                                 */
-/* -------------------------------------------------------------------------- */
+function getStreak(history) {
+  if (!history.length) return 0;
 
-function SectionHeader({ title, action, onAction }) {
-  return (
-    <View style={styles.sectionHeader}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+  const days = [
+    ...new Set(
+      history.map((run) => {
+        const d = new Date(run.date);
+        return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      })
+    ),
+  ];
 
-      {action ? (
-        <Pressable
-          onPress={onAction}
-          accessibilityRole="button"
-          accessibilityLabel={action}
-          hitSlop={10}
-        >
-          <Text style={styles.sectionAction}>{action}</Text>
-        </Pressable>
-      ) : null}
-    </View>
-  );
-}
+  let streak = 0;
 
-function MetricCard({ label, value, suffix, icon, accent = COLORS.green }) {
-  return (
-    <AnimatedPressable style={styles.metricCard}>
-      <View
-        style={[
-          styles.metricIcon,
-          {
-            backgroundColor: `${accent}12`,
-            borderColor: `${accent}24`,
-          },
-        ]}
-      >
-        <Icon name={icon} size={16} color={accent} stroke={1.8} />
-      </View>
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-      <Text style={styles.metricValue}>
-        {value}
-        {suffix ? <Text style={styles.metricSuffix}> {suffix}</Text> : null}
-      </Text>
+  for (let i = 0; i < 365; i++) {
+    const check = new Date(today);
+    check.setDate(today.getDate() - i);
 
-      <Text style={styles.metricLabel}>{label}</Text>
-    </AnimatedPressable>
-  );
-}
+    const key = `${check.getFullYear()}-${check.getMonth()}-${check.getDate()}`;
 
-function ProgressBar({ progress, height = 8 }) {
-  const width = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.timing(width, {
-      toValue: clamp(progress, 0, 1),
-      duration: 850,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
-  }, [progress, width]);
-
-  return (
-    <View style={[styles.progressTrack, { height }]}>
-      <Animated.View
-        style={[
-          styles.progressFill,
-          {
-            height,
-            width: width.interpolate({
-              inputRange: [0, 1],
-              outputRange: ['0%', '100%'],
-            }),
-          },
-        ]}
-      />
-    </View>
-  );
-}
-
-function Avatar({ size = 42 }) {
-  return (
-    <View
-      style={[
-        styles.avatar,
-        {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-        },
-      ]}
-    >
-      <View
-        style={[
-          styles.avatarGlow,
-          {
-            width: size * 0.7,
-            height: size * 0.7,
-            borderRadius: size,
-          },
-        ]}
-      />
-      <Text style={[styles.avatarText, { fontSize: size * 0.36 }]}>S</Text>
-    </View>
-  );
-}
-
-function ModalSheet({
-  visible,
-  onClose,
-  title,
-  children,
-  height = 'auto',
-}) {
-  const slide = useRef(new Animated.Value(500)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (visible) {
-      Animated.parallel([
-        Animated.spring(slide, {
-          toValue: 0,
-          friction: 10,
-          tension: 70,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 180,
-          useNativeDriver: true,
-        }),
-      ]).start();
+    if (days.includes(key)) {
+      streak++;
+    } else if (i === 0) {
+      continue;
     } else {
-      Animated.parallel([
-        Animated.timing(slide, {
-          toValue: 500,
-          duration: 220,
-          easing: Easing.in(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacity, {
-          toValue: 0,
-          duration: 150,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      break;
     }
-  }, [visible, slide, opacity]);
+  }
 
-  if (!visible) return null;
+  return streak;
+}
+
+function getPersonalBests(history) {
+  if (!history.length) {
+    return {
+      fastestPace: "--:--",
+      longestRun: 0,
+      topSpeed: 0,
+      bestDistance: 0,
+    };
+  }
+
+  const longestRun = Math.max(
+    ...history.map((x) => Number(x.distanceKm || 0))
+  );
+
+  const topSpeed = Math.max(
+    ...history.map((x) => Number(x.topSpeedKmh || 0))
+  );
+
+  const fastestPaceRun = history
+    .filter(
+      (x) =>
+        x.distanceKm >= 1 &&
+        x.durationSeconds > 0
+    )
+    .sort(
+      (a, b) =>
+        a.durationSeconds / a.distanceKm -
+        b.durationSeconds / b.distanceKm
+    )[0];
+
+  return {
+    fastestPace: fastestPaceRun
+      ? getPace(
+          fastestPaceRun.distanceKm,
+          fastestPaceRun.durationSeconds
+        )
+      : "--:--",
+    longestRun: longestRun,
+    topSpeed: topSpeed,
+    bestDistance: longestRun,
+  };
+}
+
+/* =========================================================
+   DARK MAP
+========================================================= */
+
+const darkMapStyle = [
+  {
+    elementType: "geometry",
+    stylers: [{ color: "#111511" }],
+  },
+  {
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#747A71" }],
+  },
+  {
+    elementType: "labels.text.stroke",
+    stylers: [{ color: "#080A08" }],
+  },
+  {
+    featureType: "road",
+    elementType: "geometry",
+    stylers: [{ color: "#20251F" }],
+  },
+  {
+    featureType: "road.highway",
+    elementType: "geometry",
+    stylers: [{ color: "#2B322A" }],
+  },
+  {
+    featureType: "road",
+    elementType: "geometry.stroke",
+    stylers: [{ color: "#111511" }],
+  },
+  {
+    featureType: "water",
+    elementType: "geometry",
+    stylers: [{ color: "#09110D" }],
+  },
+  {
+    featureType: "poi",
+    elementType: "geometry",
+    stylers: [{ color: "#171C17" }],
+  },
+];
+
+/* =========================================================
+   ROUTE
+========================================================= */
+
+const SpectrumRoute = React.memo(
+  ({ points, prefix = "route" }) => {
+    if (!Array.isArray(points) || points.length < 2) {
+      return null;
+    }
+
+    const valid = points.filter(isValidCoordinate);
+
+    if (valid.length < 2) return null;
+
+    return (
+      <>
+        <Polyline
+          coordinates={valid.map(mapCoordinate)}
+          strokeColor="rgba(0,0,0,0.65)"
+          strokeWidth={10}
+          lineCap="round"
+          lineJoin="round"
+        />
+
+        {valid.slice(0, -1).map((point, index) => {
+          const next = valid[index + 1];
+
+          const speed =
+            (Number(point.speedKmh || 0) +
+              Number(next.speedKmh || 0)) /
+            2;
+
+          return (
+            <Polyline
+              key={`${prefix}-${index}`}
+              coordinates={[
+                mapCoordinate(point),
+                mapCoordinate(next),
+              ]}
+              strokeColor={getSpectrumColor(speed)}
+              strokeWidth={6}
+              lineCap="round"
+              lineJoin="round"
+            />
+          );
+        })}
+      </>
+    );
+  }
+);
+
+/* =========================================================
+   MARKERS
+========================================================= */
+
+const StartMarker = ({ coordinate }) => {
+  if (!isValidCoordinate(coordinate)) return null;
 
   return (
-    <Modal
-      transparent
-      visible={visible}
-      animationType="none"
-      onRequestClose={onClose}
-      statusBarTranslucent
+    <Marker
+      coordinate={mapCoordinate(coordinate)}
+      anchor={{ x: 0.5, y: 0.5 }}
     >
-      <View style={styles.modalRoot}>
-        <AnimatedPressable
-          onPress={onClose}
-          style={StyleSheet.absoluteFill}
-          accessibilityLabel="Close modal"
-        >
-          <Animated.View
-            style={[
-              StyleSheet.absoluteFill,
-              styles.modalBackdrop,
-              { opacity },
-            ]}
-          />
-        </AnimatedPressable>
-
-        <Animated.View
-          style={[
-            styles.sheet,
-            height !== 'auto' ? { height } : null,
-            {
-              transform: [{ translateY: slide }],
-            },
-          ]}
-        >
-          <View style={styles.sheetHandle} />
-
-          <View style={styles.sheetHeader}>
-            <Text style={styles.sheetTitle}>{title}</Text>
-
-            <Pressable
-              onPress={onClose}
-              style={styles.closeButton}
-              accessibilityRole="button"
-              accessibilityLabel="Close"
-            >
-              <Icon name="close" size={17} color={COLORS.secondary} />
-            </Pressable>
-          </View>
-
-          <View style={styles.sheetContent}>{children}</View>
-        </Animated.View>
+      <View style={styles.startMarker}>
+        <View style={styles.startMarkerInner} />
       </View>
-    </Modal>
+    </Marker>
   );
-}
+};
 
-function TopHeader({
-  title,
-  subtitle,
-  onNotification,
-  onProfile,
-  unread = false,
-  showBack = false,
-  onBack,
-}) {
+const FinishMarker = ({ coordinate }) => {
+  if (!isValidCoordinate(coordinate)) return null;
+
   return (
-    <View style={styles.topHeader}>
-      <View style={styles.headerLeft}>
-        {showBack ? (
-          <Pressable
-            onPress={onBack}
-            style={styles.headerBack}
-            accessibilityRole="button"
-            accessibilityLabel="Go back"
-          >
-            <Icon name="back" size={22} color={COLORS.white} />
-          </Pressable>
-        ) : null}
-
-        <View>
-          {subtitle ? <Text style={styles.eyebrow}>{subtitle}</Text> : null}
-          <Text style={styles.pageTitle}>{title}</Text>
-        </View>
+    <Marker
+      coordinate={mapCoordinate(coordinate)}
+      anchor={{ x: 0.5, y: 0.5 }}
+    >
+      <View style={styles.finishMarker}>
+        <Ionicons
+          name="flag"
+          size={12}
+          color="#FFFFFF"
+        />
       </View>
-
-      <View style={styles.headerActions}>
-        {onNotification ? (
-          <Pressable
-            onPress={onNotification}
-            style={styles.headerIconButton}
-            accessibilityRole="button"
-            accessibilityLabel="Notifications"
-          >
-            <Icon name="bell" size={20} color={COLORS.white} />
-            {unread ? <View style={styles.unreadDot} /> : null}
-          </Pressable>
-        ) : null}
-
-        {onProfile ? (
-          <Pressable
-            onPress={onProfile}
-            accessibilityRole="button"
-            accessibilityLabel="Profile"
-          >
-            <Avatar size={40} />
-          </Pressable>
-        ) : null}
-      </View>
-    </View>
+    </Marker>
   );
-}
+};
 
-/* -------------------------------------------------------------------------- */
-/*                               HOME HERO                                    */
-/* -------------------------------------------------------------------------- */
+const LiveMarker = ({ coordinate }) => {
+  if (!isValidCoordinate(coordinate)) return null;
 
-function HeroVisualization({ progress }) {
-  const pulse = useRef(new Animated.Value(0.8)).current;
-  const rotate = useRef(new Animated.Value(0)).current;
+  return (
+    <Marker
+      coordinate={mapCoordinate(coordinate)}
+      anchor={{ x: 0.5, y: 0.5 }}
+      zIndex={999}
+    >
+      <View style={styles.liveMarker}>
+        <View style={styles.liveMarkerInner} />
+      </View>
+    </Marker>
+  );
+};
+
+/* =========================================================
+   BACKGROUND GPS TASK
+========================================================= */
+
+TaskManager.defineTask(
+  LOCATION_TASK_NAME,
+  async ({ data, error }) => {
+    if (error || !data?.locations?.length) return;
+
+    try {
+      const stored =
+        await AsyncStorage.getItem(SESSION_KEY);
+
+      if (!stored) return;
+
+      const session = JSON.parse(stored);
+
+      if (
+        !session ||
+        !session.running ||
+        session.paused
+      ) {
+        return;
+      }
+
+      let updatedSession = {
+        ...session,
+      };
+
+      for (const locationData of data.locations) {
+        const coords = locationData?.coords;
+
+        if (!coords) continue;
+
+        const {
+          latitude,
+          longitude,
+          accuracy,
+          altitude,
+          heading,
+        } = coords;
+
+        if (
+          !Number.isFinite(latitude) ||
+          !Number.isFinite(longitude)
+        ) {
+          continue;
+        }
+
+        if (
+          Number.isFinite(accuracy) &&
+          accuracy > MAX_ACCURACY
+        ) {
+          continue;
+        }
+
+        const timestamp =
+          Number(locationData.timestamp) ||
+          Date.now();
+
+        const currentPoint = {
+          latitude,
+          longitude,
+          accuracy,
+          altitude: altitude || 0,
+          heading:
+            Number.isFinite(heading) ? heading : -1,
+          timestamp,
+        };
+
+        const previous =
+          updatedSession.lastPoint ||
+          updatedSession.route?.[
+            updatedSession.route.length - 1
+          ];
+
+        if (!previous) {
+          updatedSession.lastPoint =
+            currentPoint;
+
+          updatedSession.route = [
+            ...(updatedSession.route || []),
+            {
+              ...currentPoint,
+              speedKmh: 0,
+            },
+          ];
+
+          continue;
+        }
+
+        const distance = distanceMeters(
+          previous.latitude,
+          previous.longitude,
+          latitude,
+          longitude
+        );
+
+        const deltaTime = Math.max(
+          0.5,
+          (timestamp -
+            (Number(previous.timestamp) ||
+              timestamp)) /
+            1000
+        );
+
+        const calculatedSpeed =
+          (distance / deltaTime) * 3.6;
+
+        if (
+          calculatedSpeed >
+            MAX_RUNNING_SPEED_KMH ||
+          distance < MIN_MOVEMENT_METERS
+        ) {
+          continue;
+        }
+
+        const smoothedSpeed = smoothSpeed(
+          updatedSession.speedKmh || 0,
+          Math.max(0, calculatedSpeed)
+        );
+
+        const newPoint = {
+          ...currentPoint,
+          speedKmh: Number(
+            smoothedSpeed.toFixed(2)
+          ),
+        };
+
+        if (updatedSession.routeBreakPending) {
+          newPoint.breakBefore = true;
+          updatedSession.routeBreakPending = false;
+        }
+
+        updatedSession.route = compactRoute(
+          [
+            ...(updatedSession.route || []),
+            newPoint,
+          ],
+          MAX_ROUTE_POINTS
+        );
+
+        updatedSession.lastPoint =
+          currentPoint;
+
+        updatedSession.speedKmh = Number(
+          smoothedSpeed.toFixed(2)
+        );
+
+        updatedSession.topSpeedKmh =
+          Math.max(
+            Number(
+              updatedSession.topSpeedKmh || 0
+            ),
+            Math.max(0, calculatedSpeed)
+          );
+
+        updatedSession.distanceMeters =
+          Number(
+            updatedSession.distanceMeters || 0
+          ) + distance;
+      }
+
+      await AsyncStorage.setItem(
+        SESSION_KEY,
+        JSON.stringify(updatedSession)
+      );
+    } catch (e) {}
+  }
+);
+
+/* =========================================================
+   MAIN APP
+========================================================= */
+
+export default function App() {
+  const mapRef = useRef(null);
+  const completionMapRef = useRef(null);
+
+  const runAnim = useRef(
+    new Animated.Value(0)
+  ).current;
+
+  const pulseAnim = useRef(
+    new Animated.Value(0)
+  ).current;
+
+  /* ---------------------------------------------
+     APP
+  --------------------------------------------- */
+
+  const [onboarding, setOnboarding] =
+    useState(false);
+
+  const [activeTab, setActiveTab] =
+    useState("home");
+
+  const [permissionGranted, setPermissionGranted] =
+    useState(false);
+
+  const [location, setLocation] =
+    useState(null);
+
+  const [accuracy, setAccuracy] =
+    useState(null);
+
+  const [isConnected, setIsConnected] =
+    useState(true);
+
+  /* ---------------------------------------------
+     RUN
+  --------------------------------------------- */
+
+  const [running, setRunning] =
+    useState(false);
+
+  const [paused, setPaused] =
+    useState(false);
+
+  const [timeData, setTimeData] =
+    useState({
+      accumulatedMs: 0,
+      lastResumeTime: 0,
+    });
+
+  const [elapsedSeconds, setElapsedSeconds] =
+    useState(0);
+
+  const [distance, setDistance] =
+    useState(0);
+
+  const [speed, setSpeed] =
+    useState(0);
+
+  const [topSpeed, setTopSpeed] =
+    useState(0);
+
+  const [route, setRoute] =
+    useState([]);
+
+  const [paceHistory, setPaceHistory] =
+    useState([]);
+
+  /* ---------------------------------------------
+     HISTORY
+  --------------------------------------------- */
+
+  const [history, setHistory] =
+    useState([]);
+
+  /* ---------------------------------------------
+     MODALS
+  --------------------------------------------- */
+
+  const [missionVisible, setMissionVisible] =
+    useState(false);
+
+  const [summaryVisible, setSummaryVisible] =
+    useState(false);
+
+  const [historyDetailVisible, setHistoryDetailVisible] =
+    useState(false);
+
+  const [selectedHistoryRun, setSelectedHistoryRun] =
+    useState(null);
+
+  const [summary, setSummary] =
+    useState(null);
+
+  /* ---------------------------------------------
+     CHALLENGE
+  --------------------------------------------- */
+
+  const [targetDistance, setTargetDistance] =
+    useState(null);
+
+  const [challengeCompleted, setChallengeCompleted] =
+    useState(false);
+
+  /* ---------------------------------------------
+     MAP
+  --------------------------------------------- */
+
+  const [mapType, setMapType] =
+    useState("standard");
+
+  const [followUser, setFollowUser] =
+    useState(true);
+
+  /* =========================================================
+     INITIALIZE
+  ========================================================= */
 
   useEffect(() => {
-    const pulseLoop = Animated.loop(
+    initializeApp();
+
+    // Keep the Android system navigation bar visible and inset the app
+    // so the bottom app navigation never overlaps the system buttons.
+    if (Platform.OS === "android") {
+      NavigationBar.setVisibilityAsync("visible").catch(() => {});
+      NavigationBar.setBehaviorAsync("inset-swipe").catch(() => {});
+      // Keep Android navigation in the normal layout flow so the app
+      // bottom bar cannot sit underneath the system navigation controls.
+      NavigationBar.setPositionAsync("relative").catch(() => {});
+      NavigationBar.setBackgroundColorAsync(C.black).catch(() => {});
+      NavigationBar.setButtonStyleAsync("light").catch(() => {});
+    }
+
+    const unsubscribe =
+      NetInfo.addEventListener((state) => {
+        setIsConnected(
+          Boolean(state.isConnected)
+        );
+      });
+
+    return unsubscribe;
+  }, []);
+
+  async function initializeApp() {
+    await loadHistory();
+    await checkOnboarding();
+    await setupLocation();
+  }
+
+  async function checkOnboarding() {
+    try {
+      const value =
+        await AsyncStorage.getItem(
+          ONBOARDING_KEY
+        );
+
+      if (!value) {
+        setOnboarding(true);
+      }
+    } catch (e) {}
+  }
+
+  async function finishOnboarding() {
+    await AsyncStorage.setItem(
+      ONBOARDING_KEY,
+      "true"
+    );
+
+    setOnboarding(false);
+  }
+
+  async function loadHistory() {
+    try {
+      const saved =
+        await AsyncStorage.getItem(
+          HISTORY_KEY
+        );
+
+      if (saved) {
+        setHistory(JSON.parse(saved));
+      }
+    } catch (e) {}
+  }
+
+  /* =========================================================
+     DERIVED DATA
+  ========================================================= */
+
+  const weeklyDistance = useMemo(
+    () => getWeeklyDistance(history),
+    [history]
+  );
+
+  const streak = useMemo(
+    () => getStreak(history),
+    [history]
+  );
+
+  const personalBests = useMemo(
+    () => getPersonalBests(history),
+    [history]
+  );
+
+  const totalDistance = useMemo(
+    () =>
+      history.reduce(
+        (sum, item) =>
+          sum +
+          Number(item.distanceKm || 0),
+        0
+      ),
+    [history]
+  );
+
+  const totalRuns = history.length;
+
+  const gpsStatus = getGpsStatus(accuracy);
+
+  /* =========================================================
+     ANIMATIONS
+  ========================================================= */
+
+  useEffect(() => {
+    if (running && !paused) {
+      const loop = Animated.loop(
+        Animated.sequence([
+          Animated.timing(runAnim, {
+            toValue: 1,
+            duration: 380,
+            useNativeDriver: true,
+          }),
+          Animated.timing(runAnim, {
+            toValue: 0,
+            duration: 380,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+
+      loop.start();
+
+      return () => loop.stop();
+    }
+
+    runAnim.stopAnimation();
+    runAnim.setValue(0);
+  }, [running, paused]);
+
+  useEffect(() => {
+    const pulse = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulse, {
+        Animated.timing(pulseAnim, {
           toValue: 1,
-          duration: 1500,
-          easing: Easing.inOut(Easing.ease),
+          duration: 1300,
           useNativeDriver: true,
         }),
-        Animated.timing(pulse, {
-          toValue: 0.8,
-          duration: 1500,
-          easing: Easing.inOut(Easing.ease),
+        Animated.timing(pulseAnim, {
+          toValue: 0,
+          duration: 1300,
           useNativeDriver: true,
         }),
       ])
     );
 
-    const rotateLoop = Animated.loop(
-      Animated.timing(rotate, {
-        toValue: 1,
-        duration: 16000,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      })
-    );
+    pulse.start();
 
-    pulseLoop.start();
-    rotateLoop.start();
+    return () => pulse.stop();
+  }, []);
 
-    return () => {
-      pulseLoop.stop();
-      rotateLoop.stop();
-    };
-  }, [pulse, rotate]);
-
-  const rotation = rotate.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-
-  return (
-    <View style={styles.heroVisual}>
-      <View style={styles.heroGlowOne} />
-      <View style={styles.heroGlowTwo} />
-
-      <Animated.View
-        style={[
-          styles.routeOrbit,
-          {
-            transform: [{ rotate: rotation }],
-          },
-        ]}
-      >
-        <View style={[styles.routeNode, styles.routeNodeOne]} />
-        <View style={[styles.routeNode, styles.routeNodeTwo]} />
-        <View style={[styles.routeNode, styles.routeNodeThree]} />
-      </Animated.View>
-
-      <View style={styles.heroCircleOuter}>
-        <View
-          style={[
-            styles.heroCircleProgress,
-            {
-              transform: [
-                {
-                  rotate: `${Math.max(15, progress * 360 - 90)}deg`,
-                },
-              ],
-            },
-          ]}
-        />
-        <View style={styles.heroCircleInner}>
-          <Animated.View
-            style={[
-              styles.heroPulse,
-              {
-                transform: [{ scale: pulse }],
-              },
-            ]}
-          />
-
-          <View style={styles.heroRunIcon}>
-            <Icon name="run" size={25} color={COLORS.green} stroke={2} />
-          </View>
-        </View>
-      </View>
-
-      <View style={[styles.routeLine, styles.routeLineA]} />
-<View style={[styles.routeLine, styles.routeLineB]} />    </View>
-  );
-}
-
-function HomeScreen({
-  user,
-  activities,
-  weeklyGoal,
-  onStartRun,
-  onActivityDetails,
-  onNotifications,
-  onProfile,
-  onGoalEdit,
-  onSeeAllActivity,
-  unread,
-}) {
-  const weeklyDistance = useMemo(
-    () => getActivityTotal(activities, 'distance'),
-    [activities]
-  );
-
-  const goalProgress = clamp(weeklyDistance / weeklyGoal.target, 0, 1);
-
-  const dayActivity = useMemo(() => {
-    const result = DAYS.map(() => false);
-
-    activities.forEach((activity) => {
-      if (
-        typeof activity.dayIndex === 'number' &&
-        activity.dayIndex >= 0 &&
-        activity.dayIndex < 7
-      ) {
-        result[activity.dayIndex] = true;
-      }
+  const runnerTranslateY =
+    runAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, -10],
     });
 
-    return result;
-  }, [activities]);
-
-  return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor={COLORS.bg}
-        translucent={false}
-      />
-
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <TopHeader
-          title="Good morning"
-          subtitle={`${user.name} • Ready to move?`}
-          onNotification={onNotifications}
-          onProfile={onProfile}
-          unread={unread}
-        />
-
-        <FadeSlideIn delay={60}>
-          <View style={styles.homeHeroCard}>
-            <View style={styles.heroTopRow}>
-              <View>
-                <Text style={styles.heroEyebrow}>TODAY'S RUN</Text>
-                <Text style={styles.heroTitle}>Keep the pace.</Text>
-              </View>
-
-              <View style={styles.livePill}>
-                <View style={styles.liveDot} />
-                <Text style={styles.liveText}>READY</Text>
-              </View>
-            </View>
-
-            <View style={styles.heroDataRow}>
-              <View style={styles.heroMainMetric}>
-                <Text style={styles.heroDistance}>5.42</Text>
-                <Text style={styles.heroUnit}>KM</Text>
-
-                <View style={styles.heroSecondaryMetrics}>
-                  <View>
-                    <Text style={styles.heroSmallValue}>32:18</Text>
-                    <Text style={styles.heroSmallLabel}>TIME</Text>
-                  </View>
-
-                  <View style={styles.heroMetricDivider} />
-
-                  <View>
-                    <Text style={styles.heroSmallValue}>5:57</Text>
-                    <Text style={styles.heroSmallLabel}>/KM</Text>
-                  </View>
-                </View>
-              </View>
-
-              <HeroVisualization progress={goalProgress} />
-            </View>
-
-            <View style={styles.heroBottomRow}>
-              <View>
-                <Text style={styles.heroBottomLabel}>WEEKLY TARGET</Text>
-                <Text style={styles.heroBottomValue}>
-                  {weeklyDistance.toFixed(1)} / {weeklyGoal.target} KM
-                </Text>
-              </View>
-
-              <Text style={styles.heroPercentage}>
-                {Math.round(goalProgress * 100)}%
-              </Text>
-            </View>
-
-            <ProgressBar progress={goalProgress} height={6} />
-          </View>
-        </FadeSlideIn>
-
-        <FadeSlideIn delay={130}>
-          <View style={styles.metricGrid}>
-            <MetricCard
-              label="Distance"
-              value="5.42"
-              suffix="km"
-              icon="run"
-              accent={COLORS.green}
-            />
-            <MetricCard
-              label="Calories"
-              value="412"
-              suffix="kcal"
-              icon="flame"
-              accent={COLORS.orange}
-            />
-            <MetricCard
-              label="Duration"
-              value="32:18"
-              icon="clock"
-              accent={COLORS.cyan}
-            />
-            <MetricCard
-              label="Pace"
-              value="5:57"
-              suffix="/km"
-              icon="stats"
-              accent={COLORS.blue}
-            />
-          </View>
-        </FadeSlideIn>
-
-        <FadeSlideIn delay={190}>
-          <SectionHeader title="Weekly goal" action="Edit" onAction={onGoalEdit} />
-
-          <View style={styles.goalCard}>
-            <View style={styles.goalHeader}>
-              <View>
-                <Text style={styles.goalTitle}>MOVE WITH PURPOSE</Text>
-                <Text style={styles.goalDistance}>
-                  {weeklyDistance.toFixed(1)}
-                  <Text style={styles.goalTarget}> / {weeklyGoal.target} KM</Text>
-                </Text>
-              </View>
-
-              <View style={styles.goalBadge}>
-                <Text style={styles.goalBadgeText}>
-                  {Math.round(goalProgress * 100)}%
-                </Text>
-              </View>
-            </View>
-
-            <ProgressBar progress={goalProgress} height={9} />
-
-            <View style={styles.daysRow}>
-              {DAYS.map((day, index) => (
-                <View key={day} style={styles.dayItem}>
-                  <Text
-                    style={[
-                      styles.dayText,
-                      dayActivity[index] && styles.dayTextActive,
-                    ]}
-                  >
-                    {day}
-                  </Text>
-
-                  <View
-                    style={[
-                      styles.dayDot,
-                      dayActivity[index] && styles.dayDotActive,
-                    ]}
-                  >
-                    {dayActivity[index] ? (
-                      <Icon name="check" size={12} color={COLORS.bg} stroke={2} />
-                    ) : null}
-                  </View>
-                </View>
-              ))}
-            </View>
-          </View>
-        </FadeSlideIn>
-
-        <FadeSlideIn delay={250}>
-          <SectionHeader title="Today's plan" />
-
-          <View style={styles.planCard}>
-            <View style={styles.planIcon}>
-              <Icon name="run" size={23} color={COLORS.green} />
-            </View>
-
-            <View style={styles.planInfo}>
-              <Text style={styles.planEyebrow}>TODAY'S RUN</Text>
-              <Text style={styles.planTitle}>Easy Run</Text>
-
-              <View style={styles.planMeta}>
-                <Text style={styles.planMetaText}>5.0 km</Text>
-                <View style={styles.metaDot} />
-                <Text style={styles.planMetaText}>~30 min</Text>
-              </View>
-            </View>
-
-            <AnimatedPressable
-              onPress={onStartRun}
-              style={styles.primaryCircleButton}
-              accessibilityLabel="Start running"
-            >
-              <Icon name="play" size={16} color={COLORS.bg} />
-            </AnimatedPressable>
-          </View>
-        </FadeSlideIn>
-
-        <FadeSlideIn delay={310}>
-          <SectionHeader
-            title="Recent activity"
-            action="See all"
-            onAction={onSeeAllActivity}
-          />
-
-          <View style={styles.activityCard}>
-            {activities.slice(0, 3).map((activity, index) => (
-              <React.Fragment key={activity.id}>
-                <ActivityRow
-                  activity={activity}
-                  onPress={() => onActivityDetails(activity)}
-                />
-                {index < Math.min(activities.length, 3) - 1 ? (
-                  <View style={styles.rowDivider} />
-                ) : null}
-              </React.Fragment>
-            ))}
-
-            {activities.length === 0 ? (
-              <EmptyActivity onStart={onStartRun} compact />
-            ) : null}
-          </View>
-        </FadeSlideIn>
-
-        <View style={{ height: 130 }} />
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/*                              ACTIVITY COMPONENTS                            */
-/* -------------------------------------------------------------------------- */
-
-function ActivityRow({ activity, onPress }) {
-  return (
-    <AnimatedPressable
-      onPress={onPress}
-      style={styles.activityRow}
-      accessibilityLabel={`Open ${activity.title}`}
-    >
-      <View style={styles.activityIcon}>
-        <Icon name="run" size={18} color={COLORS.green} />
-      </View>
-
-      <View style={styles.activityMain}>
-        <Text style={styles.activityTitle}>{activity.title}</Text>
-
-        <Text style={styles.activityDate}>{activity.date}</Text>
-      </View>
-
-      <View style={styles.activityNumbers}>
-        <Text style={styles.activityDistance}>
-          {formatDistance(activity.distance)} km
-        </Text>
-        <Text style={styles.activityPace}>
-          {formatPace(activity.pace)}/km
-        </Text>
-      </View>
-
-      <Icon name="chevron" size={15} color={COLORS.muted} />
-    </AnimatedPressable>
-  );
-}
-
-function EmptyActivity({ onStart, compact = false }) {
-  return (
-    <View style={[styles.emptyState, compact && styles.emptyStateCompact]}>
-      <View style={styles.emptyIcon}>
-        <Icon name="run" size={26} color={COLORS.green} />
-      </View>
-
-      <Text style={styles.emptyTitle}>No runs yet</Text>
-      <Text style={styles.emptyText}>Your next run starts here.</Text>
-
-      <AnimatedPressable
-        onPress={onStart}
-        style={styles.emptyButton}
-        accessibilityLabel="Start your first run"
-      >
-        <Text style={styles.emptyButtonText}>START YOUR FIRST RUN</Text>
-      </AnimatedPressable>
-    </View>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/*                              RUN TRACKING                                   */
-/* -------------------------------------------------------------------------- */
-
-function RunTrackingScreen({
-  settings,
-  onBack,
-  onFinished,
-  onNotify,
-}) {
-  const [running, setRunning] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
-  const [distance, setDistance] = useState(0);
-  const [heartRate, setHeartRate] = useState(0);
-  const [pace, setPace] = useState(0);
-
-  const startTimeRef = useRef(null);
-  const baseElapsedRef = useRef(0);
-  const distanceRef = useRef(0);
-  const runningRef = useRef(false);
-
-  const pulse = useRef(new Animated.Value(1)).current;
-  const progress = useRef(new Animated.Value(0)).current;
+  /* =========================================================
+     TIMER
+  ========================================================= */
 
   useEffect(() => {
-    runningRef.current = running;
-  }, [running]);
-
-  useEffect(() => {
-    let timer = null;
+    let interval;
 
     if (running) {
-      startTimeRef.current = Date.now();
-
-      timer = setInterval(() => {
-        const currentElapsed =
-          baseElapsedRef.current +
-          Math.floor((Date.now() - startTimeRef.current) / 1000);
-
-        setElapsed(currentElapsed);
-
-        const secondsSinceLast = currentElapsed % 2;
-
-        if (secondsSinceLast === 0) {
-          const increment = 0.008 + Math.random() * 0.005;
-          distanceRef.current += increment;
-
-          const nextDistance = distanceRef.current;
-          const nextPace = getPace(nextDistance, currentElapsed);
-
-          setDistance(nextDistance);
-          setPace(clamp(nextPace + (Math.random() - 0.5) * 0.22, 4.7, 7.8));
-
-          const nextHeartRate = Math.round(
-            146 + Math.sin(currentElapsed / 11) * 8 + (Math.random() - 0.5) * 5
+      interval = setInterval(() => {
+        if (
+          paused ||
+          !timeData.lastResumeTime
+        ) {
+          setElapsedSeconds(
+            Math.floor(
+              timeData.accumulatedMs / 1000
+            )
           );
-
-          setHeartRate(clamp(nextHeartRate, 132, 166));
+        } else {
+          setElapsedSeconds(
+            Math.floor(
+              (
+                timeData.accumulatedMs +
+                (Date.now() -
+                  timeData.lastResumeTime)
+              ) / 1000
+            )
+          );
         }
       }, 1000);
     }
 
-    return () => {
-      if (timer) clearInterval(timer);
-    };
-  }, [running]);
+    return () => clearInterval(interval);
+  }, [
+    running,
+    paused,
+    timeData,
+  ]);
+
+  /* =========================================================
+     LIVE SESSION SYNC
+  ========================================================= */
 
   useEffect(() => {
-    if (!running) return undefined;
+    if (!running) return;
 
-    const pulseLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, {
-          toValue: 1.08,
-          duration: 600,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulse, {
-          toValue: 1,
-          duration: 600,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ])
-    );
+    const interval = setInterval(
+      async () => {
+        try {
+          const stored =
+            await AsyncStorage.getItem(
+              SESSION_KEY
+            );
 
-    pulseLoop.start();
+          if (!stored) return;
 
-    return () => pulseLoop.stop();
-  }, [running, pulse]);
+          const session =
+            JSON.parse(stored);
 
-  useEffect(() => {
-    Animated.timing(progress, {
-      toValue: Math.min(distance / 5, 1),
-      duration: 700,
-      useNativeDriver: false,
-    }).start();
-  }, [distance, progress]);
+          const nextDistance =
+            Number(
+              session.distanceMeters || 0
+            ) / 1000;
 
-  const start = () => {
-    triggerHaptic(settings, 'impact');
+          const nextSpeed =
+            Number(
+              session.speedKmh || 0
+            );
 
-    baseElapsedRef.current = elapsed;
-    startTimeRef.current = Date.now();
+          setDistance(nextDistance);
+          setSpeed(nextSpeed);
+          setTopSpeed(
+            Number(
+              session.topSpeedKmh || 0
+            )
+          );
 
-    setRunning(true);
-  };
+          if (
+            Array.isArray(session.route)
+          ) {
+            setRoute((prev) => {
+              if (
+                prev.length !==
+                session.route.length
+              ) {
+                return session.route;
+              }
 
-  const pause = () => {
-    triggerHaptic(settings, 'selection');
+              return prev;
+            });
+          }
 
-    if (startTimeRef.current) {
-      const currentElapsed =
-        baseElapsedRef.current +
-        Math.floor((Date.now() - startTimeRef.current) / 1000);
+          if (
+            session.lastPoint &&
+            isValidCoordinate(
+              session.lastPoint
+            )
+          ) {
+            const point =
+              mapCoordinate(
+                session.lastPoint
+              );
 
-      baseElapsedRef.current = currentElapsed;
-      setElapsed(currentElapsed);
-    }
+            setLocation(point);
 
-    setRunning(false);
-  };
+            setAccuracy(
+              Number(
+                session.lastPoint.accuracy
+              )
+            );
 
-  const resume = () => {
-    triggerHaptic(settings, 'impact');
-    startTimeRef.current = Date.now();
-    setRunning(true);
-  };
-
-  const finish = () => {
-    const finalDistance = Math.max(distanceRef.current, distance);
-    const finalTime = elapsed;
-    const finalPace = getPace(finalDistance, finalTime);
-
-    triggerHaptic(settings, 'success');
-
-    onFinished({
-      distance: finalDistance,
-      duration: finalTime,
-      pace: finalPace,
-      calories: Math.round(finalDistance * 76),
-      heartRate: heartRate || 145,
-    });
-  };
-
-  const calories = Math.round(distance * 76);
-
-  return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor={COLORS.bg}
-        translucent={false}
-      />
-
-      <View style={styles.runScreen}>
-        <View style={styles.runHeader}>
-          <Pressable
-            onPress={onBack}
-            style={styles.runBack}
-            accessibilityRole="button"
-            accessibilityLabel="Exit run"
-          >
-            <Icon name="back" size={22} color={COLORS.white} />
-          </Pressable>
-
-          <View style={styles.liveRunHeader}>
-            <View style={[styles.liveDot, running && styles.liveDotRunning]} />
-            <Text style={styles.liveRunText}>
-              {running ? 'LIVE RUN' : elapsed > 0 ? 'PAUSED' : 'READY'}
-            </Text>
-          </View>
-
-          <View style={styles.runHeaderPlaceholder} />
-        </View>
-
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.runScrollContent}
-        >
-          <View style={styles.runHero}>
-            <Animated.View
-              style={[
-                styles.runPulseRing,
+            setPaceHistory((prev) => {
+              const next = [
+                ...prev,
                 {
-                  transform: [{ scale: pulse }],
-                  opacity: running ? 0.7 : 0.35,
+                  speed:
+                    Number(
+                      session.speedKmh ||
+                        0
+                    ),
+                  time: Date.now(),
                 },
-              ]}
-            />
+              ];
 
-            <View style={styles.runCircle}>
-              <View style={styles.runCircleInner}>
-                <Text style={styles.runDistance}>{distance.toFixed(2)}</Text>
-                <Text style={styles.runDistanceUnit}>KM</Text>
-                <View style={styles.runMiniLine} />
-                <Text style={styles.runTime}>{formatDuration(elapsed)}</Text>
-              </View>
-            </View>
-          </View>
+              return next.slice(-30);
+            });
 
-          <View style={styles.runStatsGrid}>
-            <RunStat label="PACE" value={pace ? formatPace(pace) : '0:00'} suffix="/KM" />
-            <RunStat label="CALORIES" value={calories} suffix="KCAL" />
-            <RunStat
-              label="HEART RATE"
-              value={heartRate || '--'}
-              suffix="BPM"
-              heart
-            />
-          </View>
-
-          <View style={styles.runRouteCard}>
-            <View style={styles.routeCardHeader}>
-              <View>
-                <Text style={styles.routeCardEyebrow}>LIVE ROUTE</Text>
-                <Text style={styles.routeCardTitle}>
-                  {running ? 'Finding your rhythm' : 'Your run is ready'}
-                </Text>
-              </View>
-
-              <View style={styles.gpsPill}>
-                <View style={styles.gpsDot} />
-                <Text style={styles.gpsText}>GPS</Text>
-              </View>
-            </View>
-
-            <View style={styles.fakeMap}>
-              <View style={styles.mapGridLineOne} />
-              <View style={styles.mapGridLineTwo} />
-              <View style={styles.mapRoadOne} />
-              <View style={styles.mapRoadTwo} />
-              <View style={styles.mapRoadThree} />
-
-              <View style={styles.mapRoute}>
-                <View style={styles.mapSegment s1} />
-                <View style={styles.mapSegment s2} />
-                <View style={styles.mapSegment s3} />
-                <View style={styles.mapSegment s4} />
-                <View style={styles.mapStartDot} />
-                <View style={styles.mapCurrentDot} />
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.runGoalMini}>
-            <View>
-              <Text style={styles.runGoalLabel}>TARGET</Text>
-              <Text style={styles.runGoalValue}>5.00 KM</Text>
-            </View>
-
-            <View style={styles.runGoalProgressWrap}>
-              <View style={styles.runGoalTrack}>
-                <Animated.View
-                  style={[
-                    styles.runGoalFill,
-                    {
-                      width: progress.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: ['0%', '100%'],
-                      }),
-                    },
-                  ]}
-                />
-              </View>
-            </View>
-          </View>
-
-          <View style={{ height: 190 }} />
-        </ScrollView>
-
-        <View style={styles.runControls}>
-          {!running && elapsed === 0 ? (
-            <AnimatedPressable
-              onPress={start}
-              style={styles.startRunLarge}
-              accessibilityLabel="Start running"
-            >
-              <Icon name="play" size={22} color={COLORS.bg} />
-              <Text style={styles.startRunLargeText}>START RUN</Text>
-            </AnimatedPressable>
-          ) : (
-            <View style={styles.activeControls}>
-              <AnimatedPressable
-                onPress={running ? pause : resume}
-                style={styles.pauseButton}
-                accessibilityLabel={running ? 'Pause running' : 'Resume running'}
-              >
-                <Icon
-                  name={running ? 'pause' : 'play'}
-                  size={24}
-                  color={COLORS.bg}
-                />
-              </AnimatedPressable>
-
-              <AnimatedPressable
-                onPress={finish}
-                style={styles.endRunButton}
-                accessibilityLabel="End run"
-              >
-                <View style={styles.endRunDot} />
-                <Text style={styles.endRunText}>END RUN</Text>
-              </AnimatedPressable>
-            </View>
-          )}
-        </View>
-      </View>
-    </SafeAreaView>
-  );
-}
-
-function RunStat({ label, value, suffix, heart }) {
-  return (
-    <View style={styles.runStat}>
-      <View style={styles.runStatIcon}>
-        <Icon
-          name={heart ? 'heart' : label === 'PACE' ? 'stats' : 'flame'}
-          size={16}
-          color={heart ? COLORS.danger : COLORS.green}
-        />
-      </View>
-
-      <Text style={styles.runStatValue}>
-        {value}
-        <Text style={styles.runStatSuffix}> {suffix}</Text>
-      </Text>
-      <Text style={styles.runStatLabel}>{label}</Text>
-    </View>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/*                              RUN SUMMARY                                    */
-/* -------------------------------------------------------------------------- */
-
-function RunSummaryScreen({
-  summary,
-  settings,
-  onSave,
-  onShare,
-  onDone,
-}) {
-  const entrance = useRef(new Animated.Value(0)).current;
-  const graph = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.spring(entrance, {
-        toValue: 1,
-        friction: 8,
-        tension: 55,
-        useNativeDriver: true,
-      }),
-      Animated.timing(graph, {
-        toValue: 1,
-        duration: 1000,
-        delay: 250,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: false,
-      }),
-    ]).start();
-
-    triggerHaptic(settings, 'success');
-  }, [entrance, graph, settings]);
-
-  const translateY = entrance.interpolate({
-    inputRange: [0, 1],
-    outputRange: [40, 0],
-  });
-
-  return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor={COLORS.bg}
-        translucent={false}
-      />
-
-      <Animated.View
-        style={[
-          styles.summaryScreen,
-          {
-            opacity: entrance,
-            transform: [{ translateY }],
-          },
-        ]}
-      >
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.summaryContent}
-        >
-          <View style={styles.summaryTop}>
-            <View style={styles.completeIcon}>
-              <Icon name="check" size={32} color={COLORS.bg} stroke={2.3} />
-            </View>
-
-            <Text style={styles.summaryEyebrow}>RUN COMPLETE</Text>
-            <Text style={styles.summaryTitle}>Great work!</Text>
-            <Text style={styles.summarySubtitle}>
-              You showed up. That's what counts.
-            </Text>
-          </View>
-
-          <View style={styles.summaryMainCard}>
-            <Text style={styles.summaryDistance}>
-              {summary.distance.toFixed(2)}
-              <Text style={styles.summaryDistanceUnit}> KM</Text>
-            </Text>
-
-            <Text style={styles.summaryTime}>
-              {formatDuration(summary.duration)}
-            </Text>
-
-            <View style={styles.summaryDivider} />
-
-            <View style={styles.summaryMetrics}>
-              <SummaryMetric
-                label="AVG PACE"
-                value={`${formatPace(summary.pace)}/km`}
-              />
-              <SummaryMetric
-                label="CALORIES"
-                value={`${summary.calories} kcal`}
-              />
-              <SummaryMetric
-                label="AVG HR"
-                value={`${summary.heartRate} bpm`}
-              />
-            </View>
-          </View>
-
-          <View style={styles.performanceCard}>
-            <View style={styles.performanceHeader}>
-              <View>
-                <Text style={styles.performanceEyebrow}>PERFORMANCE</Text>
-                <Text style={styles.performanceTitle}>Your rhythm</Text>
-              </View>
-
-              <Text style={styles.performanceScore}>GOOD</Text>
-            </View>
-
-            <View style={styles.performanceGraph}>
-              <View style={styles.graphHorizontal h1} />
-              <View style={styles.graphHorizontal h2} />
-              <View style={styles.graphHorizontal h3} />
-
-              <Animated.View
-                style={[
-                  styles.graphBar,
-                  styles.graphB1,
-                  { transform: [{ scaleY: graph }] },
-                ]}
-              />
-              <Animated.View
-                style={[
-                  styles.graphBar,
-                  styles.graphB2,
-                  { transform: [{ scaleY: graph }] },
-                ]}
-              />
-              <Animated.View
-                style={[
-                  styles.graphBar,
-                  styles.graphB3,
-                  { transform: [{ scaleY: graph }] },
-                ]}
-              />
-              <Animated.View
-                style={[
-                  styles.graphBar,
-                  styles.graphB4,
-                  { transform: [{ scaleY: graph }] },
-                ]}
-              />
-              <Animated.View
-                style={[
-                  styles.graphBar,
-                  styles.graphB5,
-                  { transform: [{ scaleY: graph }] },
-                ]}
-              />
-              <Animated.View
-                style={[
-                  styles.graphBar,
-                  styles.graphB6,
-                  { transform: [{ scaleY: graph }] },
-                ]}
-              />
-              <Animated.View
-                style={[
-                  styles.graphBar,
-                  styles.graphB7,
-                  { transform: [{ scaleY: graph }] },
-                ]}
-              />
-            </View>
-
-            <View style={styles.graphLabels}>
-              <Text>0</Text>
-              <Text>1</Text>
-              <Text>2</Text>
-              <Text>3</Text>
-              <Text>4</Text>
-              <Text>5 KM</Text>
-            </View>
-          </View>
-
-          <View style={{ height: 130 }} />
-        </ScrollView>
-
-        <View style={styles.summaryActions}>
-          <AnimatedPressable
-            onPress={onSave}
-            style={styles.saveRunButton}
-            accessibilityLabel="Save run"
-          >
-            <Icon name="check" size={19} color={COLORS.bg} />
-            <Text style={styles.saveRunText}>SAVE RUN</Text>
-          </AnimatedPressable>
-
-          <View style={styles.summarySecondaryActions}>
-            <AnimatedPressable
-              onPress={onShare}
-              style={styles.summarySecondaryButton}
-              accessibilityLabel="Share run"
-            >
-              <Text style={styles.summarySecondaryText}>SHARE</Text>
-            </AnimatedPressable>
-
-            <AnimatedPressable
-              onPress={onDone}
-              style={styles.summarySecondaryButton}
-              accessibilityLabel="Done"
-            >
-              <Text style={styles.summarySecondaryText}>DONE</Text>
-            </AnimatedPressable>
-          </View>
-        </View>
-      </Animated.View>
-    </SafeAreaView>
-  );
-}
-
-function SummaryMetric({ label, value }) {
-  return (
-    <View style={styles.summaryMetric}>
-      <Text style={styles.summaryMetricValue}>{value}</Text>
-      <Text style={styles.summaryMetricLabel}>{label}</Text>
-    </View>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/*                              ACTIVITY SCREEN                                */
-/* -------------------------------------------------------------------------- */
-
-function ActivityScreen({
-  activities,
-  onActivityDetails,
-  onStartRun,
-}) {
-  const [filter, setFilter] = useState('All');
-  const [period, setPeriod] = useState('Week');
-  const [search, setSearch] = useState('');
-
-  const filtered = useMemo(() => {
-    const query = search.trim().toLowerCase();
-
-    return activities.filter((activity) => {
-      const matchesFilter =
-        filter === 'All' ||
-        (filter === 'Runs' && activity.type === 'Runs') ||
-        (filter === 'Walking' && activity.type === 'Walking') ||
-        (filter === 'Other' && activity.type === 'Other');
-
-      const matchesSearch =
-        !query ||
-        activity.title.toLowerCase().includes(query) ||
-        activity.date.toLowerCase().includes(query);
-
-      return matchesFilter && matchesSearch;
-    });
-  }, [activities, filter, search]);
-
-  const distance = getActivityTotal(filtered, 'distance');
-  const calories = getActivityTotal(filtered, 'calories');
-  const duration = getActivityTotal(filtered, 'duration');
-
-  return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor={COLORS.bg}
-        translucent={false}
-      />
-
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <TopHeader title="Activity" subtitle="Your movement history" />
-
-        <FadeSlideIn delay={50}>
-          <View style={styles.segmentedControl}>
-            {['Week', 'Month', 'Year'].map((item) => (
-              <Pressable
-                key={item}
-                onPress={() => setPeriod(item)}
-                style={[
-                  styles.segment,
-                  period === item && styles.segmentActive,
-                ]}
-                accessibilityRole="button"
-                accessibilityLabel={`${item} activity filter`}
-              >
-                <Text
-                  style={[
-                    styles.segmentText,
-                    period === item && styles.segmentTextActive,
-                  ]}
-                >
-                  {item}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        </FadeSlideIn>
-
-        <FadeSlideIn delay={100}>
-          <View style={styles.activitySummaryCard}>
-            <ActivitySummary
-              value={`${distance.toFixed(1)} km`}
-              label="DISTANCE"
-            />
-            <ActivitySummary value={filtered.length} label="RUNS" />
-            <ActivitySummary
-              value={formatDuration(duration)}
-              label="TIME"
-            />
-            <ActivitySummary
-              value={`${Math.round(calories)}`}
-              label="CALORIES"
-            />
-          </View>
-        </FadeSlideIn>
-
-        <FadeSlideIn delay={150}>
-          <View style={styles.searchBox}>
-            <Icon name="search" size={18} color={COLORS.muted} />
-
-            <TextInput
-              value={search}
-              onChangeText={setSearch}
-              placeholder="Search activity"
-              placeholderTextColor={COLORS.muted}
-              style={styles.searchInput}
-              returnKeyType="search"
-              selectionColor={COLORS.green}
-              accessibilityLabel="Search activity"
-            />
-
-            {search.length > 0 ? (
-              <Pressable
-                onPress={() => setSearch('')}
-                accessibilityRole="button"
-                accessibilityLabel="Clear search"
-              >
-                <Icon name="close" size={16} color={COLORS.secondary} />
-              </Pressable>
-            ) : null}
-          </View>
-
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filterScroll}
-          >
-            {['All', 'Runs', 'Walking', 'Other'].map((item) => (
-              <Pressable
-                key={item}
-                onPress={() => setFilter(item)}
-                style={[
-                  styles.filterPill,
-                  filter === item && styles.filterPillActive,
-                ]}
-                accessibilityRole="button"
-                accessibilityLabel={`Filter ${item}`}
-              >
-                <Text
-                  style={[
-                    styles.filterPillText,
-                    filter === item && styles.filterPillTextActive,
-                  ]}
-                >
-                  {item}
-                </Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-        </FadeSlideIn>
-
-        <FadeSlideIn delay={200}>
-          <SectionHeader title="Your activities" />
-
-          <View style={styles.activityCard}>
-            {filtered.map((activity, index) => (
-              <React.Fragment key={activity.id}>
-                <ActivityRow
-                  activity={activity}
-                  onPress={() => onActivityDetails(activity)}
-                />
-                {index < filtered.length - 1 ? (
-                  <View style={styles.rowDivider} />
-                ) : null}
-              </React.Fragment>
-            ))}
-
-            {filtered.length === 0 ? (
-              <EmptyActivity onStart={onStartRun} />
-            ) : null}
-          </View>
-        </FadeSlideIn>
-
-        <View style={{ height: 130 }} />
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
-
-function ActivitySummary({ value, label }) {
-  return (
-    <View style={styles.activitySummaryItem}>
-      <Text style={styles.activitySummaryValue}>{value}</Text>
-      <Text style={styles.activitySummaryLabel}>{label}</Text>
-    </View>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/*                                STATS SCREEN                                 */
-/* -------------------------------------------------------------------------- */
-
-function StatsScreen({ activities, weeklyGoal }) {
-  const totalDistance = getActivityTotal(activities, 'distance');
-  const totalRuns = activities.length;
-  const totalCalories = getActivityTotal(activities, 'calories');
-  const totalTime = getActivityTotal(activities, 'duration');
-
-  const averagePace = useMemo(() => {
-    if (!totalDistance || !totalTime) return 0;
-    return getPace(totalDistance, totalTime);
-  }, [totalDistance, totalTime]);
-
-  const bestPace = useMemo(() => {
-    if (!activities.length) return 0;
-    return Math.min(...activities.map((item) => item.pace || Infinity));
-  }, [activities]);
-
-  const longestRun = useMemo(() => {
-    if (!activities.length) return 0;
-    return Math.max(...activities.map((item) => item.distance || 0));
-  }, [activities]);
-
-  const weeklyBars = useMemo(() => {
-    const values = DAYS.map((_, index) =>
-      activities
-        .filter((item) => item.dayIndex === index)
-        .reduce((sum, item) => sum + item.distance, 0)
+            if (
+              followUser &&
+              mapRef.current &&
+              isConnected
+            ) {
+              mapRef.current.animateToRegion(
+                {
+                  ...point,
+                  latitudeDelta:
+                    MAP_DELTA,
+                  longitudeDelta:
+                    MAP_DELTA,
+                },
+                500
+              );
+            }
+          }
+        } catch (e) {}
+      },
+      1000
     );
 
-    const max = Math.max(...values, 1);
+    return () =>
+      clearInterval(interval);
+  }, [
+    running,
+    followUser,
+    isConnected,
+  ]);
 
-    return values.map((value) => ({
-      value,
-      ratio: value / max,
-    }));
-  }, [activities]);
+  /* =========================================================
+     CHALLENGE
+  ========================================================= */
 
-  const strongestDayIndex = useMemo(() => {
-    let bestIndex = 0;
-    let bestValue = -1;
+  useEffect(() => {
+    if (
+      running &&
+      targetDistance &&
+      !challengeCompleted &&
+      distance >= targetDistance
+    ) {
+      setChallengeCompleted(true);
 
-    weeklyBars.forEach((item, index) => {
-      if (item.value > bestValue) {
-        bestValue = item.value;
-        bestIndex = index;
+      Speech.speak(
+        "Mission completed",
+        {
+          language: "en-IN",
+          rate: 0.95,
+        }
+      );
+
+      Vibration.vibrate([
+        0,
+        150,
+        100,
+        150,
+      ]);
+
+      Alert.alert(
+        "MISSION COMPLETE",
+        `You completed ${targetDistance} KM. Excellent work.`
+      );
+
+      AsyncStorage.getItem(
+        SESSION_KEY
+      ).then((stored) => {
+        if (!stored) return;
+
+        try {
+          const session =
+            JSON.parse(stored);
+
+          session.challengeCompleted =
+            true;
+
+          AsyncStorage.setItem(
+            SESSION_KEY,
+            JSON.stringify(session)
+          );
+        } catch (e) {}
+      });
+    }
+  }, [
+    distance,
+    running,
+    targetDistance,
+    challengeCompleted,
+  ]);
+
+  /* =========================================================
+     LOCATION
+  ========================================================= */
+
+  async function setupLocation() {
+    try {
+      const foreground =
+        await Location.requestForegroundPermissionsAsync();
+
+      if (
+        foreground.status !==
+        "granted"
+      ) {
+        return false;
       }
+
+      setPermissionGranted(true);
+
+      const current =
+        await Location.getCurrentPositionAsync(
+          {
+            accuracy:
+              Location.Accuracy.High,
+          }
+        );
+
+      if (current?.coords) {
+        setLocation({
+          latitude:
+            current.coords.latitude,
+          longitude:
+            current.coords.longitude,
+          altitude:
+            current.coords.altitude,
+          heading:
+            current.coords.heading,
+        });
+
+        setAccuracy(
+          current.coords.accuracy
+        );
+      }
+
+      await restoreSession();
+
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  async function restoreSession() {
+    try {
+      const stored =
+        await AsyncStorage.getItem(
+          SESSION_KEY
+        );
+
+      if (!stored) return;
+
+      const session =
+        JSON.parse(stored);
+
+      if (!session?.running) {
+        return;
+      }
+
+      setRunning(true);
+      setPaused(
+        Boolean(session.paused)
+      );
+
+      setTimeData(
+        session.timeData || {
+          accumulatedMs: 0,
+          lastResumeTime: 0,
+        }
+      );
+
+      setDistance(
+        Number(
+          session.distanceMeters || 0
+        ) / 1000
+      );
+
+      setSpeed(
+        Number(
+          session.speedKmh || 0
+        )
+      );
+
+      setTopSpeed(
+        Number(
+          session.topSpeedKmh || 0
+        )
+      );
+
+      setRoute(
+        Array.isArray(session.route)
+          ? session.route
+          : []
+      );
+
+      setTargetDistance(
+        session.targetDistance ||
+          null
+      );
+
+      setChallengeCompleted(
+        Boolean(
+          session.challengeCompleted
+        )
+      );
+
+      setActiveTab("run");
+    } catch (e) {}
+  }
+
+  async function startLocationService() {
+    try {
+      const enabled =
+        await Location.hasServicesEnabledAsync();
+
+      if (!enabled) {
+        Alert.alert(
+          "Location is off",
+          "Turn on Location Services to track your run."
+        );
+
+        return false;
+      }
+
+      const background =
+        await Location.requestBackgroundPermissionsAsync();
+
+      if (
+        background.status !==
+        "granted"
+      ) {
+        Alert.alert(
+          "Background location needed",
+          "Allow background location so Raftaar can continue tracking when the screen is locked."
+        );
+
+        return false;
+      }
+
+      const alreadyStarted =
+        await Location.hasStartedLocationUpdatesAsync(
+          LOCATION_TASK_NAME
+        );
+
+      if (!alreadyStarted) {
+        await Location.startLocationUpdatesAsync(
+          LOCATION_TASK_NAME,
+          {
+            accuracy:
+              Location.Accuracy
+                .BestForNavigation,
+
+            timeInterval: 1000,
+
+            distanceInterval: 2,
+
+            showsBackgroundLocationIndicator:
+              true,
+
+            foregroundService: {
+              notificationTitle:
+                "Raftaar is tracking",
+              notificationBody:
+                "Your run is being tracked in the background.",
+            },
+          }
+        );
+      }
+
+      return true;
+    } catch (e) {
+      Alert.alert(
+        "GPS error",
+        "Unable to start location tracking."
+      );
+
+      return false;
+    }
+  }
+
+  /* =========================================================
+     START RUN
+  ========================================================= */
+
+  async function confirmMissionStart(
+    targetKm
+  ) {
+    setMissionVisible(false);
+
+    let ready =
+      permissionGranted;
+
+    if (!ready) {
+      ready = await setupLocation();
+    }
+
+    if (!ready) return;
+
+    const started =
+      await startLocationService();
+
+    if (!started) return;
+
+    try {
+      const current =
+        await Location.getCurrentPositionAsync(
+          {
+            accuracy:
+              Location.Accuracy
+                .BestForNavigation,
+          }
+        );
+
+      const now = Date.now();
+
+      const firstPoint = {
+        latitude:
+          current.coords.latitude,
+        longitude:
+          current.coords.longitude,
+        accuracy:
+          current.coords.accuracy,
+        altitude:
+          current.coords.altitude || 0,
+        heading:
+          current.coords.heading || -1,
+        timestamp: now,
+        speedKmh: 0,
+      };
+
+      const newTimeData = {
+        accumulatedMs: 0,
+        lastResumeTime: now,
+      };
+
+      const newSession = {
+        running: true,
+        paused: false,
+
+        timeData: newTimeData,
+
+        distanceMeters: 0,
+        speedKmh: 0,
+        topSpeedKmh: 0,
+
+        route: [firstPoint],
+        lastPoint: firstPoint,
+
+        routeBreakPending: false,
+
+        targetDistance:
+          targetKm,
+
+        challengeCompleted:
+          false,
+      };
+
+      await AsyncStorage.setItem(
+        SESSION_KEY,
+        JSON.stringify(newSession)
+      );
+
+      setTargetDistance(targetKm);
+      setChallengeCompleted(false);
+
+      setLocation(
+        mapCoordinate(firstPoint)
+      );
+
+      setAccuracy(
+        firstPoint.accuracy
+      );
+
+      setTimeData(newTimeData);
+      setElapsedSeconds(0);
+
+      setRunning(true);
+      setPaused(false);
+
+      setDistance(0);
+      setSpeed(0);
+      setTopSpeed(0);
+
+      setRoute([firstPoint]);
+      setPaceHistory([]);
+
+      setActiveTab("run");
+
+      Speech.speak(
+        targetKm
+          ? `Mission ${targetKm} kilometers started`
+          : "Free Run started",
+        {
+          language: "en-IN",
+          rate: 0.95,
+        }
+      );
+
+      Vibration.vibrate(100);
+    } catch (e) {
+      Alert.alert(
+        "Couldn't start",
+        "Raftaar could not start this run."
+      );
+    }
+  }
+
+  /* =========================================================
+     PAUSE
+  ========================================================= */
+
+  async function pauseRun() {
+    const newTimeData = {
+      accumulatedMs:
+        timeData.accumulatedMs +
+        (Date.now() -
+          timeData.lastResumeTime),
+      lastResumeTime: null,
+    };
+
+    setPaused(true);
+    setSpeed(0);
+    setTimeData(newTimeData);
+
+    await AsyncStorage.mergeItem(
+      SESSION_KEY,
+      JSON.stringify({
+        paused: true,
+        speedKmh: 0,
+        routeBreakPending: true,
+        timeData: newTimeData,
+      })
+    );
+
+    Vibration.vibrate(80);
+
+    Speech.speak("Run paused", {
+      language: "en-IN",
+      rate: 0.95,
     });
+  }
 
-    return bestValue > 0 ? bestIndex : 0;
-  }, [weeklyBars]);
+  /* =========================================================
+     RESUME
+  ========================================================= */
 
-  const goalRemaining = Math.max(weeklyGoal.target - totalDistance, 0);
+  async function resumeRun() {
+    try {
+      const current =
+        await Location.getCurrentPositionAsync(
+          {
+            accuracy:
+              Location.Accuracy
+                .BestForNavigation,
+          }
+        );
 
-  const insight = useMemo(() => {
-    if (!activities.length) {
-      return 'Your first run will start building your performance story.';
+      const now = Date.now();
+
+      const newTimeData = {
+        accumulatedMs:
+          timeData.accumulatedMs,
+        lastResumeTime: now,
+      };
+
+      const point = {
+        latitude:
+          current.coords.latitude,
+        longitude:
+          current.coords.longitude,
+        accuracy:
+          current.coords.accuracy,
+        altitude:
+          current.coords.altitude || 0,
+        heading:
+          current.coords.heading || -1,
+        timestamp: now,
+        speedKmh: 0,
+        breakBefore: true,
+      };
+
+      setPaused(false);
+      setSpeed(0);
+      setTimeData(newTimeData);
+
+      setRoute([
+        ...route,
+        point,
+      ]);
+
+      setLocation(
+        mapCoordinate(point)
+      );
+
+      setAccuracy(
+        point.accuracy
+      );
+
+      const stored =
+        await AsyncStorage.getItem(
+          SESSION_KEY
+        );
+
+      if (stored) {
+        const session =
+          JSON.parse(stored);
+
+        session.paused = false;
+        session.speedKmh = 0;
+        session.timeData =
+          newTimeData;
+
+        session.routeBreakPending =
+          false;
+
+        session.route = [
+          ...(session.route || []),
+          point,
+        ];
+
+        session.lastPoint =
+          point;
+
+        await AsyncStorage.setItem(
+          SESSION_KEY,
+          JSON.stringify(session)
+        );
+      }
+
+      Speech.speak(
+        "Run resumed",
+        {
+          language: "en-IN",
+          rate: 0.95,
+        }
+      );
+
+      Vibration.vibrate(80);
+    } catch (e) {}
+  }
+
+  /* =========================================================
+     FINISH
+  ========================================================= */
+
+  function finishRun() {
+    Alert.alert(
+      "Finish your run?",
+      "Your workout will be saved to history.",
+      [
+        {
+          text: "Keep running",
+          style: "cancel",
+        },
+        {
+          text: "Finish",
+          style: "destructive",
+          onPress: completeRun,
+        },
+      ]
+    );
+  }
+
+  async function completeRun() {
+    try {
+      let finalDistance =
+        distance;
+
+      let finalDuration =
+        elapsedSeconds;
+
+      const finalRoute =
+        compactRoute(
+          route,
+          MAX_ROUTE_POINTS
+        );
+
+      const averageSpeed =
+        finalDuration > 0
+          ? finalDistance /
+            (finalDuration / 3600)
+          : 0;
+
+      const workout = {
+        id: String(Date.now()),
+
+        date:
+          new Date().toISOString(),
+
+        distanceKm:
+          Number(
+            finalDistance.toFixed(3)
+          ),
+
+        durationSeconds:
+          finalDuration,
+
+        averageSpeedKmh:
+          Number(
+            averageSpeed.toFixed(2)
+          ),
+
+        topSpeedKmh:
+          Number(
+            topSpeed.toFixed(2)
+          ),
+
+        pace:
+          getPace(
+            finalDistance,
+            finalDuration
+          ),
+
+        calories:
+          estimatedCalories(
+            finalDistance
+          ),
+
+        route:
+          finalRoute,
+
+        targetDistance:
+          targetDistance,
+      };
+
+      const updatedHistory = [
+        workout,
+        ...history,
+      ].slice(0, 100);
+
+      await AsyncStorage.setItem(
+        HISTORY_KEY,
+        JSON.stringify(
+          updatedHistory
+        )
+      );
+
+      await AsyncStorage.removeItem(
+        SESSION_KEY
+      );
+
+      const started =
+        await Location.hasStartedLocationUpdatesAsync(
+          LOCATION_TASK_NAME
+        );
+
+      if (started) {
+        await Location.stopLocationUpdatesAsync(
+          LOCATION_TASK_NAME
+        );
+      }
+
+      setHistory(
+        updatedHistory
+      );
+
+      setSummary(workout);
+
+      setRunning(false);
+      setPaused(false);
+
+      setSpeed(0);
+
+      setTargetDistance(null);
+      setChallengeCompleted(false);
+
+      setSummaryVisible(true);
+
+      Speech.speak(
+        "Run completed",
+        {
+          language: "en-IN",
+          rate: 0.95,
+        }
+      );
+
+      Vibration.vibrate([
+        0,
+        120,
+        80,
+        120,
+      ]);
+    } catch (e) {
+      Alert.alert(
+        "Save error",
+        "The run could not be saved."
+      );
     }
+  }
 
-    if (goalRemaining <= 0) {
-      return 'You have completed your weekly goal. Keep the momentum going.';
-    }
+  /* =========================================================
+     HOME
+  ========================================================= */
 
-    return `You are ${goalRemaining.toFixed(
-      1
-    )} km away from your weekly goal.`;
-  }, [activities.length, goalRemaining]);
+  function renderHome() {
+    const goal = 20;
+    const progress = Math.min(100, (weeklyDistance / goal) * 100);
+    const latest = history[0];
+
+    return (
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.neoScroll}>
+        <View style={styles.neoHeader}>
+          <View>
+            <Text style={styles.neoOverline}>GOOD TO SEE YOU</Text>
+            <Text style={styles.neoGreeting}>Shiva <Text style={styles.neoDot}>•</Text></Text>
+          </View>
+          <TouchableOpacity style={styles.neoAvatar} onPress={() => setActiveTab("profile")} activeOpacity={0.85}>
+            <Text style={styles.neoAvatarText}>S</Text>
+            <View style={styles.neoOnline} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.neoHero}>
+          <View style={styles.neoHeroGlow} />
+          <View style={styles.neoHeroTop}>
+            <View>
+              <Text style={styles.neoLabel}>THIS WEEK</Text>
+              <Text style={styles.neoHeroNumber}>{weeklyDistance.toFixed(1)}</Text>
+              <Text style={styles.neoHeroUnit}>KILOMETERS</Text>
+            </View>
+            <View style={styles.neoRing}>
+              <View style={styles.neoRingInner}>
+                <Text style={styles.neoRingValue}>{Math.round(progress)}%</Text>
+                <Text style={styles.neoRingText}>GOAL</Text>
+              </View>
+            </View>
+          </View>
+          <View style={styles.neoProgressTrack}>
+            <View style={[styles.neoProgressFill, { width: `${progress}%` }]} />
+          </View>
+          <View style={styles.neoHeroBottom}>
+            <Text style={styles.neoMuted}>{weeklyDistance >= goal ? "Goal completed" : `${(goal - weeklyDistance).toFixed(1)} km remaining`}</Text>
+            <Text style={styles.neoMuted}>{goal} km target</Text>
+          </View>
+          <TouchableOpacity style={styles.neoPrimary} onPress={() => setMissionVisible(true)} activeOpacity={0.88}>
+            <View style={styles.neoPlay}><Ionicons name="play" size={16} color={C.black} /></View>
+            <Text style={styles.neoPrimaryText}>START A RUN</Text>
+            <Ionicons name="arrow-forward" size={18} color={C.black} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.neoSectionHead}>
+          <View><Text style={styles.neoLabel}>YOUR NUMBERS</Text><Text style={styles.neoSectionTitle}>Built by consistency.</Text></View>
+          <TouchableOpacity onPress={() => setActiveTab("stats")}><Text style={styles.neoLink}>Stats</Text></TouchableOpacity>
+        </View>
+        <View style={styles.neoGrid}>
+          <View style={styles.neoMetric}><View style={[styles.neoMetricIcon, {backgroundColor:"rgba(92,255,138,.12)"}]}><Ionicons name="navigate" size={18} color={C.lime}/></View><Text style={styles.neoMetricValue}>{totalDistance.toFixed(1)}</Text><Text style={styles.neoMetricLabel}>TOTAL KM</Text></View>
+          <View style={styles.neoMetric}><View style={[styles.neoMetricIcon, {backgroundColor:"rgba(77,124,255,.14)"}]}><Ionicons name="footsteps" size={18} color={C.blue}/></View><Text style={styles.neoMetricValue}>{totalRuns}</Text><Text style={styles.neoMetricLabel}>RUNS</Text></View>
+          <View style={styles.neoMetric}><View style={[styles.neoMetricIcon, {backgroundColor:"rgba(255,157,77,.13)"}]}><Ionicons name="flame" size={18} color={C.orange}/></View><Text style={styles.neoMetricValue}>{streak}</Text><Text style={styles.neoMetricLabel}>DAY STREAK</Text></View>
+          <View style={styles.neoMetric}><View style={[styles.neoMetricIcon, {backgroundColor:"rgba(184,255,39,.12)"}]}><Ionicons name="trophy" size={18} color={C.lime2}/></View><Text style={styles.neoMetricValue}>{personalBests.longestRun ? personalBests.longestRun.toFixed(1) : "0"}</Text><Text style={styles.neoMetricLabel}>BEST RUN</Text></View>
+        </View>
+
+        <View style={styles.neoSectionHead}><View><Text style={styles.neoLabel}>LATEST</Text><Text style={styles.neoSectionTitle}>Your last move.</Text></View></View>
+        {latest ? (
+          <TouchableOpacity style={styles.neoLatest} activeOpacity={0.88} onPress={() => {setSelectedHistoryRun(latest);setHistoryDetailVisible(true);}}>
+            <View style={styles.neoLatestIcon}><Ionicons name="trending-up" size={22} color={C.lime}/></View>
+            <View style={{flex:1}}><Text style={styles.neoLatestTitle}>{Number(latest.distanceKm || 0).toFixed(2)} km run</Text><Text style={styles.neoLatestSub}>{new Date(latest.date).toLocaleDateString("en-IN", {day:"2-digit", month:"short"})}  ·  {latest.pace}/km</Text></View>
+            <Ionicons name="chevron-forward" size={18} color={C.muted2}/>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.neoLatest}><View style={styles.neoLatestIcon}><Ionicons name="sparkles-outline" size={22} color={C.lime}/></View><View style={{flex:1}}><Text style={styles.neoLatestTitle}>Your first run is waiting.</Text><Text style={styles.neoLatestSub}>Start moving and build your history.</Text></View></View>
+        )}
+
+        <View style={styles.neoQuote}><View style={styles.neoQuoteMark}><Ionicons name="flash" size={16} color={C.black}/></View><Text style={styles.neoQuoteText}>Consistency beats intensity. Show up, then go.</Text></View>
+      </ScrollView>
+    );
+  }
+
+
+  /* =========================================================
+     RUN TAB
+  ========================================================= */
+
+  function renderRun() {
+    const currentPace = getPace(distance, elapsedSeconds);
+    return (
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.runNeoScroll}>
+        <View style={styles.runNeoHeader}>
+          <View><Text style={styles.neoLabel}>{running ? (paused ? "PAUSED SESSION" : "LIVE SESSION") : "READY WHEN YOU ARE"}</Text><Text style={styles.runNeoTitle}>{targetDistance ? `${targetDistance} KM` : "Free Run"}</Text></View>
+          <View style={styles.gpsNeo}><View style={[styles.gpsNeoDot,{backgroundColor:gpsStatus.color}]} /><Text style={styles.gpsNeoText}>{gpsStatus.label}</Text></View>
+        </View>
+
+        <View style={styles.runMapNeo}>
+          {isConnected ? <MapView ref={mapRef} style={StyleSheet.absoluteFill} mapType={mapType} customMapStyle={mapType === "standard" ? darkMapStyle : undefined} showsCompass={false} showsBuildings={false} showsTraffic={false} showsIndoors={false} showsUserLocation={false} initialRegion={location ? {...location,latitudeDelta:MAP_DELTA,longitudeDelta:MAP_DELTA} : {latitude:28.6139,longitude:77.209,latitudeDelta:0.08,longitudeDelta:0.08}}>
+            <SpectrumRoute points={route} prefix="neo-live" />
+            {route.length > 0 && <StartMarker coordinate={route[0]} />}
+            {running && location && <LiveMarker coordinate={location} />}
+          </MapView> : <OfflineRunView running={running} paused={paused} distance={distance} elapsedSeconds={elapsedSeconds} targetDistance={targetDistance} location={location} translateY={runnerTranslateY} />}
+          <View style={styles.mapNeoTop}><View style={styles.mapLiveBadge}><View style={[styles.mapLiveDot,{backgroundColor:running ? C.lime : C.muted2}]} /><Text style={styles.mapLiveText}>{running ? "GPS LIVE" : "MAP READY"}</Text></View></View>
+          <View style={styles.mapNeoControls}><TouchableOpacity style={styles.mapNeoButton} onPress={() => setFollowUser(v=>!v)}><Ionicons name={followUser ? "locate" : "locate-outline"} size={18} color={followUser ? C.lime : C.white}/></TouchableOpacity><TouchableOpacity style={styles.mapNeoButton} onPress={() => setMapType(v=>v === "standard" ? "satellite" : "standard")}><Ionicons name="layers-outline" size={18} color={C.white}/></TouchableOpacity></View>
+        </View>
+
+        <View style={styles.runNeoPrimaryCard}>
+          <Text style={styles.neoLabel}>DISTANCE</Text>
+          <View style={styles.runNeoDistanceRow}><Text style={styles.runNeoDistance}>{distance.toFixed(2)}</Text><Text style={styles.runNeoUnit}>KM</Text></View>
+          <View style={styles.runNeoTime}><Ionicons name="time-outline" size={15} color={C.muted}/><Text style={styles.runNeoTimeText}>{formatTime(elapsedSeconds)}</Text></View>
+        </View>
+
+        <View style={styles.runNeoStats}>
+          <View style={styles.runNeoStat}><Text style={styles.runNeoStatValue}>{currentPace}</Text><Text style={styles.runNeoStatLabel}>PACE / KM</Text></View>
+          <View style={styles.runNeoStat}><Text style={styles.runNeoStatValue}>{speed.toFixed(1)}</Text><Text style={styles.runNeoStatLabel}>KM / H</Text></View>
+          <View style={styles.runNeoStat}><Text style={styles.runNeoStatValue}>{estimatedCalories(distance)}</Text><Text style={styles.runNeoStatLabel}>KCAL</Text></View>
+        </View>
+
+        {running && <View style={styles.neoChartCard}><View style={styles.neoChartHead}><View><Text style={styles.neoLabel}>PERFORMANCE</Text><Text style={styles.neoChartTitle}>Live pace signal</Text></View><Text style={styles.neoChartHint}>30 SEC</Text></View><LiveGraph values={paceHistory.map(x=>x.speed)} /></View>}
+
+        {!running ? <TouchableOpacity style={styles.runNeoStart} onPress={() => setMissionVisible(true)} activeOpacity={0.88}><Ionicons name="play" size={18} color={C.black}/><Text style={styles.runNeoStartText}>START RUN</Text><Ionicons name="arrow-forward" size={18} color={C.black}/></TouchableOpacity> : <View style={styles.runNeoActions}><TouchableOpacity style={styles.runNeoPause} onPress={paused ? resumeRun : pauseRun}><Ionicons name={paused ? "play" : "pause"} size={18} color={C.white}/><Text style={styles.runNeoActionText}>{paused ? "RESUME" : "PAUSE"}</Text></TouchableOpacity><TouchableOpacity style={styles.runNeoFinish} onPress={finishRun}><Ionicons name="stop" size={18} color={C.white}/><Text style={styles.runNeoActionText}>FINISH</Text></TouchableOpacity></View>}
+      </ScrollView>
+    );
+  }
+
+
+  /* =========================================================
+     HISTORY TAB
+  ========================================================= */
+
+  function renderHistory() {
+    return (
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.neoScroll}>
+        <View style={styles.neoHeader}><View><Text style={styles.neoOverline}>ACTIVITY</Text><Text style={styles.neoGreeting}>Your runs.</Text></View><View style={styles.neoCount}><Text style={styles.neoCountText}>{history.length}</Text></View></View>
+        <View style={styles.activitySummary}><View><Text style={styles.neoLabel}>TOTAL DISTANCE</Text><Text style={styles.activityBig}>{totalDistance.toFixed(1)}<Text style={styles.activityUnit}> KM</Text></Text></View><View><Text style={styles.neoLabel}>STREAK</Text><Text style={styles.activityBig}>{streak}<Text style={styles.activityUnit}> D</Text></Text></View></View>
+        {history.length === 0 ? <View style={styles.neoEmpty}><View style={styles.neoEmptyIcon}><Ionicons name="footsteps-outline" size={28} color={C.lime}/></View><Text style={styles.neoEmptyTitle}>No runs yet</Text><Text style={styles.neoEmptyText}>Your activity timeline will appear here after your first run.</Text><TouchableOpacity style={styles.neoSmallButton} onPress={()=>setMissionVisible(true)}><Text style={styles.neoSmallButtonText}>START FIRST RUN</Text></TouchableOpacity></View> : history.map((item,index)=><TouchableOpacity key={item.id || `run-${index}`} style={styles.activityRow} activeOpacity={0.86} onPress={()=>{setSelectedHistoryRun(item);setHistoryDetailVisible(true);}}><View style={styles.activityDate}><Text style={styles.activityDay}>{new Date(item.date).toLocaleDateString("en-IN",{day:"2-digit"})}</Text><Text style={styles.activityMonth}>{new Date(item.date).toLocaleDateString("en-IN",{month:"short"}).toUpperCase()}</Text></View><View style={styles.activityMain}><Text style={styles.activityDistance}>{Number(item.distanceKm||0).toFixed(2)} km</Text><Text style={styles.activitySub}>{item.pace}/km  ·  {formatTime(item.durationSeconds)}</Text></View><View style={styles.activityArrow}><Ionicons name="chevron-forward" size={17} color={C.muted2}/></View></TouchableOpacity>)}
+      </ScrollView>
+    );
+  }
+
+
+  /* =========================================================
+     PROFILE
+  ========================================================= */
+
+  function renderProfile() {
+    return (
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.neoScroll}>
+        <View style={styles.neoHeader}><View><Text style={styles.neoOverline}>ACCOUNT</Text><Text style={styles.neoGreeting}>Runner profile.</Text></View><View style={styles.profileNeoAvatar}><Text style={styles.profileNeoAvatarText}>S</Text></View></View>
+        <View style={styles.profileNeoHero}><View style={styles.profileNeoBadge}><Ionicons name="flash" size={16} color={C.black}/></View><View style={{flex:1}}><Text style={styles.profileNeoName}>Shiva</Text><Text style={styles.profileNeoSub}>Keep moving. Keep building.</Text></View></View>
+        <View style={styles.profileNeoStats}><ProfileStat label="RUNS" value={totalRuns}/><ProfileStat label="KM" value={totalDistance.toFixed(1)}/><ProfileStat label="STREAK" value={`${streak}d`}/></View>
+        <Text style={[styles.neoLabel,{marginTop:26,marginBottom:10}]}>PERSONAL BESTS</Text>
+        <View style={styles.profileNeoCard}><ValueRow icon="trophy-outline" title="Longest run" text={`${personalBests.longestRun ? personalBests.longestRun.toFixed(2) : "0.00"} km`} /><ValueRow icon="speedometer-outline" title="Fastest pace" text={`${personalBests.fastestPace} /km`} /><ValueRow icon="rocket-outline" title="Top speed" text={`${personalBests.topSpeed.toFixed(1)} km/h`} /></View>
+        <Text style={[styles.neoLabel,{marginTop:26,marginBottom:10}]}>APP STATUS</Text>
+        <View style={styles.profileNeoCard}><ValueRow icon="location-outline" title="GPS" text={permissionGranted ? gpsStatus.label : "Permission required"} /><ValueRow icon="cloud-outline" title="Network" text={isConnected ? "Online" : "Offline mode"} /><ValueRow icon="shield-checkmark-outline" title="Privacy" text="Data stays on device" /></View>
+        <Text style={styles.profileNeoVersion}>RAFTAAR • 3.0</Text>
+      </ScrollView>
+    );
+  }
+
+  function renderStats() {
+    const avgPaceRun = history.length ? history.filter(x=>x.distanceKm>0).reduce((a,x)=>a+(Number(x.durationSeconds||0)/Number(x.distanceKm||1)),0)/Math.max(1,history.filter(x=>x.distanceKm>0).length) : 0;
+    const avgPace = avgPaceRun ? `${Math.floor(avgPaceRun/60)}:${String(Math.floor(avgPaceRun%60)).padStart(2,"0")}` : "--:--";
+    const bars = Array.from({length:7},(_,i)=>{ const d=new Date(); d.setDate(d.getDate()-(6-i)); const key=d.toDateString(); return history.filter(x=>new Date(x.date).toDateString()===key).reduce((a,x)=>a+Number(x.distanceKm||0),0); });
+    const maxBar=Math.max(1,...bars);
+    return (
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.neoScroll}>
+        <View style={styles.neoHeader}><View><Text style={styles.neoOverline}>PERFORMANCE</Text><Text style={styles.neoGreeting}>Your stats.</Text></View><View style={styles.statsPulse}><View style={styles.statsPulseDot}/></View></View>
+        <View style={styles.statsHero}><Text style={styles.neoLabel}>ALL-TIME DISTANCE</Text><Text style={styles.statsHeroValue}>{totalDistance.toFixed(1)}<Text style={styles.statsHeroUnit}> KM</Text></Text><Text style={styles.neoMuted}>{totalRuns} total runs · {streak} day streak</Text></View>
+        <View style={styles.statsChartCard}><View style={styles.neoChartHead}><View><Text style={styles.neoLabel}>LAST 7 DAYS</Text><Text style={styles.neoChartTitle}>Distance</Text></View><Text style={styles.statsChartTotal}>{bars.reduce((a,b)=>a+b,0).toFixed(1)} km</Text></View><View style={styles.barChart}>{bars.map((v,i)=><View key={i} style={styles.barSlot}><View style={[styles.barFill,{height:Math.max(5,(v/maxBar)*112)}]} /><Text style={styles.barLabel}>{["S","M","T","W","T","F","S"][new Date(Date.now()-(6-i)*86400000).getDay()]}</Text></View>)}</View></View>
+        <View style={styles.statsGrid}><View style={styles.statsCard}><Text style={styles.neoLabel}>AVG PACE</Text><Text style={styles.statsValue}>{avgPace}</Text><Text style={styles.statsUnit}>MIN / KM</Text></View><View style={styles.statsCard}><Text style={styles.neoLabel}>BEST PACE</Text><Text style={styles.statsValue}>{personalBests.fastestPace}</Text><Text style={styles.statsUnit}>MIN / KM</Text></View><View style={styles.statsCard}><Text style={styles.neoLabel}>LONGEST</Text><Text style={styles.statsValue}>{personalBests.longestRun.toFixed(1)}</Text><Text style={styles.statsUnit}>KM</Text></View><View style={styles.statsCard}><Text style={styles.neoLabel}>TOP SPEED</Text><Text style={styles.statsValue}>{personalBests.topSpeed.toFixed(1)}</Text><Text style={styles.statsUnit}>KM / H</Text></View></View>
+        <View style={styles.insightCard}><View style={styles.insightIcon}><Ionicons name="bulb-outline" size={19} color={C.black}/></View><View style={{flex:1}}><Text style={styles.insightTitle}>RAFTAAR INSIGHT</Text><Text style={styles.insightText}>{history.length ? (weeklyDistance >= 20 ? "You have hit this week's target. Keep the rhythm going." : `${(20-weeklyDistance).toFixed(1)} km left to complete this week's target.`) : "Start your first run to unlock personalized performance insights."}</Text></View></View>
+      </ScrollView>
+    );
+  }
+
+
+  /* =========================================================
+     ROOT
+  ========================================================= */
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView
+      style={styles.safe}
+    >
       <StatusBar
-        barStyle="light-content"
-        backgroundColor={COLORS.bg}
+        hidden={false}
+        barStyle="dark-content"
+        backgroundColor={C.bg}
         translucent={false}
       />
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+      <View
+        style={styles.app}
       >
-        <TopHeader title="Stats" subtitle="Performance, quantified" />
+        <View
+          style={styles.content}
+        >
+          {activeTab === "home" &&
+            renderHome()}
 
-        <FadeSlideIn delay={50}>
-          <View style={styles.statsHero}>
-            <View>
-              <Text style={styles.statsHeroEyebrow}>ALL-TIME DISTANCE</Text>
-              <Text style={styles.statsHeroValue}>
-                {totalDistance.toFixed(1)}
-                <Text style={styles.statsHeroUnit}> KM</Text>
-              </Text>
-              <Text style={styles.statsHeroSub}>
-                {totalRuns} runs • {formatDuration(totalTime)}
-              </Text>
-            </View>
+          {activeTab === "run" &&
+            renderRun()}
 
-            <View style={styles.statsOrb}>
-              <Icon name="stats" size={28} color={COLORS.green} />
+          {activeTab === "history" &&
+            renderHistory()}
+
+          {activeTab === "stats" &&
+            renderStats()}
+
+          {activeTab === "profile" &&
+            renderProfile()}
+        </View>
+
+        {/* BOTTOM NAV */}
+
+        <BottomNav
+          active={activeTab}
+          onChange={setActiveTab}
+          running={running}
+        />
+      </View>
+
+      {/* =====================================================
+          ONBOARDING
+      ===================================================== */}
+
+      <Modal
+        visible={onboarding}
+        animationType="fade"
+        transparent={false}
+      >
+        <SafeAreaView
+          style={
+            styles.onboarding
+          }
+        >
+          <View
+            style={
+              styles.onboardingTop
+            }
+          >
+            <Text
+              style={
+                styles.onboardingLogo
+              }
+            >
+              Raftaar.
+            </Text>
+
+            <View
+              style={
+                styles.onboardingPill
+              }
+            >
+              <View
+                style={
+                  styles.onboardingDot
+                }
+              />
+
+              <Text
+                style={
+                  styles.onboardingPillText
+                }
+              >
+                GPS RUN & DISTANCE TRACKER
+              </Text>
             </View>
           </View>
-        </FadeSlideIn>
 
-        <FadeSlideIn delay={120}>
-          <SectionHeader title="Weekly distance" />
+          <View
+            style={
+              styles.onboardingCenter
+            }
+          >
+            <View
+              style={
+                styles.onboardingIcon
+              }
+            >
+              <FontAwesome5
+                name="running"
+                size={50}
+                color={C.lime}
+              />
+            </View>
 
-          <View style={styles.chartCard}>
-            <View style={styles.chartHeader}>
+            <Text
+              style={
+                styles.onboardingTitle
+              }
+            >
+              Run with{"\n"}
+              <Text
+                style={
+                  styles.onboardingAccent
+                }
+              >
+                purpose.
+              </Text>
+            </Text>
+
+            <Text
+              style={
+                styles.onboardingText
+              }
+            >
+              Raftaar turns every run into a
+              focused experience. Track your
+              route, distance, pace and
+              progress beautifully.
+            </Text>
+          </View>
+
+          <View
+            style={
+              styles.onboardingFeatures
+            }
+          >
+            <OnboardingFeature
+              icon="navigate-outline"
+              title="GPS tracking"
+              text="Precise route & distance"
+            />
+
+            <OnboardingFeature
+              icon="stats-chart-outline"
+              title="Smart progress"
+              text="Streaks & personal bests"
+            />
+
+            <OnboardingFeature
+              icon="lock-closed-outline"
+              title="Private"
+              text="Your data stays yours"
+            />
+          </View>
+
+          <TouchableOpacity
+            style={
+              styles.onboardingButton
+            }
+            activeOpacity={0.86}
+            onPress={
+              finishOnboarding
+            }
+          >
+            <Text
+              style={
+                styles.onboardingButtonText
+              }
+            >
+              LET'S RUN
+            </Text>
+
+            <Ionicons
+              name="arrow-forward"
+              size={19}
+              color={C.black}
+            />
+          </TouchableOpacity>
+        </SafeAreaView>
+      </Modal>
+
+      {/* =====================================================
+          MISSION MODAL
+      ===================================================== */}
+
+      <Modal
+        visible={missionVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() =>
+          setMissionVisible(false)
+        }
+      >
+        <View
+          style={
+            styles.modalOverlay
+          }
+        >
+          <View
+            style={
+              styles.missionSheet
+            }
+          >
+            <View
+              style={
+                styles.sheetHandle
+              }
+            />
+
+            <View
+              style={
+                styles.sheetHeader
+              }
+            >
               <View>
-                <Text style={styles.chartValue}>
-                  {totalDistance.toFixed(1)} km
+                <Text
+                  style={
+                    styles.sheetKicker
+                  }
+                >
+                  CHOOSE YOUR RUN
                 </Text>
-                <Text style={styles.chartSub}>This running period</Text>
+
+                <Text
+                  style={
+                    styles.sheetTitle
+                  }
+                >
+                  What's the goal?
+                </Text>
               </View>
 
-              <View style={styles.chartTrend}>
-                <Text style={styles.chartTrendText}>+6%</Text>
-              </View>
-            </View>
-
-            <View style={styles.barChart}>
-              {weeklyBars.map((bar, index) => (
-                <Bar
-                  key={DAYS[index]}
-                  label={DAYS[index]}
-                  value={bar.value}
-                  ratio={bar.ratio}
-                  active={index === strongestDayIndex}
+              <TouchableOpacity
+                onPress={() =>
+                  setMissionVisible(
+                    false
+                  )
+                }
+                style={
+                  styles.sheetClose
+                }
+              >
+                <Ionicons
+                  name="close"
+                  size={20}
+                  color={C.white}
                 />
-              ))}
+              </TouchableOpacity>
             </View>
+
+            <MissionOption
+              icon="infinite-outline"
+              title="Free Run"
+              subtitle="Run without a target"
+              accent={C.lime}
+              onPress={() =>
+                confirmMissionStart(
+                  null
+                )
+              }
+            />
+
+            <MissionOption
+              icon="flash-outline"
+              title="1 KM Sprint"
+              subtitle="Quick and focused"
+              accent={C.orange}
+              onPress={() =>
+                confirmMissionStart(
+                  1
+                )
+              }
+            />
+
+            <MissionOption
+              icon="flame-outline"
+              title="3 KM Challenge"
+              subtitle="Build your momentum"
+              accent={C.red}
+              onPress={() =>
+                confirmMissionStart(
+                  3
+                )
+              }
+            />
+
+            <MissionOption
+              icon="trophy-outline"
+              title="5 KM Mission"
+              subtitle="The classic runner goal"
+              accent={C.purple}
+              onPress={() =>
+                confirmMissionStart(
+                  5
+                )
+              }
+            />
+
+            <MissionOption
+              icon="star-outline"
+              title="10 KM Endurance"
+              subtitle="Go beyond your limits"
+              accent={C.lime}
+              onPress={() =>
+                confirmMissionStart(
+                  10
+                )
+              }
+            />
           </View>
-        </FadeSlideIn>
+        </View>
+      </Modal>
 
-        <FadeSlideIn delay={190}>
-          <View style={styles.statsGrid}>
-            <StatCard
-              label="AVG PACE"
-              value={averagePace ? `${formatPace(averagePace)}/km` : '--'}
-              icon="run"
-              accent={COLORS.green}
-            />
-            <StatCard
-              label="BEST PACE"
-              value={bestPace ? `${formatPace(bestPace)}/km` : '--'}
-              icon="target"
-              accent={COLORS.blue}
-            />
-            <StatCard
-              label="LONGEST RUN"
-              value={`${longestRun.toFixed(2)} km`}
-              icon="run"
-              accent={COLORS.cyan}
-            />
-            <StatCard
-              label="TOTAL CALORIES"
-              value={`${Math.round(totalCalories)}`}
-              icon="flame"
-              accent={COLORS.orange}
-            />
+      {/* =====================================================
+          SUMMARY
+      ===================================================== */}
+
+      <Modal
+        visible={summaryVisible}
+        animationType="slide"
+        onRequestClose={() =>
+          setSummaryVisible(false)
+        }
+      >
+        <SafeAreaView
+          style={styles.modalSafe}
+        >
+          <View
+            style={
+              styles.modalHeader
+            }
+          >
+            <View>
+              <Text
+                style={
+                  styles.modalKicker
+                }
+              >
+                WORKOUT COMPLETE
+              </Text>
+
+              <Text
+                style={
+                  styles.modalTitle
+                }
+              >
+                Great run.
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              style={
+                styles.closeButton
+              }
+              onPress={() =>
+                setSummaryVisible(
+                  false
+                )
+              }
+            >
+              <Ionicons
+                name="close"
+                size={20}
+                color={C.white}
+              />
+            </TouchableOpacity>
           </View>
-        </FadeSlideIn>
 
-        <FadeSlideIn delay={260}>
-          <SectionHeader title="Performance insights" />
+          {summary && (
+            <ScrollView
+              showsVerticalScrollIndicator={
+                false
+              }
+              contentContainerStyle={
+                styles.summaryScroll
+              }
+            >
+              {summary.targetDistance &&
+                summary.distanceKm >=
+                  summary.targetDistance && (
+                  <View
+                    style={
+                      styles.missionComplete
+                    }
+                  >
+                    <Ionicons
+                      name="trophy"
+                      size={22}
+                      color={C.lime}
+                    />
 
-          <View style={styles.insightCard}>
-            <Insight
-              number="01"
-              title="Pace momentum"
-              text="Your recent running rhythm is trending faster than your earlier sessions."
-              accent={COLORS.green}
-            />
+                    <View
+                      style={
+                        styles.missionCompleteText
+                      }
+                    >
+                      <Text
+                        style={
+                          styles.missionCompleteTitle
+                        }
+                      >
+                        MISSION ACCOMPLISHED
+                      </Text>
 
-            <View style={styles.insightDivider} />
+                      <Text
+                        style={
+                          styles.missionCompleteSub
+                        }
+                      >
+                        You hit your target.
+                      </Text>
+                    </View>
+                  </View>
+                )}
 
-            <Insight
-              number="02"
-              title={`${DAYS[strongestDayIndex]} is your strongest day`}
-              text={`That's when you covered the most distance in this period.`}
-              accent={COLORS.blue}
-            />
+              <View
+                style={
+                  styles.summaryHero
+                }
+              >
+                <Text
+                  style={
+                    styles.summaryHeroLabel
+                  }
+                >
+                  DISTANCE
+                </Text>
 
-            <View style={styles.insightDivider} />
+                <Text
+                  style={
+                    styles.summaryHeroValue
+                  }
+                >
+                  {Number(
+                    summary.distanceKm ||
+                      0
+                  ).toFixed(2)}
 
-            <Insight
-              number="03"
-              title="Goal distance"
-              text={insight}
-              accent={COLORS.cyan}
-            />
-          </View>
-        </FadeSlideIn>
+                  <Text
+                    style={
+                      styles.summaryHeroUnit
+                    }
+                  >
+                    {" "}
+                    KM
+                  </Text>
+                </Text>
 
-        <View style={{ height: 130 }} />
-      </ScrollView>
+                <Text
+                  style={
+                    styles.summaryHeroTime
+                  }
+                >
+                  {formatTime(
+                    summary.durationSeconds
+                  )}
+                </Text>
+              </View>
+
+              {isConnected &&
+                summary.route?.length >=
+                  2 && (
+                  <View
+                    style={
+                      styles.summaryMap
+                    }
+                  >
+                    <MapView
+                      ref={
+                        completionMapRef
+                      }
+                      style={
+                        StyleSheet.absoluteFill
+                      }
+                      customMapStyle={
+                        darkMapStyle
+                      }
+                      showsCompass={
+                        false
+                      }
+                      showsBuildings={
+                        false
+                      }
+                      showsTraffic={
+                        false
+                      }
+                      showsUserLocation={
+                        false
+                      }
+                      onMapReady={() => {
+                        const coords =
+                          summary.route
+                            .filter(
+                              isValidCoordinate
+                            )
+                            .map(
+                              mapCoordinate
+                            );
+
+                        if (
+                          coords.length >=
+                          2
+                        ) {
+                          setTimeout(
+                            () => {
+                              completionMapRef.current?.fitToCoordinates(
+                                coords,
+                                {
+                                  edgePadding:
+                                    {
+                                      top: 50,
+                                      right: 30,
+                                      bottom: 50,
+                                      left: 30,
+                                    },
+                                  animated:
+                                    true,
+                                }
+                              );
+                            },
+                            250
+                          );
+                        }
+                      }}
+                    >
+                      <SpectrumRoute
+                        points={
+                          summary.route
+                        }
+                        prefix="summary"
+                      />
+
+                      <StartMarker
+                        coordinate={
+                          summary.route[0]
+                        }
+                      />
+
+                      <FinishMarker
+                        coordinate={
+                          summary.route[
+                            summary.route
+                              .length -
+                              1
+                          ]
+                        }
+                      />
+                    </MapView>
+                  </View>
+                )}
+
+              <View
+                style={
+                  styles.summaryStats
+                }
+              >
+                <SummaryMetric
+                  icon="walk-outline"
+                  label="PACE"
+                  value={`${summary.pace}/km`}
+                />
+
+                <SummaryMetric
+                  icon="speedometer-outline"
+                  label="AVG SPEED"
+                  value={`${Number(
+                    summary.averageSpeedKmh ||
+                      0
+                  ).toFixed(
+                    1
+                  )} km/h`}
+                />
+
+                <SummaryMetric
+                  icon="trending-up-outline"
+                  label="TOP SPEED"
+                  value={`${Number(
+                    summary.topSpeedKmh ||
+                      0
+                  ).toFixed(
+                    1
+                  )} km/h`}
+                />
+
+                <SummaryMetric
+                  icon="flame-outline"
+                  label="CALORIES"
+                  value={`${summary.calories} kcal`}
+                />
+              </View>
+
+              <View
+                style={
+                  styles.spectrumCard
+                }
+              >
+                <Text
+                  style={
+                    styles.spectrumTitle
+                  }
+                >
+                  SPEED SPECTRUM
+                </Text>
+
+                <View
+                  style={
+                    styles.spectrumBar
+                  }
+                >
+                  {SPEED_STOPS.map(
+                    (stop) => (
+                      <View
+                        key={
+                          stop.speed
+                        }
+                        style={[
+                          styles.spectrumSegment,
+                          {
+                            backgroundColor:
+                              stop.color,
+                          },
+                        ]}
+                      />
+                    )
+                  )}
+                </View>
+
+                <View
+                  style={
+                    styles.spectrumLabels
+                  }
+                >
+                  <Text
+                    style={
+                      styles.spectrumLabel
+                    }
+                  >
+                    SLOW
+                  </Text>
+
+                  <Text
+                    style={
+                      styles.spectrumLabel
+                    }
+                  >
+                    FAST
+                  </Text>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                style={
+                  styles.doneButton
+                }
+                onPress={() =>
+                  setSummaryVisible(
+                    false
+                  )
+                }
+              >
+                <Text
+                  style={
+                    styles.doneButtonText
+                  }
+                >
+                  DONE
+                </Text>
+
+                <Ionicons
+                  name="checkmark"
+                  size={19}
+                  color={C.black}
+                />
+              </TouchableOpacity>
+            </ScrollView>
+          )}
+        </SafeAreaView>
+      </Modal>
+
+      {/* =====================================================
+          HISTORY DETAIL
+      ===================================================== */}
+
+      <Modal
+        visible={historyDetailVisible}
+        animationType="slide"
+        onRequestClose={() =>
+          setHistoryDetailVisible(
+            false
+          )
+        }
+      >
+        <SafeAreaView
+          style={styles.modalSafe}
+        >
+          {selectedHistoryRun && (
+            <>
+              <View
+                style={
+                  styles.modalHeader
+                }
+              >
+                <View>
+                  <Text
+                    style={
+                      styles.modalKicker
+                    }
+                  >
+                    RUN DETAILS
+                  </Text>
+
+                  <Text
+                    style={
+                      styles.modalTitle
+                    }
+                  >
+                    {Number(
+                      selectedHistoryRun.distanceKm ||
+                        0
+                    ).toFixed(
+                      2
+                    )}{" "}
+                    KM
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  style={
+                    styles.closeButton
+                  }
+                  onPress={() =>
+                    setHistoryDetailVisible(
+                      false
+                    )
+                  }
+                >
+                  <Ionicons
+                    name="close"
+                    size={20}
+                    color={C.white}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView
+                showsVerticalScrollIndicator={
+                  false
+                }
+                contentContainerStyle={
+                  styles.summaryScroll
+                }
+              >
+                <View
+                  style={
+                    styles.detailDate
+                  }
+                >
+                  {new Date(
+                    selectedHistoryRun.date
+                  ).toLocaleString(
+                    "en-IN",
+                    {
+                      dateStyle:
+                        "long",
+                      timeStyle:
+                        "short",
+                    }
+                  )}
+                </View>
+
+                {selectedHistoryRun
+                  .route?.length >=
+                  2 && (
+                  <View
+                    style={
+                      styles.summaryMap
+                    }
+                  >
+                    <MapView
+                      style={
+                        StyleSheet.absoluteFill
+                      }
+                      customMapStyle={
+                        darkMapStyle
+                      }
+                      showsCompass={
+                        false
+                      }
+                      showsBuildings={
+                        false
+                      }
+                      showsTraffic={
+                        false
+                      }
+                      showsUserLocation={
+                        false
+                      }
+                    >
+                      <SpectrumRoute
+                        points={
+                          selectedHistoryRun.route
+                        }
+                        prefix="detail"
+                      />
+
+                      <StartMarker
+                        coordinate={
+                          selectedHistoryRun
+                            .route[0]
+                        }
+                      />
+
+                      <FinishMarker
+                        coordinate={
+                          selectedHistoryRun
+                            .route[
+                              selectedHistoryRun
+                                .route
+                                .length -
+                                1
+                            ]
+                        }
+                      />
+                    </MapView>
+                  </View>
+                )}
+
+                <View
+                  style={
+                    styles.summaryStats
+                  }
+                >
+                  <SummaryMetric
+                    icon="time-outline"
+                    label="TIME"
+                    value={formatTime(
+                      selectedHistoryRun.durationSeconds
+                    )}
+                  />
+
+                  <SummaryMetric
+                    icon="walk-outline"
+                    label="PACE"
+                    value={`${selectedHistoryRun.pace}/km`}
+                  />
+
+                  <SummaryMetric
+                    icon="speedometer-outline"
+                    label="AVG"
+                    value={`${Number(
+                      selectedHistoryRun.averageSpeedKmh ||
+                        0
+                    ).toFixed(
+                      1
+                    )} km/h`}
+                  />
+
+                  <SummaryMetric
+                    icon="flame-outline"
+                    label="CALORIES"
+                    value={`${selectedHistoryRun.calories}`}
+                  />
+                </View>
+              </ScrollView>
+            </>
+          )}
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
 
-function Bar({ label, value, ratio, active }) {
-  const height = useRef(new Animated.Value(0)).current;
+/* =========================================================
+   COMPONENTS
+========================================================= */
 
-  useEffect(() => {
-    Animated.timing(height, {
-      toValue: ratio,
-      duration: 700,
-      delay: Math.random() * 180,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
-  }, [height, ratio]);
-
-  return (
-    <View style={styles.barColumn}>
-      <View style={styles.barTrack}>
-        <Animated.View
-          style={[
-            styles.barFill,
-            active && styles.barFillActive,
-            {
-              height: height.interpolate({
-                inputRange: [0, 1],
-                outputRange: ['0%', '100%'],
-              }),
-            },
-          ]}
-        />
-      </View>
-
-      <Text style={[styles.barLabel, active && styles.barLabelActive]}>
-        {label}
-      </Text>
-
-      <Text style={styles.barValue}>{value ? value.toFixed(1) : '—'}</Text>
-    </View>
-  );
+function BottomNav({ active, onChange, running }) {
+  const items = [
+    { id:"home", icon:"home-outline", activeIcon:"home", label:"Home" },
+    { id:"run", icon:"navigate-outline", activeIcon:"navigate", label:"Run" },
+    { id:"history", icon:"list-outline", activeIcon:"list", label:"Activity" },
+    { id:"stats", icon:"stats-chart-outline", activeIcon:"stats-chart", label:"Stats" },
+    { id:"profile", icon:"person-outline", activeIcon:"person", label:"Profile" },
+  ];
+  return <View style={styles.neoNavWrap}><View style={styles.neoNav}>{items.map(item=>{const selected=active===item.id;return <TouchableOpacity key={item.id} style={styles.neoNavItem} activeOpacity={0.82} onPress={()=>onChange(item.id)}><View style={[styles.neoNavIcon,{backgroundColor:selected?C.lime:"transparent"}]}><Ionicons name={selected?item.activeIcon:item.icon} size={19} color={selected?C.black:C.muted}/></View><Text style={[styles.neoNavText,{color:selected?C.white:C.muted2}]}>{item.label}</Text>{running && item.id==="run" && <View style={styles.neoNavLive}/>}</TouchableOpacity>})}</View></View>;
 }
 
-function StatCard({ label, value, icon, accent }) {
+function ScreenHeader({
+  kicker,
+  title,
+  right,
+}) {
   return (
-    <View style={styles.statCard}>
-      <View
-        style={[
-          styles.statIcon,
-          {
-            backgroundColor: `${accent}12`,
-            borderColor: `${accent}22`,
-          },
-        ]}
-      >
-        <Icon name={icon} size={16} color={accent} />
-      </View>
+    <View
+      style={styles.screenHeader}
+    >
+      <View>
+        <Text
+          style={styles.screenKicker}
+        >
+          {kicker}
+        </Text>
 
-      <Text style={styles.statCardValue}>{value}</Text>
-      <Text style={styles.statCardLabel}>{label}</Text>
-    </View>
-  );
-}
-
-function Insight({ number, title, text, accent }) {
-  return (
-    <View style={styles.insightRow}>
-      <View
-        style={[
-          styles.insightNumber,
-          {
-            borderColor: `${accent}40`,
-            backgroundColor: `${accent}10`,
-          },
-        ]}
-      >
-        <Text style={[styles.insightNumberText, { color: accent }]}>
-          {number}
+        <Text
+          style={styles.screenTitle}
+        >
+          {title}
         </Text>
       </View>
 
-      <View style={styles.insightContent}>
-        <Text style={styles.insightTitle}>{title}</Text>
-        <Text style={styles.insightText}>{text}</Text>
+      {right}
+    </View>
+  );
+}
+
+function HomeHeroVisual() {
+  return (
+    <View pointerEvents="none" style={styles.heroVisual}>
+      <View style={styles.heroGlowA} />
+      <View style={styles.heroGlowB} />
+      <View style={styles.heroRingOuter} />
+      <View style={styles.heroRing}>
+        <View style={styles.heroRingInner} />
+      </View>
+      <View style={[styles.routeSeg, styles.routeSeg1]} />
+      <View style={[styles.routeSeg, styles.routeSeg2]} />
+      <View style={[styles.routeSeg, styles.routeSeg3]} />
+      <View style={styles.routeDotStart} />
+      <View style={styles.routeDotEnd} />
+      <View style={styles.runnerMark}>
+        <View style={styles.runnerHead} />
+        <View style={[styles.runnerLimb, styles.runnerArm]} />
+        <View style={[styles.runnerLimb, styles.runnerLegA]} />
+        <View style={[styles.runnerLimb, styles.runnerLegB]} />
       </View>
     </View>
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/*                              PROFILE SCREEN                                 */
-/* -------------------------------------------------------------------------- */
-
-function ProfileScreen({
-  user,
-  activities,
-  weeklyGoal,
-  settings,
-  onSettings,
-  onGoalEdit,
-  onNotifications,
+function HeroMeta({
+  icon,
+  text,
 }) {
-  const distance = getActivityTotal(activities, 'distance');
-
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor={COLORS.bg}
-        translucent={false}
+    <View
+      style={styles.heroMetaItem}
+    >
+      <Ionicons
+        name={icon}
+        size={12}
+        color={C.lime}
       />
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+      <Text
+        style={styles.heroMetaText}
       >
-        <TopHeader
-          title="Profile"
-          subtitle="Your running identity"
-          onNotification={onNotifications}
-        />
-
-        <FadeSlideIn delay={50}>
-          <View style={styles.profileHero}>
-            <View style={styles.profileAvatarWrap}>
-              <Avatar size={82} />
-              <View style={styles.profileOnlineDot} />
-            </View>
-
-            <Text style={styles.profileName}>{user.name}</Text>
-            <Text style={styles.profileTag}>RUNNER • LEVEL 07</Text>
-
-            <View style={styles.profileStats}>
-              <ProfileStat value={activities.length} label="RUNS" />
-              <View style={styles.profileStatDivider} />
-              <ProfileStat value={distance.toFixed(1)} label="KM" />
-              <View style={styles.profileStatDivider} />
-              <ProfileStat value="4" label="STREAK" />
-            </View>
-          </View>
-        </FadeSlideIn>
-
-        <FadeSlideIn delay={120}>
-          <SectionHeader title="Training" />
-
-          <View style={styles.settingsCard}>
-            <ProfileRow
-              icon="target"
-              title="Running Goal"
-              value={`${weeklyGoal.target} km / week`}
-              onPress={onGoalEdit}
-            />
-
-            <View style={styles.rowDivider} />
-
-            <ProfileRow
-              icon="stats"
-              title="Weekly Target"
-              value={`${weeklyGoal.target} km`}
-              onPress={onGoalEdit}
-            />
-
-            <View style={styles.rowDivider} />
-
-            <ProfileRow
-              icon="run"
-              title="Preferred Distance"
-              value="5–10 km"
-              onPress={() => {}}
-            />
-          </View>
-        </FadeSlideIn>
-
-        <FadeSlideIn delay={190}>
-          <SectionHeader title="Preferences" />
-
-          <View style={styles.settingsCard}>
-            <ProfileRow
-              icon="stats"
-              title="Units"
-              value={settings.distanceUnit.toUpperCase()}
-              onPress={onSettings}
-            />
-
-            <View style={styles.rowDivider} />
-
-            <ProfileRow
-              icon="bell"
-              title="Notifications"
-              value={settings.notifications ? 'On' : 'Off'}
-              onPress={onSettings}
-            />
-
-            <View style={styles.rowDivider} />
-
-            <ProfileRow
-              icon="target"
-              title="Appearance"
-              value="Dark"
-              onPress={onSettings}
-            />
-          </View>
-        </FadeSlideIn>
-
-        <FadeSlideIn delay={260}>
-          <SectionHeader title="More" />
-
-          <View style={styles.settingsCard}>
-            <ProfileRow
-              icon="stats"
-              title="Settings"
-              value=""
-              onPress={onSettings}
-            />
-
-            <View style={styles.rowDivider} />
-
-            <ProfileRow
-              icon="check"
-              title="About RAFTAAR"
-              value="v1.0"
-              onPress={() => {}}
-            />
-          </View>
-        </FadeSlideIn>
-
-        <View style={{ height: 130 }} />
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
-
-function ProfileStat({ value, label }) {
-  return (
-    <View style={styles.profileStat}>
-      <Text style={styles.profileStatValue}>{value}</Text>
-      <Text style={styles.profileStatLabel}>{label}</Text>
+        {text}
+      </Text>
     </View>
   );
 }
 
-function ProfileRow({ icon, title, value, onPress }) {
+function MiniMetric({
+  icon,
+  value,
+  label,
+  accent,
+}) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={styles.profileRow}
-      accessibilityRole="button"
-      accessibilityLabel={title}
+    <View
+      style={styles.miniMetric}
     >
-      <View style={styles.profileRowIcon}>
-        <Icon name={icon} size={17} color={COLORS.green} />
+      <Ionicons
+        name={icon}
+        size={18}
+        color={accent}
+      />
+
+      <Text
+        style={styles.miniMetricValue}
+      >
+        {value}
+      </Text>
+
+      <Text
+        style={styles.miniMetricLabel}
+      >
+        {label}
+      </Text>
+
+      <View style={styles.microSparkline}>
+        {[0.28, 0.42, 0.34, 0.62, 0.48, 0.76, 0.58, 0.9].map((v, i) => (
+          <View
+            key={i}
+            style={[
+              styles.microSparkBar,
+              {
+                height: 3 + v * 11,
+                backgroundColor: accent,
+                opacity: 0.25 + i * 0.09,
+              },
+            ]}
+          />
+        ))}
       </View>
-
-      <Text style={styles.profileRowTitle}>{title}</Text>
-
-      {value ? <Text style={styles.profileRowValue}>{value}</Text> : null}
-
-      <Icon name="chevron" size={14} color={COLORS.muted} />
-    </Pressable>
+    </View>
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/*                              BOTTOM NAV                                     */
-/* -------------------------------------------------------------------------- */
-
-const TABS = [
-  { key: 'home', label: 'Home', icon: 'home' },
-  { key: 'run', label: 'Run', icon: 'run' },
-  { key: 'activity', label: 'Activity', icon: 'activity' },
-  { key: 'stats', label: 'Stats', icon: 'stats' },
-  { key: 'profile', label: 'Profile', icon: 'profile' },
-];
-
-function BottomNav({ activeTab, onChange, onRun }) {
+function FeatureCard({
+  icon,
+  title,
+  text,
+}) {
   return (
-    <View pointerEvents="box-none" style={styles.bottomNavContainer}>
-      <View style={styles.bottomNav}>
-        {TABS.map((tab) => {
-          const selected = activeTab === tab.key;
+    <View
+      style={styles.featureCard}
+    >
+      <View
+        style={styles.featureIcon}
+      >
+        <Ionicons
+          name={icon}
+          size={20}
+          color={C.lime}
+        />
+      </View>
+
+      <View
+        style={styles.featureContent}
+      >
+        <Text
+          style={styles.featureTitle}
+        >
+          {title}
+        </Text>
+
+        <Text
+          style={styles.featureText}
+        >
+          {text}
+        </Text>
+      </View>
+
+      <Ionicons
+        name="arrow-up-outline"
+        size={18}
+        color={C.muted2}
+        style={{
+          transform: [
+            {
+              rotate: "45deg",
+            },
+          ],
+        }}
+      />
+    </View>
+  );
+}
+
+function LiveStat({
+  label,
+  value,
+  unit,
+}) {
+  return (
+    <View
+      style={styles.liveStat}
+    >
+      <Text
+        style={styles.liveStatLabel}
+      >
+        {label}
+      </Text>
+
+      <Text
+        style={styles.liveStatValue}
+      >
+        {value}
+      </Text>
+
+      <Text
+        style={styles.liveStatUnit}
+      >
+        {unit}
+      </Text>
+    </View>
+  );
+}
+
+function HistoryStat({
+  label,
+  value,
+}) {
+  return (
+    <View
+      style={styles.historyStat}
+    >
+      <Text
+        style={styles.historyStatLabel}
+      >
+        {label}
+      </Text>
+
+      <Text
+        style={styles.historyStatValue}
+      >
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+function ProfileStat({
+  value,
+  label,
+  icon,
+}) {
+  return (
+    <View
+      style={styles.profileStat}
+    >
+      <Ionicons
+        name={icon}
+        size={18}
+        color={C.lime}
+      />
+
+      <Text
+        style={styles.profileStatValue}
+      >
+        {value}
+      </Text>
+
+      <Text
+        style={styles.profileStatLabel}
+      >
+        {label}
+      </Text>
+    </View>
+  );
+}
+
+function PBRow({
+  icon,
+  label,
+  value,
+}) {
+  return (
+    <View
+      style={styles.pbRow}
+    >
+      <View
+        style={styles.pbIcon}
+      >
+        <Ionicons
+          name={icon}
+          size={18}
+          color={C.lime}
+        />
+      </View>
+
+      <Text
+        style={styles.pbLabel}
+      >
+        {label}
+      </Text>
+
+      <Text
+        style={styles.pbValue}
+      >
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+function ValueRow({
+  icon,
+  title,
+  text,
+}) {
+  return (
+    <View
+      style={styles.valueRow}
+    >
+      <View
+        style={styles.valueIcon}
+      >
+        <Ionicons
+          name={icon}
+          size={18}
+          color={C.lime}
+        />
+      </View>
+
+      <View
+        style={styles.valueContent}
+      >
+        <Text
+          style={styles.valueTitle}
+        >
+          {title}
+        </Text>
+
+        <Text
+          style={styles.valueText}
+        >
+          {text}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+function SummaryMetric({
+  icon,
+  label,
+  value,
+}) {
+  return (
+    <View
+      style={styles.summaryMetric}
+    >
+      <Ionicons
+        name={icon}
+        size={18}
+        color={C.lime}
+      />
+
+      <Text
+        style={
+          styles.summaryMetricLabel
+        }
+      >
+        {label}
+      </Text>
+
+      <Text
+        style={
+          styles.summaryMetricValue
+        }
+      >
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+function MissionOption({
+  icon,
+  title,
+  subtitle,
+  accent,
+  onPress,
+}) {
+  return (
+    <TouchableOpacity
+      activeOpacity={0.82}
+      style={
+        styles.missionOption
+      }
+      onPress={onPress}
+    >
+      <View
+        style={[
+          styles.missionOptionIcon,
+          {
+            backgroundColor:
+              `${accent}15`,
+            borderColor:
+              `${accent}35`,
+          },
+        ]}
+      >
+        <Ionicons
+          name={icon}
+          size={21}
+          color={accent}
+        />
+      </View>
+
+      <View
+        style={
+          styles.missionOptionContent
+        }
+      >
+        <Text
+          style={
+            styles.missionOptionTitle
+          }
+        >
+          {title}
+        </Text>
+
+        <Text
+          style={
+            styles.missionOptionSubtitle
+          }
+        >
+          {subtitle}
+        </Text>
+      </View>
+
+      <Ionicons
+        name="chevron-forward"
+        size={18}
+        color={C.muted2}
+      />
+    </TouchableOpacity>
+  );
+}
+
+function OfflineRunView({
+  running,
+  paused,
+  distance,
+  elapsedSeconds,
+  targetDistance,
+  location,
+  translateY,
+}) {
+  return (
+    <View
+      style={
+        styles.offlineRun
+      }
+    >
+      {running && !paused ? (
+        <Animated.View
+          style={{
+            transform: [
+              {
+                translateY,
+              },
+            ],
+          }}
+        >
+          <FontAwesome5
+            name="running"
+            size={42}
+            color={C.lime}
+          />
+        </Animated.View>
+      ) : (
+        <Ionicons
+          name="cloud-offline-outline"
+          size={42}
+          color={C.muted2}
+        />
+      )}
+
+      <Text
+        style={styles.offlineRunTitle}
+      >
+        {running
+          ? paused
+            ? "RUN PAUSED"
+            : "TRACKING OFFLINE"
+          : "READY TO RUN"}
+      </Text>
+
+      <Text
+        style={
+          styles.offlineRunMetricLabel
+        }
+      >
+        {targetDistance
+          ? "DISTANCE REMAINING"
+          : "ELAPSED TIME"}
+      </Text>
+
+      <Text
+        style={
+          styles.offlineRunMetric
+        }
+      >
+        {targetDistance
+          ? Math.max(
+              0,
+              targetDistance -
+                distance
+            ).toFixed(2)
+          : formatTime(
+              elapsedSeconds
+            )}
+      </Text>
+
+      <Text
+        style={
+          styles.offlineRunUnit
+        }
+      >
+        {targetDistance
+          ? `KM / ${targetDistance} KM`
+          : "HR : MIN : SEC"}
+      </Text>
+
+      <View
+        style={
+          styles.offlineExtra
+        }
+      >
+        <View
+          style={
+            styles.offlineExtraItem
+          }
+        >
+          <Text
+            style={
+              styles.offlineExtraLabel
+            }
+          >
+            ALTITUDE
+          </Text>
+
+          <Text
+            style={
+              styles.offlineExtraValue
+            }
+          >
+            {location?.altitude
+              ? Math.round(
+                  location.altitude
+                )
+              : "--"}
+            <Text
+              style={
+                styles.offlineExtraUnit
+              }
+            >
+              {" "}
+              M
+            </Text>
+          </Text>
+        </View>
+
+        <View
+          style={
+            styles.offlineExtraItem
+          }
+        >
+          <Text
+            style={
+              styles.offlineExtraLabel
+            }
+          >
+            DIRECTION
+          </Text>
+
+          <Text
+            style={
+              styles.offlineExtraValue
+            }
+          >
+            {getDirection(
+              location?.heading
+            )}
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function LiveGraph({ values }) {
+  const data = values.length > 1
+    ? values.slice(-18)
+    : [0.2, 0.35, 0.28, 0.58, 0.42, 0.72, 0.55, 0.86, 0.68, 0.9];
+
+  const max = Math.max(...data, 1);
+  const min = Math.min(...data, 0);
+  const range = max - min || 1;
+
+  return (
+    <View style={styles.liveGraph}>
+      <View style={styles.graphGridLine} />
+      <View style={[styles.graphGridLine, { top: "50%" }]} />
+      <View style={[styles.graphGridLine, { top: "100%" }]} />
+
+      <View style={styles.graphBars}>
+        {data.map((value, index) => {
+          const normalized = (value - min) / range;
+          const y = 30 - normalized * 24;
+          const next = data[index + 1] ?? value;
+          const nextNormalized = (next - min) / range;
+          const nextY = 30 - nextNormalized * 24;
+          const dx = 100 / Math.max(1, data.length - 1);
+          const dy = nextY - y;
+          const length = Math.sqrt(dx * dx + dy * dy);
+          const angle = Math.atan2(dy, dx) * (180 / Math.PI);
 
           return (
-            <Pressable
-              key={tab.key}
-              onPress={() => {
-                if (tab.key === 'run') {
-                  onRun();
-                } else {
-                  onChange(tab.key);
-                }
+            <View
+              key={index}
+              style={{
+                position: "absolute",
+                left: `${(index / Math.max(1, data.length - 1)) * 100}%`,
+                top: `${y}%`,
+                width: `${Math.max(12, length)}%`,
+                height: 2,
+                borderRadius: 2,
+                backgroundColor: C.lime,
+                opacity: 0.45 + (index / data.length) * 0.55,
+                transform: [{ rotate: `${angle}deg` }],
+                transformOrigin: "left center",
+                shadowColor: C.lime,
+                shadowOpacity: 0.9,
+                shadowRadius: 5,
+                shadowOffset: { width: 0, height: 0 },
+                elevation: 3,
               }}
-              style={styles.navItem}
-              accessibilityRole="button"
-              accessibilityLabel={`${tab.label} tab`}
-              accessibilityState={{ selected }}
-            >
-              <Animated.View
-                style={[
-                  styles.navIconWrap,
-                  selected && styles.navIconWrapActive,
-                ]}
-              >
-                <Icon
-                  name={tab.icon}
-                  size={20}
-                  color={selected ? COLORS.green : COLORS.muted}
-                />
-              </Animated.View>
-
-              <Text
-                style={[
-                  styles.navLabel,
-                  selected && styles.navLabelActive,
-                ]}
-              >
-                {tab.label}
-              </Text>
-            </Pressable>
+            />
+          );
+        })}
+        {data.map((value, index) => {
+          const normalized = (value - min) / range;
+          return (
+            <View
+              key={`dot-${index}`}
+              style={{
+                position: "absolute",
+                left: `${(index / Math.max(1, data.length - 1)) * 100}%`,
+                top: `${30 - normalized * 24}%`,
+                width: 5,
+                height: 5,
+                borderRadius: 3,
+                marginLeft: -2,
+                marginTop: -2,
+                backgroundColor: C.lime,
+                shadowColor: C.lime,
+                shadowOpacity: 0.85,
+                shadowRadius: 5,
+                shadowOffset: { width: 0, height: 0 },
+                elevation: 3,
+              }}
+            />
           );
         })}
       </View>
@@ -2756,3366 +3556,2005 @@ function BottomNav({ activeTab, onChange, onRun }) {
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/*                              MAIN APP                                       */
-/* -------------------------------------------------------------------------- */
-
-export default function App() {
-  const { width } = useWindowDimensions();
-
-  const [activeTab, setActiveTab] = useState('home');
-  const [screen, setScreen] = useState('main');
-
-  const [user] = useState({
-    name: 'Shiva',
-  });
-
-  const [activities, setActivities] = useState(INITIAL_ACTIVITIES);
-  const [weeklyGoal, setWeeklyGoal] = useState({
-    target: 25,
-  });
-
-  const [settings, setSettings] = useState(INITIAL_SETTINGS);
-  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
-
-  const [selectedActivity, setSelectedActivity] = useState(null);
-  const [runSummary, setRunSummary] = useState(null);
-
-  const [showFinishConfirm, setShowFinishConfirm] = useState(false);
-  const [pendingSummary, setPendingSummary] = useState(null);
-
-  const [showSettings, setShowSettings] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [showGoalEdit, setShowGoalEdit] = useState(false);
-  const [goalInput, setGoalInput] = useState(String(weeklyGoal.target));
-
-  const [toast, setToast] = useState('');
-
-  const toastTimer = useRef(null);
-
-  const showToast = useCallback((message) => {
-    setToast(message);
-
-    if (toastTimer.current) {
-      clearTimeout(toastTimer.current);
-    }
-
-    toastTimer.current = setTimeout(() => {
-      setToast('');
-    }, 2400);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (toastTimer.current) clearTimeout(toastTimer.current);
-    };
-  }, []);
-
-  const unreadCount = notifications.filter((item) => item.unread).length;
-
-  const goToMainTab = useCallback((tab) => {
-    setScreen('main');
-    setActiveTab(tab);
-  }, []);
-
-  const startRun = useCallback(() => {
-    triggerHaptic(settings, 'impact');
-    setScreen('run');
-  }, [settings]);
-
-  const handleRunFinished = useCallback((summary) => {
-    setPendingSummary(summary);
-    setShowFinishConfirm(true);
-  }, []);
-
-  const confirmFinishRun = useCallback(() => {
-    setShowFinishConfirm(false);
-
-    if (pendingSummary) {
-      setRunSummary(pendingSummary);
-      setPendingSummary(null);
-      setScreen('summary');
-    }
-  }, [pendingSummary]);
-
-  const saveRun = useCallback(() => {
-    if (!runSummary) return;
-
-    const newActivity = {
-      id: `run-${Date.now()}`,
-      title: 'Fresh Run',
-      type: 'Runs',
-      date: 'Today',
-      dayIndex: 1,
-      distance: Number(runSummary.distance.toFixed(2)),
-      duration: runSummary.duration,
-      pace: runSummary.pace,
-      calories: runSummary.calories,
-      heartRate: runSummary.heartRate,
-    };
-
-    setActivities((prev) => [newActivity, ...prev]);
-    setNotifications((prev) => [
-      {
-        id: `notification-${Date.now()}`,
-        title: 'Run saved',
-        message: `Great job! You ran ${newActivity.distance.toFixed(1)} km.`,
-        time: 'Now',
-        unread: true,
-      },
-      ...prev,
-    ]);
-
-    triggerHaptic(settings, 'success');
-    showToast('Run saved to your activity');
-
-    setScreen('main');
-    setActiveTab('home');
-    setRunSummary(null);
-  }, [runSummary, settings, showToast]);
-
-  const shareRun = useCallback(() => {
-    triggerHaptic(settings, 'selection');
-    showToast('Run card ready to share');
-  }, [settings, showToast]);
-
-  const doneSummary = useCallback(() => {
-    setRunSummary(null);
-    setScreen('main');
-    setActiveTab('home');
-  }, []);
-
-  const openNotifications = useCallback(() => {
-    setShowNotifications(true);
-
-    setNotifications((prev) =>
-      prev.map((item) => ({
-        ...item,
-        unread: false,
-      }))
-    );
-  }, []);
-
-  const updateSetting = useCallback((key, value) => {
-    setSettings((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-  }, []);
-
-  const saveGoal = useCallback(() => {
-    const parsed = Number(goalInput);
-
-    if (!Number.isFinite(parsed) || parsed < 1) {
-      showToast('Enter a valid weekly target');
-      return;
-    }
-
-    setWeeklyGoal({
-      target: clamp(Math.round(parsed * 10) / 10, 1, 200),
-    });
-
-    setShowGoalEdit(false);
-    triggerHaptic(settings, 'success');
-    showToast('Weekly goal updated');
-  }, [goalInput, settings, showToast]);
-
-  const renderMainScreen = () => {
-    if (activeTab === 'home') {
-      return (
-        <HomeScreen
-          user={user}
-          activities={activities}
-          weeklyGoal={weeklyGoal}
-          onStartRun={startRun}
-          onActivityDetails={setSelectedActivity}
-          onNotifications={openNotifications}
-          onProfile={() => goToMainTab('profile')}
-          onGoalEdit={() => {
-            setGoalInput(String(weeklyGoal.target));
-            setShowGoalEdit(true);
-          }}
-          onSeeAllActivity={() => goToMainTab('activity')}
-          unread={unreadCount > 0}
-        />
-      );
-    }
-
-    if (activeTab === 'activity') {
-      return (
-        <ActivityScreen
-          activities={activities}
-          onActivityDetails={setSelectedActivity}
-          onStartRun={startRun}
-        />
-      );
-    }
-
-    if (activeTab === 'stats') {
-      return (
-        <StatsScreen activities={activities} weeklyGoal={weeklyGoal} />
-      );
-    }
-
-    if (activeTab === 'profile') {
-      return (
-        <ProfileScreen
-          user={user}
-          activities={activities}
-          weeklyGoal={weeklyGoal}
-          settings={settings}
-          onSettings={() => setShowSettings(true)}
-          onGoalEdit={() => {
-            setGoalInput(String(weeklyGoal.target));
-            setShowGoalEdit(true);
-          }}
-          onNotifications={openNotifications}
-        />
-      );
-    }
-
-    return (
-      <HomeScreen
-        user={user}
-        activities={activities}
-        weeklyGoal={weeklyGoal}
-        onStartRun={startRun}
-        onActivityDetails={setSelectedActivity}
-        onNotifications={openNotifications}
-        onProfile={() => goToMainTab('profile')}
-        onGoalEdit={() => {
-          setGoalInput(String(weeklyGoal.target));
-          setShowGoalEdit(true);
-        }}
-        onSeeAllActivity={() => goToMainTab('activity')}
-        unread={unreadCount > 0}
-      />
-    );
-  };
-
-  if (screen === 'run') {
-    return (
-      <View style={styles.appRoot}>
-        <RunTrackingScreen
-          settings={settings}
-          onBack={() => {
-            setScreen('main');
-            setActiveTab('home');
-          }}
-          onFinished={handleRunFinished}
-        />
-
-        <FinishConfirmModal
-          visible={showFinishConfirm}
-          onCancel={() => setShowFinishConfirm(false)}
-          onFinish={confirmFinishRun}
-        />
-      </View>
-    );
-  }
-
-  if (screen === 'summary' && runSummary) {
-    return (
-      <View style={styles.appRoot}>
-        <RunSummaryScreen
-          summary={runSummary}
-          settings={settings}
-          onSave={saveRun}
-          onShare={shareRun}
-          onDone={doneSummary}
-        />
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.appRoot}>
-      <View style={{ flex: 1, width: Math.min(width, 900) }}>
-        {renderMainScreen()}
-      </View>
-
-      <BottomNav
-        activeTab={activeTab}
-        onChange={goToMainTab}
-        onRun={startRun}
-      />
-
-      <ActivityDetailModal
-        activity={selectedActivity}
-        visible={!!selectedActivity}
-        onClose={() => setSelectedActivity(null)}
-      />
-
-      <NotificationsModal
-        notifications={notifications}
-        visible={showNotifications}
-        onClose={() => setShowNotifications(false)}
-      />
-
-      <SettingsModal
-        visible={showSettings}
-        settings={settings}
-        onClose={() => setShowSettings(false)}
-        onChange={updateSetting}
-      />
-
-      <GoalModal
-        visible={showGoalEdit}
-        value={goalInput}
-        onChange={setGoalInput}
-        onClose={() => setShowGoalEdit(false)}
-        onSave={saveGoal}
-      />
-
-      {toast ? (
-        <View pointerEvents="none" style={styles.toastContainer}>
-          <View style={styles.toast}>
-            <View style={styles.toastIcon}>
-              <Icon name="check" size={14} color={COLORS.bg} />
-            </View>
-            <Text style={styles.toastText}>{toast}</Text>
-          </View>
-        </View>
-      ) : null}
-    </View>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/*                               MODAL SCREENS                                 */
-/* -------------------------------------------------------------------------- */
-
-function FinishConfirmModal({ visible, onCancel, onFinish }) {
-  return (
-    <ModalSheet
-      visible={visible}
-      onClose={onCancel}
-      title="Finish this run?"
-    >
-      <View style={styles.confirmIcon}>
-        <Icon name="check" size={28} color={COLORS.green} />
-      </View>
-
-      <Text style={styles.confirmTitle}>Ready to wrap it up?</Text>
-      <Text style={styles.confirmText}>
-        Your run will be shown in your summary. You can save it to your activity
-        history afterwards.
-      </Text>
-
-      <AnimatedPressable
-        onPress={onFinish}
-        style={styles.sheetPrimaryButton}
-        accessibilityLabel="Finish run"
-      >
-        <Text style={styles.sheetPrimaryText}>FINISH RUN</Text>
-      </AnimatedPressable>
-
-      <AnimatedPressable
-        onPress={onCancel}
-        style={styles.sheetSecondaryButton}
-        accessibilityLabel="Cancel finish run"
-      >
-        <Text style={styles.sheetSecondaryText}>CANCEL</Text>
-      </AnimatedPressable>
-    </ModalSheet>
-  );
-}
-
-function ActivityDetailModal({ activity, visible, onClose }) {
-  if (!activity) return null;
-
-  return (
-    <ModalSheet
-      visible={visible}
-      onClose={onClose}
-      title="Run details"
-    >
-      <View style={styles.detailTop}>
-        <View style={styles.detailIcon}>
-          <Icon name="run" size={25} color={COLORS.green} />
-        </View>
-
-        <View style={styles.detailHeading}>
-          <Text style={styles.detailTitle}>{activity.title}</Text>
-          <Text style={styles.detailDate}>{activity.date}</Text>
-        </View>
-      </View>
-
-      <View style={styles.detailGrid}>
-        <DetailMetric
-          label="DISTANCE"
-          value={`${activity.distance.toFixed(2)} km`}
-        />
-        <DetailMetric
-          label="DURATION"
-          value={formatDuration(activity.duration)}
-        />
-        <DetailMetric
-          label="PACE"
-          value={`${formatPace(activity.pace)}/km`}
-        />
-        <DetailMetric
-          label="CALORIES"
-          value={`${activity.calories} kcal`}
-        />
-        <DetailMetric
-          label="HEART RATE"
-          value={`${activity.heartRate} bpm`}
-        />
-        <DetailMetric label="TYPE" value={activity.type} />
-      </View>
-
-      <View style={styles.detailGraphCard}>
-        <Text style={styles.detailGraphTitle}>PACE PROFILE</Text>
-        <View style={styles.detailGraph}>
-          {[38, 55, 48, 68, 61, 78, 65, 86, 72, 82].map((height, index) => (
-            <View
-              key={index}
-              style={[
-                styles.detailGraphBar,
-                {
-                  height,
-                  opacity: 0.4 + index * 0.05,
-                },
-              ]}
-            />
-          ))}
-        </View>
-      </View>
-
-      <AnimatedPressable
-        onPress={onClose}
-        style={styles.sheetPrimaryButton}
-        accessibilityLabel="Close run details"
-      >
-        <Text style={styles.sheetPrimaryText}>DONE</Text>
-      </AnimatedPressable>
-    </ModalSheet>
-  );
-}
-
-function DetailMetric({ label, value }) {
-  return (
-    <View style={styles.detailMetric}>
-      <Text style={styles.detailMetricValue}>{value}</Text>
-      <Text style={styles.detailMetricLabel}>{label}</Text>
-    </View>
-  );
-}
-
-function NotificationsModal({ notifications, visible, onClose }) {
-  return (
-    <ModalSheet
-      visible={visible}
-      onClose={onClose}
-      title="Notifications"
-      height="72%"
-    >
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 30 }}
-      >
-        {notifications.map((notification, index) => (
-          <View
-            key={notification.id}
-            style={[
-              styles.notificationRow,
-              index < notifications.length - 1 && styles.notificationBorder,
-            ]}
-          >
-            <View
-              style={[
-                styles.notificationIcon,
-                notification.unread && styles.notificationIconUnread,
-              ]}
-            >
-              <Icon
-                name={notification.title === 'Weekly goal' ? 'target' : 'run'}
-                size={18}
-                color={notification.unread ? COLORS.green : COLORS.secondary}
-              />
-            </View>
-
-            <View style={styles.notificationContent}>
-              <View style={styles.notificationTitleRow}>
-                <Text style={styles.notificationTitle}>
-                  {notification.title}
-                </Text>
-                <Text style={styles.notificationTime}>
-                  {notification.time}
-                </Text>
-              </View>
-
-              <Text style={styles.notificationMessage}>
-                {notification.message}
-              </Text>
-            </View>
-
-            {notification.unread ? (
-              <View style={styles.notificationUnread} />
-            ) : null}
-          </View>
-        ))}
-
-        {notifications.length === 0 ? (
-          <View style={styles.emptyNotifications}>
-            <Icon name="bell" size={30} color={COLORS.muted} />
-            <Text style={styles.emptyTitle}>All caught up</Text>
-            <Text style={styles.emptyText}>No new notifications.</Text>
-          </View>
-        ) : null}
-      </ScrollView>
-    </ModalSheet>
-  );
-}
-
-function SettingsModal({
-  visible,
-  settings,
-  onClose,
-  onChange,
-}) {
-  return (
-    <ModalSheet
-      visible={visible}
-      onClose={onClose}
-      title="Settings"
-      height="82%"
-    >
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 30 }}
-      >
-        <Text style={styles.settingsSectionTitle}>RUN EXPERIENCE</Text>
-
-        <View style={styles.settingsCard}>
-          <SettingSwitch
-            title="Notifications"
-            subtitle="Training reminders and milestones"
-            value={settings.notifications}
-            onChange={(value) => onChange('notifications', value)}
-          />
-
-          <View style={styles.rowDivider} />
-
-          <SettingSwitch
-            title="Sound"
-            subtitle="Audio feedback during runs"
-            value={settings.sound}
-            onChange={(value) => onChange('sound', value)}
-          />
-
-          <View style={styles.rowDivider} />
-
-          <SettingSwitch
-            title="Haptic Feedback"
-            subtitle="Subtle feedback for important actions"
-            value={settings.haptics}
-            onChange={(value) => onChange('haptics', value)}
-          />
-
-          <View style={styles.rowDivider} />
-
-          <SettingSwitch
-            title="Dark Mode"
-            subtitle="RAFTAAR's cinematic dark appearance"
-            value={settings.darkMode}
-            onChange={(value) => onChange('darkMode', value)}
-          />
-        </View>
-
-        <Text style={styles.settingsSectionTitle}>MEASUREMENTS</Text>
-
-        <View style={styles.settingsCard}>
-          <SettingChoice
-            title="Distance Unit"
-            value={settings.distanceUnit}
-            options={['km', 'mi']}
-            onChange={(value) => onChange('distanceUnit', value)}
-          />
-
-          <View style={styles.rowDivider} />
-
-          <SettingChoice
-            title="Pace Unit"
-            value={settings.paceUnit}
-            options={['/km', '/mi']}
-            onChange={(value) => onChange('paceUnit', value)}
-          />
-        </View>
-
-        <View style={styles.settingsFooter}>
-          <Text style={styles.settingsFooterBrand}>RAFTAAR</Text>
-          <Text style={styles.settingsFooterText}>
-            Move faster. Live stronger.
-          </Text>
-        </View>
-      </ScrollView>
-    </ModalSheet>
-  );
-}
-
-function SettingSwitch({
+function OnboardingFeature({
+  icon,
   title,
-  subtitle,
-  value,
-  onChange,
+  text,
 }) {
   return (
-    <View style={styles.settingSwitchRow}>
-      <View style={styles.settingSwitchText}>
-        <Text style={styles.settingTitle}>{title}</Text>
-        <Text style={styles.settingSubtitle}>{subtitle}</Text>
-      </View>
-
-      <Switch
-        value={!!value}
-        onValueChange={onChange}
-        trackColor={{
-          false: '#26312D',
-          true: '#315E3D',
-        }}
-        thumbColor={value ? COLORS.green : '#87938E'}
-        ios_backgroundColor="#26312D"
-        accessibilityLabel={title}
-      />
-    </View>
-  );
-}
-
-function SettingChoice({
-  title,
-  value,
-  options,
-  onChange,
-}) {
-  return (
-    <View style={styles.settingChoiceRow}>
-      <Text style={styles.settingChoiceTitle}>{title}</Text>
-
-      <View style={styles.choicePills}>
-        {options.map((option) => (
-          <Pressable
-            key={option}
-            onPress={() => onChange(option)}
-            style={[
-              styles.choicePill,
-              value === option && styles.choicePillActive,
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel={`${title} ${option}`}
-          >
-            <Text
-              style={[
-                styles.choicePillText,
-                value === option && styles.choicePillTextActive,
-              ]}
-            >
-              {option}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-    </View>
-  );
-}
-
-function GoalModal({
-  visible,
-  value,
-  onChange,
-  onClose,
-  onSave,
-}) {
-  return (
-    <ModalSheet
-      visible={visible}
-      onClose={onClose}
-      title="Weekly goal"
+    <View
+      style={
+        styles.onboardingFeature
+      }
     >
-      <View style={styles.goalEditHero}>
-        <View style={styles.goalEditIcon}>
-          <Icon name="target" size={27} color={COLORS.green} />
-        </View>
+      <View
+        style={
+          styles.onboardingFeatureIcon
+        }
+      >
+        <Ionicons
+          name={icon}
+          size={17}
+          color={C.lime}
+        />
+      </View>
 
-        <Text style={styles.goalEditTitle}>Set your weekly target</Text>
-        <Text style={styles.goalEditText}>
-          A realistic target keeps momentum without turning every run into a
-          race.
+      <View>
+        <Text
+          style={
+            styles.onboardingFeatureTitle
+          }
+        >
+          {title}
+        </Text>
+
+        <Text
+          style={
+            styles.onboardingFeatureText
+          }
+        >
+          {text}
         </Text>
       </View>
-
-      <Text style={styles.inputLabel}>DISTANCE PER WEEK</Text>
-
-      <View style={styles.goalInputRow}>
-        <TextInput
-          value={value}
-          onChangeText={onChange}
-          keyboardType="decimal-pad"
-          style={styles.goalInput}
-          selectionColor={COLORS.green}
-          accessibilityLabel="Weekly target distance"
-        />
-
-        <Text style={styles.goalInputUnit}>KM</Text>
-      </View>
-
-      <View style={styles.goalPresets}>
-        {[15, 20, 25, 30, 40].map((preset) => (
-          <Pressable
-            key={preset}
-            onPress={() => onChange(String(preset))}
-            style={[
-              styles.goalPreset,
-              Number(value) === preset && styles.goalPresetActive,
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel={`Set goal to ${preset} kilometers`}
-          >
-            <Text
-              style={[
-                styles.goalPresetText,
-                Number(value) === preset && styles.goalPresetTextActive,
-              ]}
-            >
-              {preset}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <AnimatedPressable
-        onPress={onSave}
-        style={styles.sheetPrimaryButton}
-        accessibilityLabel="Save weekly goal"
-      >
-        <Text style={styles.sheetPrimaryText}>SAVE GOAL</Text>
-      </AnimatedPressable>
-    </ModalSheet>
+    </View>
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/*                                   STYLES                                   */
-/* -------------------------------------------------------------------------- */
+/* =========================================================
+   STYLES
+========================================================= */
 
 const styles = StyleSheet.create({
-  appRoot: {
-    flex: 1,
-    backgroundColor: COLORS.bg,
-  },
-
   safe: {
     flex: 1,
-    backgroundColor: COLORS.bg,
+    backgroundColor: C.bg,
   },
 
-  scrollContent: {
+  app: {
+    flex: 1,
+    backgroundColor: C.bg,
+  },
+
+  content: {
+    flex: 1,
+  },
+
+  /* =========================================
+     HOME
+  ========================================= */
+
+  homeScroll: {
     paddingHorizontal: 18,
-    paddingTop: Platform.OS === 'android' ? 8 : 4,
-    paddingBottom: 20,
+    paddingTop: 14,
+    paddingBottom: 190,
   },
 
-  /* Header */
-
-  topHeader: {
-    minHeight: 70,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-
-  headerBack: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: -8,
-    marginRight: 2,
-  },
-
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-
-  headerIconButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: COLORS.surface,
+  hero: {
+    minHeight: 355,
+    borderRadius: 30,
+    padding: 22,
+    backgroundColor: "#071117",
     borderWidth: 1,
-    borderColor: COLORS.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
+    borderColor: "rgba(39,232,255,0.18)",
+    overflow: "hidden",
+    position: "relative",
+    shadowColor: C.lime,
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 8,
   },
 
-  unreadDot: {
-    position: 'absolute',
-    right: 9,
-    top: 8,
-    width: 6,
-    height: 6,
-    borderRadius: 4,
-    backgroundColor: COLORS.green,
+  heroGlow: {
+    position: "absolute",
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    backgroundColor: "rgba(39,232,255,0.07)",
+    opacity: 1,
+    right: -90,
+    top: -90,
   },
 
-  eyebrow: {
-    color: COLORS.secondary,
-    fontSize: 12,
-    letterSpacing: 0.7,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-
-  pageTitle: {
-    color: COLORS.white,
-    fontSize: 27,
-    fontWeight: '800',
-    letterSpacing: -0.8,
-  },
-
-  /* Hero */
-
-  homeHeroCard: {
-    minHeight: 375,
-    borderRadius: 28,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    overflow: 'hidden',
-    padding: 21,
-    position: 'relative',
-  },
-
-  heroTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-
-  heroEyebrow: {
-    color: COLORS.muted,
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1.3,
-  },
-
-  heroTitle: {
-    color: COLORS.white,
-    fontSize: 18,
-    fontWeight: '700',
-    marginTop: 5,
-  },
-
-  livePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    height: 27,
-    borderRadius: 20,
-    backgroundColor: `${COLORS.green}0C`,
-    borderWidth: 1,
-    borderColor: `${COLORS.green}22`,
-  },
-
-  liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 5,
-    backgroundColor: COLORS.green,
-    marginRight: 6,
-  },
-
-  liveDotRunning: {
-    backgroundColor: COLORS.cyan,
-  },
-
-  liveText: {
-    color: COLORS.green,
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
-
-  heroDataRow: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 10,
-  },
-
-  heroMainMetric: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-
-  heroDistance: {
-    color: COLORS.white,
-    fontSize: 53,
-    fontWeight: '900',
-    letterSpacing: -3,
-  },
-
-  heroUnit: {
-    color: COLORS.green,
-    fontSize: 13,
-    fontWeight: '900',
-    letterSpacing: 2.2,
-    marginTop: -5,
-  },
-
-  heroSecondaryMetrics: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 24,
-  },
-
-  heroSmallValue: {
-    color: COLORS.white,
-    fontSize: 17,
-    fontWeight: '800',
-  },
-
-  heroSmallLabel: {
-    color: COLORS.muted,
-    fontSize: 9,
-    fontWeight: '800',
-    marginTop: 3,
-    letterSpacing: 1,
-  },
-
-  heroMetricDivider: {
-    width: 1,
-    height: 25,
-    backgroundColor: COLORS.borderStrong,
-    marginHorizontal: 16,
+  heroGlowSmall: {
+    position: "absolute",
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    backgroundColor: "rgba(92,255,138,0.06)",
+    right: 15,
+    top: 35,
   },
 
   heroVisual: {
-    width: 172,
-    height: 172,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-  },
-
-  heroGlowOne: {
-    position: 'absolute',
-    width: 120,
-    height: 120,
-    borderRadius: 100,
-    backgroundColor: `${COLORS.blue}12`,
-  },
-
-  heroGlowTwo: {
-    position: 'absolute',
-    width: 70,
-    height: 70,
-    borderRadius: 100,
-    backgroundColor: `${COLORS.green}12`,
-  },
-
-  heroCircleOuter: {
-    width: 135,
-    height: 135,
-    borderRadius: 100,
-    borderWidth: 1,
-    borderColor: 'rgba(92,255,138,0.14)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    transform: [{ rotate: '-20deg' }],
-  },
-
-  heroCircleProgress: {
-    position: 'absolute',
-    width: 135,
-    height: 135,
-    borderRadius: 100,
-    borderWidth: 4,
-    borderColor: COLORS.green,
-    borderLeftColor: 'transparent',
-    borderBottomColor: 'transparent',
-  },
-
-  heroCircleInner: {
-    width: 94,
-    height: 94,
-    borderRadius: 60,
-    backgroundColor: '#0A1311',
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  heroPulse: {
-    position: 'absolute',
-    width: 70,
-    height: 70,
-    borderRadius: 50,
-    backgroundColor: `${COLORS.green}0A`,
-  },
-
-  heroRunIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: `${COLORS.green}12`,
-    borderWidth: 1,
-    borderColor: `${COLORS.green}26`,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  routeOrbit: {
-    position: 'absolute',
-    width: 162,
-    height: 162,
-    borderRadius: 100,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: `${COLORS.cyan}24`,
-  },
-
-  routeNode: {
-    position: 'absolute',
-    width: 5,
-    height: 5,
-    borderRadius: 5,
-    backgroundColor: COLORS.cyan,
-  },
-
-  routeNodeOne: {
-    top: 10,
-    left: 36,
-  },
-
-  routeNodeTwo: {
-    right: 8,
+    position: "absolute",
+    right: -4,
     top: 72,
-  },
-
-  routeNodeThree: {
-    bottom: 18,
-    left: 36,
-  },
-
-  routeLine: {
-    position: 'absolute',
-    height: 1,
-    backgroundColor: `${COLORS.green}1B`,
-    transform: [{ rotate: '-30deg' }],
-  },
-
-  routeLineA: {
-    width: 80,
-    right: -30,
-    top: 92,
-  },
-
-  routeLineB: {
-    width: 65,
-    left: -22,
-    bottom: 85,
-    transform: [{ rotate: '35deg' }],
-  },
-
-  heroBottomRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    marginBottom: 10,
-  },
-
-  heroBottomLabel: {
-    color: COLORS.muted,
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
-
-  heroBottomValue: {
-    color: COLORS.secondary,
-    fontSize: 13,
-    fontWeight: '700',
-    marginTop: 3,
-  },
-
-  heroPercentage: {
-    color: COLORS.green,
-    fontSize: 18,
-    fontWeight: '900',
-  },
-
-  /* Metrics */
-
-  metricGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginTop: 11,
-  },
-
-  metricCard: {
-    flexBasis: '48%',
-    flexGrow: 1,
-    minHeight: 112,
-    backgroundColor: COLORS.surface,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 14,
-    justifyContent: 'space-between',
-  },
-
-  metricIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 10,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  metricValue: {
-    color: COLORS.white,
-    fontSize: 21,
-    fontWeight: '850',
-    marginTop: 8,
-  },
-
-  metricSuffix: {
-    color: COLORS.secondary,
-    fontSize: 11,
-    fontWeight: '700',
-  },
-
-  metricLabel: {
-    color: COLORS.muted,
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.8,
-    marginTop: 2,
-  },
-
-  /* Section */
-
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 27,
-    marginBottom: 11,
-  },
-
-  sectionTitle: {
-    color: COLORS.white,
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: -0.3,
-  },
-
-  sectionAction: {
-    color: COLORS.green,
-    fontSize: 12,
-    fontWeight: '800',
-  },
-
-  /* Goal */
-
-  goalCard: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 24,
-    padding: 18,
-  },
-
-  goalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-
-  goalTitle: {
-    color: COLORS.muted,
-    fontSize: 10,
-    letterSpacing: 1,
-    fontWeight: '800',
-  },
-
-  goalDistance: {
-    color: COLORS.white,
-    fontSize: 27,
-    fontWeight: '900',
-    marginTop: 5,
-  },
-
-  goalTarget: {
-    color: COLORS.secondary,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-
-  goalBadge: {
-    width: 47,
-    height: 47,
-    borderRadius: 24,
-    backgroundColor: `${COLORS.green}10`,
-    borderWidth: 1,
-    borderColor: `${COLORS.green}25`,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  goalBadgeText: {
-    color: COLORS.green,
-    fontSize: 12,
-    fontWeight: '900',
-  },
-
-  progressTrack: {
-    width: '100%',
-    backgroundColor: '#18211E',
-    borderRadius: 999,
-    overflow: 'hidden',
-  },
-
-  progressFill: {
-    borderRadius: 999,
-    backgroundColor: COLORS.green,
-    shadowColor: COLORS.green,
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 0 },
-  },
-
-  daysRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 17,
-  },
-
-  dayItem: {
-    alignItems: 'center',
-  },
-
-  dayText: {
-    color: COLORS.muted,
-    fontSize: 10,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-
-  dayTextActive: {
-    color: COLORS.secondary,
-  },
-
-  dayDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.borderStrong,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  dayDotActive: {
-    backgroundColor: COLORS.green,
-    borderColor: COLORS.green,
-  },
-
-  /* Plan */
-
-  planCard: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 15,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  planIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 17,
-    backgroundColor: `${COLORS.green}0D`,
-    borderWidth: 1,
-    borderColor: `${COLORS.green}20`,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  planInfo: {
-    flex: 1,
-    marginLeft: 14,
-  },
-
-  planEyebrow: {
-    color: COLORS.muted,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-
-  planTitle: {
-    color: COLORS.white,
-    fontSize: 17,
-    fontWeight: '800',
-    marginTop: 3,
-  },
-
-  planMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 5,
-  },
-
-  planMetaText: {
-    color: COLORS.secondary,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-
-  metaDot: {
-    width: 3,
-    height: 3,
-    borderRadius: 3,
-    backgroundColor: COLORS.muted,
-    marginHorizontal: 8,
-  },
-
-  primaryCircleButton: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: COLORS.green,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: COLORS.green,
-    shadowOpacity: 0.25,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 0 },
-  },
-
-  /* Activity */
-
-  activityCard: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 24,
-    overflow: 'hidden',
-  },
-
-  activityRow: {
-    minHeight: 79,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  activityIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    backgroundColor: `${COLORS.green}0D`,
-    borderWidth: 1,
-    borderColor: `${COLORS.green}1D`,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  activityMain: {
-    flex: 1,
-    marginLeft: 12,
-  },
-
-  activityTitle: {
-    color: COLORS.white,
-    fontSize: 14,
-    fontWeight: '750',
-  },
-
-  activityDate: {
-    color: COLORS.muted,
-    fontSize: 11,
-    fontWeight: '600',
-    marginTop: 4,
-  },
-
-  activityNumbers: {
-    alignItems: 'flex-end',
-    marginRight: 9,
-  },
-
-  activityDistance: {
-    color: COLORS.secondary,
-    fontSize: 12,
-    fontWeight: '800',
-  },
-
-  activityPace: {
-    color: COLORS.muted,
-    fontSize: 10,
-    marginTop: 4,
-  },
-
-  rowDivider: {
-    height: 1,
-    backgroundColor: COLORS.border,
-    marginLeft: 68,
-  },
-
-  /* Empty */
-
-  emptyState: {
-    padding: 35,
-    alignItems: 'center',
-  },
-
-  emptyStateCompact: {
-    paddingVertical: 25,
-  },
-
-  emptyIcon: {
-    width: 62,
-    height: 62,
-    borderRadius: 22,
-    backgroundColor: `${COLORS.green}0B`,
-    borderWidth: 1,
-    borderColor: `${COLORS.green}20`,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-
-  emptyTitle: {
-    color: COLORS.white,
-    fontSize: 18,
-    fontWeight: '800',
-  },
-
-  emptyText: {
-    color: COLORS.muted,
-    fontSize: 13,
-    textAlign: 'center',
-    marginTop: 6,
-    lineHeight: 20,
-  },
-
-  emptyButton: {
-    marginTop: 18,
-    paddingHorizontal: 17,
-    minHeight: 42,
-    borderRadius: 15,
-    backgroundColor: `${COLORS.green}12`,
-    borderWidth: 1,
-    borderColor: `${COLORS.green}25`,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  emptyButtonText: {
-    color: COLORS.green,
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 0.8,
-  },
-
-  /* Run */
-
-  runScreen: {
-    flex: 1,
-    backgroundColor: COLORS.bg,
-  },
-
-  runHeader: {
-    minHeight: 70,
-    paddingHorizontal: 18,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-
-  runBack: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  liveRunHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    height: 30,
-    borderRadius: 20,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-
-  liveRunText: {
-    color: COLORS.secondary,
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 1,
-    marginLeft: 6,
-  },
-
-  runHeaderPlaceholder: {
-    width: 44,
-  },
-
-  runScrollContent: {
-    paddingHorizontal: 18,
-    paddingTop: 8,
-  },
-
-  runHero: {
-    height: 290,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  runPulseRing: {
-    position: 'absolute',
-    width: 235,
-    height: 235,
-    borderRadius: 130,
-    borderWidth: 1,
-    borderColor: `${COLORS.green}20`,
-    backgroundColor: `${COLORS.green}04`,
-  },
-
-  runCircle: {
-    width: 210,
-    height: 210,
-    borderRadius: 120,
-    borderWidth: 1,
-    borderColor: `${COLORS.green}2A`,
-    backgroundColor: '#09100E',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: COLORS.green,
-    shadowOpacity: 0.1,
-    shadowRadius: 30,
-    shadowOffset: { width: 0, height: 0 },
-  },
-
-  runCircleInner: {
-    width: 178,
-    height: 178,
-    borderRadius: 100,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  runDistance: {
-    color: COLORS.white,
-    fontSize: 50,
-    fontWeight: '900',
-    letterSpacing: -2,
-  },
-
-  runDistanceUnit: {
-    color: COLORS.green,
-    fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 2,
-    marginTop: -4,
-  },
-
-  runMiniLine: {
-    width: 30,
-    height: 1,
-    backgroundColor: COLORS.borderStrong,
-    marginVertical: 13,
-  },
-
-  runTime: {
-    color: COLORS.secondary,
-    fontSize: 22,
-    fontWeight: '700',
-    letterSpacing: 0.4,
-  },
-
-  runStatsGrid: {
-    flexDirection: 'row',
-    gap: 9,
-  },
-
-  runStat: {
-    flex: 1,
-    minHeight: 100,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 19,
-    padding: 12,
-  },
-
-  runStatIcon: {
-    width: 27,
-    height: 27,
-    borderRadius: 9,
-    backgroundColor: COLORS.elevated,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  runStatValue: {
-    color: COLORS.white,
-    fontSize: 17,
-    fontWeight: '850',
-    marginTop: 9,
-  },
-
-  runStatSuffix: {
-    color: COLORS.muted,
-    fontSize: 9,
-    fontWeight: '800',
-  },
-
-  runStatLabel: {
-    color: COLORS.muted,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 0.8,
-    marginTop: 3,
-  },
-
-  runRouteCard: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 23,
-    marginTop: 12,
-    padding: 15,
-    overflow: 'hidden',
-  },
-
-  routeCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-
-  routeCardEyebrow: {
-    color: COLORS.muted,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-
-  routeCardTitle: {
-    color: COLORS.white,
-    fontSize: 14,
-    fontWeight: '750',
-    marginTop: 4,
-  },
-
-  gpsPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 9,
-    height: 27,
-    borderRadius: 20,
-    backgroundColor: `${COLORS.green}0A`,
-    borderWidth: 1,
-    borderColor: `${COLORS.green}1D`,
-  },
-
-  gpsDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 5,
-    backgroundColor: COLORS.green,
-    marginRight: 5,
-  },
-
-  gpsText: {
-    color: COLORS.green,
-    fontSize: 8,
-    fontWeight: '900',
-  },
-
-  fakeMap: {
+    width: 190,
     height: 150,
-    backgroundColor: '#0A1210',
-    borderRadius: 17,
-    marginTop: 13,
-    overflow: 'hidden',
-    position: 'relative',
+    opacity: 0.96,
   },
 
-  mapGridLineOne: {
-    position: 'absolute',
-    left: -30,
-    top: 48,
-    width: 320,
-    height: 1,
-    backgroundColor: '#17231F',
-    transform: [{ rotate: '18deg' }],
+  heroGlowA: {
+    position: "absolute", width: 120, height: 120, borderRadius: 60,
+    right: 20, top: 10, backgroundColor: "rgba(39,232,255,0.10)",
+  },
+  heroGlowB: {
+    position: "absolute", width: 95, height: 95, borderRadius: 48,
+    right: 2, top: 44, backgroundColor: "rgba(92,255,138,0.08)",
+  },
+  heroRingOuter: {
+    position: "absolute", width: 104, height: 104, borderRadius: 52,
+    right: 8, top: 18, borderWidth: 14, borderColor: "rgba(39,232,255,0.08)",
+  },
+  heroRing: {
+    position: "absolute", width: 88, height: 88, borderRadius: 44,
+    right: 16, top: 26, borderWidth: 3, borderStyle: "dashed",
+    borderColor: C.cyan, transform: [{ rotate: "-22deg" }],
+    alignItems: "center", justifyContent: "center",
+  },
+  heroRingInner: {
+    width: 72, height: 72, borderRadius: 36, borderWidth: 2,
+    borderColor: "rgba(92,255,138,0.55)",
+  },
+  routeSeg: {
+    position: "absolute", height: 3, borderRadius: 2,
+    backgroundColor: C.cyan, shadowColor: C.cyan, shadowOpacity: 0.8, shadowRadius: 8,
+  },
+  routeSeg1: { width: 55, left: 14, top: 105, transform: [{ rotate: "-24deg" }] },
+  routeSeg2: { width: 47, left: 61, top: 92, transform: [{ rotate: "24deg" }] },
+  routeSeg3: { width: 55, left: 101, top: 68, transform: [{ rotate: "-28deg" }], backgroundColor: C.lime },
+  routeDotStart: {
+    position: "absolute", width: 9, height: 9, borderRadius: 5, left: 18, top: 108,
+    backgroundColor: C.cyan, borderWidth: 2, borderColor: C.white,
+  },
+  routeDotEnd: {
+    position: "absolute", width: 10, height: 10, borderRadius: 5, right: 17, top: 39,
+    backgroundColor: C.lime, borderWidth: 2, borderColor: C.white,
+  },
+  runnerMark: {
+    position: "absolute", right: 55, top: 48, width: 42, height: 48,
+  },
+  runnerHead: {
+    position: "absolute", width: 10, height: 10, borderRadius: 5, left: 17, top: 0,
+    backgroundColor: C.white, shadowColor: C.cyan, shadowOpacity: 0.8, shadowRadius: 6,
+  },
+  runnerLimb: {
+    position: "absolute", height: 4, borderRadius: 2, backgroundColor: C.gradientEnd,
+  },
+  runnerArm: { width: 25, left: 11, top: 17, transform: [{ rotate: "-28deg" }] },
+  runnerLegA: { width: 28, left: 8, top: 35, transform: [{ rotate: "35deg" }] },
+  runnerLegB: { width: 25, left: 17, top: 31, transform: [{ rotate: "-42deg" }], backgroundColor: C.cyan },
+
+
+  heroTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
 
-  mapGridLineTwo: {
-    position: 'absolute',
-    left: -20,
-    top: 106,
-    width: 330,
-    height: 1,
-    backgroundColor: '#17231F',
-    transform: [{ rotate: '-13deg' }],
-  },
-
-  mapRoadOne: {
-    position: 'absolute',
-    left: 20,
-    top: -30,
-    width: 1,
-    height: 220,
-    backgroundColor: '#15211D',
-    transform: [{ rotate: '31deg' }],
-  },
-
-  mapRoadTwo: {
-    position: 'absolute',
-    left: 160,
-    top: -20,
-    width: 1,
-    height: 210,
-    backgroundColor: '#15211D',
-    transform: [{ rotate: '-25deg' }],
-  },
-
-  mapRoadThree: {
-    position: 'absolute',
-    left: 245,
-    top: -30,
-    width: 1,
-    height: 230,
-    backgroundColor: '#15211D',
-    transform: [{ rotate: '44deg' }],
-  },
-
-  mapRoute: {
-    position: 'absolute',
-    left: 35,
-    top: 25,
-    width: 220,
-    height: 105,
-  },
-
-  mapSegment: {
-    position: 'absolute',
-    height: 3,
-    borderRadius: 4,
-    backgroundColor: COLORS.green,
-    shadowColor: COLORS.green,
-    shadowOpacity: 0.6,
-    shadowRadius: 8,
-  },
-
-  s1: {
-    width: 58,
-    left: 0,
-    top: 70,
-    transform: [{ rotate: '-12deg' }],
-  },
-
-  s2: {
-    width: 65,
-    left: 52,
-    top: 54,
-    transform: [{ rotate: '28deg' }],
-  },
-
-  s3: {
-    width: 57,
-    left: 109,
-    top: 74,
-    transform: [{ rotate: '-28deg' }],
-  },
-
-  s4: {
-    width: 62,
-    left: 154,
-    top: 55,
-    transform: [{ rotate: '18deg' }],
-  },
-
-  mapStartDot: {
-    position: 'absolute',
-    width: 9,
-    height: 9,
-    borderRadius: 6,
-    backgroundColor: COLORS.blue,
-    left: 0,
-    top: 66,
-  },
-
-  mapCurrentDot: {
-    position: 'absolute',
-    width: 13,
-    height: 13,
-    borderRadius: 8,
-    backgroundColor: COLORS.green,
-    borderWidth: 3,
-    borderColor: '#13271C',
-    left: 209,
-    top: 51,
-  },
-
-  runGoalMini: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 20,
-    marginTop: 11,
-    padding: 15,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  runGoalLabel: {
-    color: COLORS.muted,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-
-  runGoalValue: {
-    color: COLORS.white,
-    fontSize: 14,
-    fontWeight: '800',
-    marginTop: 4,
-  },
-
-  runGoalProgressWrap: {
-    flex: 1,
-    marginLeft: 22,
-  },
-
-  runGoalTrack: {
-    height: 7,
-    borderRadius: 5,
-    backgroundColor: '#1A2521',
-    overflow: 'hidden',
-  },
-
-  runGoalFill: {
-    height: 7,
-    borderRadius: 5,
-    backgroundColor: COLORS.green,
-  },
-
-  runControls: {
-    position: 'absolute',
-    left: 18,
-    right: 18,
-    bottom: Platform.OS === 'android' ? 12 : 16,
-  },
-
-  startRunLarge: {
-    height: 66,
-    borderRadius: 21,
-    backgroundColor: COLORS.green,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 12,
-    shadowColor: COLORS.green,
-    shadowOpacity: 0.22,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 0 },
-  },
-
-  startRunLargeText: {
-    color: COLORS.bg,
-    fontSize: 14,
-    fontWeight: '950',
-    letterSpacing: 1,
-  },
-
-  activeControls: {
-    flexDirection: 'row',
-    gap: 11,
-  },
-
-  pauseButton: {
-    height: 66,
-    width: 66,
-    borderRadius: 21,
-    backgroundColor: COLORS.green,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  endRunButton: {
-    flex: 1,
-    height: 66,
-    borderRadius: 21,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.borderStrong,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 9,
-  },
-
-  endRunDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 3,
-    backgroundColor: COLORS.danger,
-  },
-
-  endRunText: {
-    color: COLORS.white,
-    fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-
-  /* Summary */
-
-  summaryScreen: {
-    flex: 1,
-    backgroundColor: COLORS.bg,
-  },
-
-  summaryContent: {
-    padding: 18,
-  },
-
-  summaryTop: {
-    alignItems: 'center',
-    paddingTop: 20,
-    paddingBottom: 25,
-  },
-
-  completeIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: 25,
-    backgroundColor: COLORS.green,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: COLORS.green,
-    shadowOpacity: 0.3,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 0 },
-  },
-
-  summaryEyebrow: {
-    color: COLORS.green,
+  eyebrow: {
+    color: C.lime,
     fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 1.6,
-    marginTop: 20,
+    fontWeight: "900",
+    letterSpacing: 2.2,
+    marginBottom: 17,
   },
 
-  summaryTitle: {
-    color: COLORS.white,
-    fontSize: 35,
-    fontWeight: '900',
-    letterSpacing: -1.2,
-    marginTop: 3,
-  },
-
-  summarySubtitle: {
-    color: COLORS.muted,
-    fontSize: 13,
-    marginTop: 5,
-  },
-
-  summaryMainCard: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 27,
-    padding: 22,
-    alignItems: 'center',
-  },
-
-  summaryDistance: {
-    color: COLORS.white,
-    fontSize: 53,
-    fontWeight: '900',
+  heroTitle: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
+    color: C.white,
+    fontSize: 41,
+    lineHeight: 42,
+    fontWeight: "900",
     letterSpacing: -2.5,
   },
 
-  summaryDistanceUnit: {
-    color: COLORS.green,
-    fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 1.6,
+  heroAccent: {
+    color: C.lime,
   },
 
-  summaryTime: {
-    color: COLORS.secondary,
-    fontSize: 21,
-    fontWeight: '750',
-    marginTop: 1,
-  },
-
-  summaryDivider: {
-    width: '80%',
-    height: 1,
-    backgroundColor: COLORS.border,
-    marginVertical: 20,
-  },
-
-  summaryMetrics: {
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-
-  summaryMetric: {
-    alignItems: 'center',
-    flex: 1,
-  },
-
-  summaryMetricValue: {
-    color: COLORS.white,
-    fontSize: 14,
-    fontWeight: '800',
-  },
-
-  summaryMetricLabel: {
-    color: COLORS.muted,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 0.7,
-    marginTop: 5,
-  },
-
-  performanceCard: {
-    marginTop: 12,
-    backgroundColor: COLORS.surface,
+  heroIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 15,
+    backgroundColor: "rgba(39,232,255,0.07)",
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 25,
-    padding: 18,
+    borderColor: "rgba(184,255,39,0.18)",
+    alignItems: "center",
+    justifyContent: "center",
   },
 
-  performanceHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  heroDescription: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
+    color: "#B8C1BA",
+    fontSize: 13,
+    lineHeight: 20,
+    marginTop: 24,
+    maxWidth: 255,
   },
 
-  performanceEyebrow: {
-    color: COLORS.muted,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 1,
+  startGradientBase: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 18,
+    backgroundColor: C.gradientEnd,
+  },
+  startGradientGlow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 18,
+    width: "58%",
+    backgroundColor: C.gradientStart,
+    opacity: 0.92,
   },
 
-  performanceTitle: {
-    color: COLORS.white,
-    fontSize: 18,
-    fontWeight: '800',
-    marginTop: 3,
-  },
-
-  performanceScore: {
-    color: COLORS.green,
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-
-  performanceGraph: {
-    height: 150,
-    marginTop: 18,
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    paddingHorizontal: 7,
-    position: 'relative',
-  },
-
-  graphHorizontal: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: 1,
-    backgroundColor: COLORS.border,
-  },
-
-  h1: {
-    top: 30,
-  },
-
-  h2: {
-    top: 75,
-  },
-
-  h3: {
-    top: 120,
-  },
-
-  graphBar: {
-    width: '8%',
-    borderRadius: 6,
-    backgroundColor: COLORS.green,
-    transformOrigin: 'bottom',
-  },
-
-  graphB1: {
-    height: 45,
-  },
-
-  graphB2: {
-    height: 67,
-  },
-
-  graphB3: {
-    height: 58,
-  },
-
-  graphB4: {
-    height: 91,
-  },
-
-  graphB5: {
-    height: 79,
-  },
-
-  graphB6: {
-    height: 110,
-  },
-
-  graphB7: {
-    height: 98,
-  },
-
-  graphLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 10,
-  },
-
-  graphLabels: {
-    color: COLORS.muted,
-    fontSize: 8,
-  },
-
-  summaryActions: {
-    position: 'absolute',
-    left: 18,
-    right: 18,
-    bottom: Platform.OS === 'android' ? 12 : 16,
-  },
-
-  saveRunButton: {
-    height: 59,
-    borderRadius: 19,
-    backgroundColor: COLORS.green,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+  heroStart: {
+    height: 57,
+    borderRadius: 18,
+    backgroundColor: "transparent",
+    marginTop: 25,
+    paddingHorizontal: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 9,
+    shadowColor: C.cyan,
+    shadowOpacity: 0.34,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 10,
   },
 
-  saveRunText: {
-    color: COLORS.bg,
-    fontSize: 12,
-    fontWeight: '950',
+  heroStartText: {
+    color: C.black,
+    fontSize: 13,
+    fontWeight: "900",
     letterSpacing: 1,
   },
 
-  summarySecondaryActions: {
-    flexDirection: 'row',
-    gap: 10,
+  heroMeta: {
+    flexDirection: "row",
+    gap: 13,
+    marginTop: 21,
+    flexWrap: "wrap",
+  },
+
+  heroMetaItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+
+  heroMetaText: {
+    color: "#8F9A91",
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 0.8,
+  },
+
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    marginTop: 31,
+    marginBottom: 13,
+  },
+
+  sectionKicker: {
+    color: C.lime,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 1.6,
+    marginBottom: 5,
+  },
+
+  sectionTitle: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
+    color: C.ink,
+    fontSize: 25,
+    fontWeight: "900",
+    letterSpacing: -0.8,
+  },
+
+  linkText: {
+    color: C.lime,
+    fontSize: 11,
+    fontWeight: "800",
+  },
+
+  weekCard: {
+    padding: 20,
+    borderRadius: 24,
+    backgroundColor: "rgba(13,24,20,0.92)",
+    borderWidth: 1,
+    borderColor: "rgba(190,255,218,0.13)",
+    shadowColor: C.lime,
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4,
+  },
+
+  weekMain: {
+    flexDirection: "row",
+    alignItems: "baseline",
+  },
+
+  weekValue: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
+    color: C.ink,
+    fontSize: 43,
+    fontWeight: "900",
+    letterSpacing: -1.5,
+  },
+
+  weekUnit: {
+    color: C.lime,
+    fontSize: 13,
+    fontWeight: "900",
+    marginLeft: 5,
+  },
+
+  weekCaption: {
+    color: C.muted,
+    fontSize: 11,
+    marginTop: -3,
+  },
+
+  weekProgress: {
+    height: 10,
+    backgroundColor: "#14201B",
+    borderRadius: 8,
+    overflow: "hidden",
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: "rgba(184,255,39,0.08)",
+  },
+
+  weekProgressFill: {
+    height: "100%",
+    borderRadius: 8,
+    backgroundColor: C.lime,
+    shadowColor: C.lime,
+    shadowOpacity: 0.9,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 4,
+  },
+
+  weekBottom: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginTop: 9,
   },
 
-  summarySecondaryButton: {
-    flex: 1,
-    height: 48,
-    borderRadius: 16,
-    backgroundColor: COLORS.surface,
+  weekHint: {
+    color: C.muted2,
+    fontSize: 9,
+    fontWeight: "700",
+  },
+
+  quickGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 9,
+    marginTop: 10,
+  },
+
+  miniMetric: {
+    width: (width - 45) / 2,
+    minHeight: 122,
+    borderRadius: 20,
+    backgroundColor: "rgba(12,21,18,0.88)",
     borderWidth: 1,
-    borderColor: COLORS.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  summarySecondaryText: {
-    color: COLORS.secondary,
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-
-  /* Activity page */
-
-  segmentedControl: {
-    height: 46,
-    borderRadius: 15,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    flexDirection: 'row',
-    padding: 4,
-  },
-
-  segment: {
-    flex: 1,
-    borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  segmentActive: {
-    backgroundColor: COLORS.elevated2,
-    borderWidth: 1,
-    borderColor: COLORS.borderStrong,
-  },
-
-  segmentText: {
-    color: COLORS.muted,
-    fontSize: 11,
-    fontWeight: '750',
-  },
-
-  segmentTextActive: {
-    color: COLORS.white,
-  },
-
-  activitySummaryCard: {
-    marginTop: 11,
+    borderColor: "rgba(190,255,218,0.10)",
     padding: 15,
-    backgroundColor: COLORS.surface,
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    flexDirection: 'row',
+    shadowColor: C.lime,
+    shadowOpacity: 0.045,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 2,
   },
 
-  activitySummaryItem: {
-    flex: 1,
-    alignItems: 'center',
+  miniMetricValue: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
+    color: C.ink,
+    fontSize: 27,
+    fontWeight: "900",
+    marginTop: 13,
   },
 
-  activitySummaryValue: {
-    color: COLORS.white,
-    fontSize: 14,
-    fontWeight: '850',
-  },
-
-  activitySummaryLabel: {
-    color: COLORS.muted,
+  miniMetricLabel: {
+    color: C.muted2,
     fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 0.7,
+    fontWeight: "900",
+    letterSpacing: 1,
+    marginTop: 2,
+  },
+
+  microSparkline: {
+    height: 18,
+    marginTop: 8,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 3,
+    opacity: 0.95,
+  },
+
+  microSparkBar: {
+    width: 4,
+    minHeight: 3,
+    borderRadius: 3,
+  },
+
+  featureCard: {
+    minHeight: 91,
+    borderRadius: 21,
+    backgroundColor: "rgba(12,21,18,0.82)",
+    borderWidth: 1,
+    borderColor: "rgba(190,255,218,0.10)",
+    padding: 14,
+    marginBottom: 9,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  featureIcon: {
+    width: 47,
+    height: 47,
+    borderRadius: 15,
+    backgroundColor: "rgba(184,255,39,0.09)",
+    borderWidth: 1,
+    borderColor: "rgba(184,255,39,0.22)",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: C.lime,
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 3,
+  },
+
+  featureContent: {
+    flex: 1,
+    marginLeft: 13,
+  },
+
+  featureTitle: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
+    color: C.ink,
+    fontSize: 14,
+    fontWeight: "900",
+  },
+
+  featureText: {
+    color: C.muted,
+    fontSize: 10,
+    lineHeight: 15,
     marginTop: 4,
   },
 
-  searchBox: {
-    marginTop: 12,
-    height: 50,
-    borderRadius: 17,
-    backgroundColor: COLORS.surface,
+  bottomCTA: {
+    marginTop: 20,
+    padding: 24,
+    borderRadius: 27,
+    backgroundColor: "#0A1411",
+    overflow: "hidden",
     borderWidth: 1,
-    borderColor: COLORS.border,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
+    borderColor: "rgba(184,255,39,0.15)",
+    shadowColor: C.lime,
+    shadowOpacity: 0.07,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4,
   },
 
-  searchInput: {
-    flex: 1,
-    color: COLORS.white,
-    fontSize: 13,
-    fontWeight: '600',
-    marginLeft: 9,
-    paddingVertical: 0,
-  },
-
-  filterScroll: {
-    gap: 8,
-    paddingVertical: 12,
-  },
-
-  filterPill: {
-    height: 36,
-    paddingHorizontal: 15,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  filterPillActive: {
-    backgroundColor: `${COLORS.green}12`,
-    borderColor: `${COLORS.green}30`,
-  },
-
-  filterPillText: {
-    color: COLORS.muted,
-    fontSize: 11,
-    fontWeight: '750',
-  },
-
-  filterPillTextActive: {
-    color: COLORS.green,
-  },
-
-  /* Stats */
-
-  statsHero: {
-    minHeight: 165,
-    borderRadius: 26,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    overflow: 'hidden',
-  },
-
-  statsHeroEyebrow: {
-    color: COLORS.muted,
+  bottomCTAKicker: {
+    color: "rgba(255,255,255,0.55)",
     fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 1.1,
+    fontWeight: "900",
+    letterSpacing: 1.7,
   },
 
-  statsHeroValue: {
-    color: COLORS.white,
-    fontSize: 46,
-    fontWeight: '900',
-    letterSpacing: -2,
-    marginTop: 7,
+  bottomCTATitle: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
+    color: C.white,
+    fontSize: 32,
+    fontWeight: "900",
+    marginTop: 5,
+    letterSpacing: -1,
   },
 
-  statsHeroUnit: {
-    color: COLORS.green,
-    fontSize: 12,
+  ctaButton: {
+    height: 52,
+    marginTop: 20,
+    borderRadius: 16,
+    backgroundColor: C.lime,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    shadowColor: C.lime,
+    shadowOpacity: 0.38,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 8,
+  },
+
+  ctaButtonText: {
+    color: C.black,
+    fontSize: 11,
+    fontWeight: "900",
     letterSpacing: 1,
   },
 
-  statsHeroSub: {
-    color: COLORS.secondary,
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 5,
+  /* =========================================
+     RUN
+  ========================================= */
+
+  runScreen: {
+    flex: 1,
+    paddingHorizontal: 14,
+    paddingTop: 11,
+    paddingBottom: 9,
   },
 
-  statsOrb: {
-    width: 72,
-    height: 72,
-    borderRadius: 30,
-    backgroundColor: `${COLORS.green}0D`,
-    borderWidth: 1,
-    borderColor: `${COLORS.green}24`,
-    justifyContent: 'center',
-    alignItems: 'center',
+  runHeader: {
+    height: 57,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
 
-  chartCard: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 25,
-    padding: 18,
+  runKicker: {
+    color: C.lime,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 1.6,
   },
 
-  chartHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-
-  chartValue: {
-    color: COLORS.white,
-    fontSize: 22,
-    fontWeight: '850',
-  },
-
-  chartSub: {
-    color: COLORS.muted,
-    fontSize: 10,
+  runTitle: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
+    color: C.ink,
+    fontSize: 21,
+    fontWeight: "900",
     marginTop: 3,
   },
 
-  chartTrend: {
-    height: 29,
-    paddingHorizontal: 9,
-    borderRadius: 15,
-    backgroundColor: `${COLORS.green}0D`,
+  gpsBadge: {
+    height: 31,
+    paddingHorizontal: 10,
+    borderRadius: 20,
+    backgroundColor: C.card,
     borderWidth: 1,
-    borderColor: `${COLORS.green}20`,
-    justifyContent: 'center',
+    borderColor: C.line,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
 
-  chartTrendText: {
-    color: COLORS.green,
+  gpsDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+
+  gpsBadgeText: {
+    color: C.muted,
+    fontSize: 8,
+    fontWeight: "900",
+  },
+
+  mapShell: {
+    flex: 1,
+    minHeight: 245,
+    borderRadius: 25,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(39,232,255,0.18)",
+    backgroundColor: C.card,
+    shadowColor: C.lime,
+    shadowOpacity: 0.10,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 5,
+  },
+
+  map: {
+    flex: 1,
+  },
+
+  mapOverlayTop: {
+    position: "absolute",
+    left: 13,
+    top: 13,
+  },
+
+  livePill: {
+    height: 30,
+    paddingHorizontal: 10,
+    borderRadius: 20,
+    backgroundColor: "rgba(5,6,5,0.88)",
+    borderWidth: 1,
+    borderColor: "rgba(184,255,39,0.18)",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+
+  livePulse: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: C.lime,
+  },
+
+  livePillText: {
+    color: C.white,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 0.7,
+  },
+
+  mapControls: {
+    position: "absolute",
+    right: 12,
+    bottom: 12,
+    gap: 7,
+  },
+
+  mapControl: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: "rgba(5,6,5,0.9)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  runMetric: {
+    alignItems: "center",
+    paddingTop: 11,
+  },
+
+  runMetricLabel: {
+    color: C.muted2,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 1.5,
+  },
+
+  runDistanceRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+  },
+
+  runDistance: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
+    color: C.ink,
+    fontSize: 42,
+    fontWeight: "900",
+    letterSpacing: -1.8,
+  },
+
+  runDistanceUnit: {
+    color: C.lime,
+    fontSize: 12,
+    fontWeight: "900",
+    marginLeft: 5,
+  },
+
+  timePill: {
+    height: 26,
+    paddingHorizontal: 9,
+    borderRadius: 20,
+    backgroundColor: C.card,
+    borderWidth: 1,
+    borderColor: C.line,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginTop: -3,
+  },
+
+  timePillText: {
+    color: C.muted,
     fontSize: 10,
-    fontWeight: '900',
+    fontWeight: "800",
   },
 
-  barChart: {
-    height: 210,
-    marginTop: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
+  liveStats: {
+    flexDirection: "row",
+    marginTop: 9,
+    gap: 7,
   },
 
-  barColumn: {
-    height: '100%',
-    width: '11%',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
+  liveStat: {
+    flex: 1,
+    minHeight: 64,
+    borderRadius: 15,
+    backgroundColor: "rgba(12,21,18,0.86)",
+    borderWidth: 1,
+    borderColor: "rgba(190,255,218,0.10)",
+    padding: 9,
   },
 
-  barTrack: {
-    height: 150,
-    width: 14,
-    borderRadius: 8,
-    backgroundColor: '#18221F',
-    justifyContent: 'flex-end',
-    overflow: 'hidden',
+  liveStatLabel: {
+    color: C.muted2,
+    fontSize: 7,
+    fontWeight: "900",
+    letterSpacing: 0.8,
   },
 
-  barFill: {
-    width: '100%',
-    borderRadius: 8,
-    backgroundColor: '#365240',
+  liveStatValue: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
+    color: C.ink,
+    fontSize: 16,
+    fontWeight: "900",
+    marginTop: 4,
   },
 
-  barFillActive: {
-    backgroundColor: COLORS.green,
+  liveStatUnit: {
+    color: C.muted2,
+    fontSize: 7,
+    fontWeight: "800",
   },
 
-  barLabel: {
-    color: COLORS.muted,
-    fontSize: 9,
-    fontWeight: '750',
+  graphCard: {
+    height: 88,
+    marginTop: 8,
+    padding: 10,
+    borderRadius: 17,
+    backgroundColor: "rgba(10,19,16,0.92)",
+    borderWidth: 1,
+    borderColor: "rgba(184,255,39,0.13)",
+  },
+
+  graphHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 5,
+  },
+
+  graphTitle: {
+    color: C.ink,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 1.2,
+  },
+
+  graphSub: {
+    color: C.muted2,
+    fontSize: 7,
+    fontWeight: "800",
+  },
+
+  liveGraph: {
+    flex: 1,
+    overflow: "hidden",
+    justifyContent: "flex-end",
+  },
+
+  graphGridLine: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 1,
+    backgroundColor: "#1B201B",
+  },
+
+  graphBars: {
+    height: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 1,
+  },
+
+  graphBar: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: C.lime,
+    shadowColor: C.lime,
+    shadowOpacity: 0.75,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 2,
+  },
+
+  bigStart: {
+    height: 54,
+    borderRadius: 17,
+    backgroundColor: C.lime,
+    marginTop: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    shadowColor: C.lime,
+    shadowOpacity: 0.48,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 9,
+  },
+
+  bigStartText: {
+    color: C.black,
+    fontSize: 12,
+    fontWeight: "900",
+    letterSpacing: 1,
+  },
+
+  runActions: {
+    flexDirection: "row",
+    gap: 8,
     marginTop: 8,
   },
 
-  barLabelActive: {
-    color: COLORS.green,
-  },
-
-  barValue: {
-    color: COLORS.muted,
-    fontSize: 8,
-    marginTop: 3,
-  },
-
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginTop: 11,
-  },
-
-  statCard: {
-    flexBasis: '48%',
-    flexGrow: 1,
-    minHeight: 125,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 21,
-    padding: 14,
-  },
-
-  statIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 10,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  statCardValue: {
-    color: COLORS.white,
-    fontSize: 18,
-    fontWeight: '850',
-    marginTop: 12,
-  },
-
-  statCardLabel: {
-    color: COLORS.muted,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 0.8,
-    marginTop: 4,
-  },
-
-  insightCard: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 24,
-    padding: 17,
-  },
-
-  insightRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-
-  insightNumber: {
-    width: 38,
-    height: 38,
-    borderRadius: 13,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  insightNumberText: {
-    fontSize: 9,
-    fontWeight: '900',
-  },
-
-  insightContent: {
+  pauseAction: {
     flex: 1,
-    marginLeft: 12,
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: "rgba(17,30,25,0.95)",
+    borderWidth: 1,
+    borderColor: "rgba(190,255,218,0.13)",
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
   },
 
-  insightTitle: {
-    color: COLORS.white,
-    fontSize: 14,
-    fontWeight: '800',
+  finishAction: {
+    flex: 1,
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: "#351515",
+    borderWidth: 1,
+    borderColor: "#5A2424",
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
   },
 
-  insightText: {
-    color: COLORS.muted,
+  actionText: {
+    color: C.white,
     fontSize: 11,
-    lineHeight: 18,
-    marginTop: 4,
+    fontWeight: "900",
+    letterSpacing: 0.7,
   },
 
-  insightDivider: {
-    height: 1,
-    backgroundColor: COLORS.border,
-    marginVertical: 15,
-    marginLeft: 50,
+  /* =========================================
+     OFFLINE
+  ========================================= */
+
+  offlineRun: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: C.card,
+    padding: 20,
   },
 
-  /* Profile */
-
-  profileHero: {
-    alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 27,
-    paddingTop: 24,
-    paddingBottom: 20,
-  },
-
-  profileAvatarWrap: {
-    position: 'relative',
-  },
-
-  profileOnlineDot: {
-    position: 'absolute',
-    width: 13,
-    height: 13,
-    borderRadius: 8,
-    backgroundColor: COLORS.green,
-    borderWidth: 3,
-    borderColor: COLORS.surface,
-    right: 1,
-    bottom: 4,
-  },
-
-  profileName: {
-    color: COLORS.white,
-    fontSize: 25,
-    fontWeight: '900',
-    marginTop: 12,
-  },
-
-  profileTag: {
-    color: COLORS.muted,
+  offlineRunTitle: {
+    color: C.muted,
     fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 1.2,
-    marginTop: 4,
+    fontWeight: "900",
+    letterSpacing: 1.7,
+    marginTop: 13,
+    marginBottom: 30,
   },
 
-  profileStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '82%',
-    marginTop: 21,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-  },
-
-  profileStat: {
-    flex: 1,
-    alignItems: 'center',
-  },
-
-  profileStatValue: {
-    color: COLORS.white,
-    fontSize: 18,
-    fontWeight: '850',
-  },
-
-  profileStatLabel: {
-    color: COLORS.muted,
+  offlineRunMetricLabel: {
+    color: C.muted2,
     fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 0.8,
+    fontWeight: "900",
+    letterSpacing: 1.4,
+  },
+
+  offlineRunMetric: {
+    color: C.ink,
+    fontSize: 55,
+    fontWeight: "900",
+    letterSpacing: -2,
+    marginTop: 2,
+  },
+
+  offlineRunUnit: {
+    color: C.lime,
+    fontSize: 10,
+    fontWeight: "900",
+    marginTop: 2,
+  },
+
+  offlineExtra: {
+    flexDirection: "row",
+    width: "100%",
+    gap: 8,
+    marginTop: 28,
+  },
+
+  offlineExtraItem: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 15,
+    backgroundColor: C.card2,
+    borderWidth: 1,
+    borderColor: C.line,
+    alignItems: "center",
+  },
+
+  offlineExtraLabel: {
+    color: C.muted2,
+    fontSize: 7,
+    fontWeight: "900",
+    letterSpacing: 1,
+  },
+
+  offlineExtraValue: {
+    color: C.ink,
+    fontSize: 16,
+    fontWeight: "900",
     marginTop: 4,
   },
 
-  profileStatDivider: {
-    width: 1,
-    height: 26,
-    backgroundColor: COLORS.border,
+  offlineExtraUnit: {
+    color: C.muted2,
+    fontSize: 8,
   },
 
-  settingsCard: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 22,
-    overflow: 'hidden',
-  },
+  /* =========================================
+     NAV
+  ========================================= */
 
-  profileRow: {
-    minHeight: 64,
-    paddingHorizontal: 13,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  profileRowIcon: {
-    width: 35,
-    height: 35,
-    borderRadius: 11,
-    backgroundColor: `${COLORS.green}0B`,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  profileRowTitle: {
-    flex: 1,
-    color: COLORS.white,
-    fontSize: 13,
-    fontWeight: '700',
-    marginLeft: 11,
-  },
-
-  profileRowValue: {
-    color: COLORS.muted,
-    fontSize: 11,
-    fontWeight: '600',
-    marginRight: 8,
-  },
-
-  /* Avatar */
-
-  avatar: {
-    backgroundColor: '#15241D',
-    borderWidth: 1,
-    borderColor: `${COLORS.green}35`,
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
-  },
-
-  avatarGlow: {
-    position: 'absolute',
-    backgroundColor: `${COLORS.green}13`,
-  },
-
-  avatarText: {
-    color: COLORS.green,
-    fontWeight: '900',
-  },
-
-  /* Bottom navigation */
-
-  bottomNavContainer: {
-    position: 'absolute',
-    left: 12,
-    right: 12,
-    bottom: Platform.OS === 'android' ? 9 : 8,
-    alignItems: 'center',
+  navWrap: {
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: Platform.OS === "android" ? 34 : 12,
+    backgroundColor: C.bg,
   },
 
   bottomNav: {
-    width: '100%',
-    maxWidth: 540,
-    minHeight: 70,
-    borderRadius: 25,
-    backgroundColor: 'rgba(13,21,19,0.97)',
+    height: 72,
+    borderRadius: 24,
+    backgroundColor: "rgba(9,16,14,0.96)",
     borderWidth: 1,
-    borderColor: COLORS.borderStrong,
-    flexDirection: 'row',
-    paddingHorizontal: 5,
-    paddingTop: 5,
-    paddingBottom: Platform.OS === 'android' ? 7 : 6,
-    shadowColor: '#000',
-    shadowOpacity: 0.35,
-    shadowRadius: 25,
+    borderColor: "rgba(190,255,218,0.14)",
+    shadowColor: C.lime,
+    shadowOpacity: 0.10,
+    shadowRadius: 20,
     shadowOffset: { width: 0, height: 8 },
-    elevation: 18,
+    elevation: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-around",
+    paddingHorizontal: 4,
   },
 
   navItem: {
     flex: 1,
-    minHeight: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
+    height: 62,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  navItemActive: {
+    backgroundColor: "rgba(184,255,39,0.10)",
+    borderWidth: 1,
+    borderColor: "rgba(184,255,39,0.24)",
+    shadowColor: C.lime,
+    shadowOpacity: 0.22,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 4,
   },
 
   navIconWrap: {
-    width: 39,
-    height: 34,
-    borderRadius: 13,
-    alignItems: 'center',
-    justifyContent: 'center',
+    position: "relative",
   },
 
-  navIconWrapActive: {
-    backgroundColor: `${COLORS.green}11`,
+  navLiveDot: {
+    position: "absolute",
+    right: -4,
+    top: -3,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: C.lime,
     borderWidth: 1,
-    borderColor: `${COLORS.green}1C`,
+    borderColor: C.bg,
   },
 
   navLabel: {
-    color: COLORS.muted,
-    fontSize: 8,
-    fontWeight: '750',
-    marginTop: 2,
+    color: C.muted,
+    fontSize: 9,
+    fontWeight: "800",
+    marginTop: 4,
   },
 
   navLabelActive: {
-    color: COLORS.green,
+    color: C.lime,
   },
 
-  /* Modal */
+  /* =========================================
+     SCREEN HEADERS
+  ========================================= */
 
-  modalRoot: {
-    flex: 1,
-    justifyContent: 'flex-end',
+  screenHeader: {
+    minHeight: 75,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
 
-  modalBackdrop: {
-    backgroundColor: 'rgba(0,0,0,0.72)',
+  screenKicker: {
+    color: C.lime,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 1.7,
   },
 
-  sheet: {
-    maxHeight: '90%',
-    backgroundColor: '#0A110F',
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
+  screenTitle: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
+    color: C.ink,
+    fontSize: 29,
+    fontWeight: "900",
+    letterSpacing: -1,
+    marginTop: 4,
+  },
+
+  countBadge: {
+    minWidth: 34,
+    height: 34,
+    paddingHorizontal: 9,
+    borderRadius: 17,
+    backgroundColor: C.limeDark,
     borderWidth: 1,
-    borderBottomWidth: 0,
-    borderColor: COLORS.borderStrong,
-    paddingBottom: Platform.OS === 'android' ? 18 : 30,
-    overflow: 'hidden',
+    borderColor: "#CDEEBB",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  countBadgeText: {
+    color: C.lime,
+    fontSize: 11,
+    fontWeight: "900",
+  },
+
+  /* =========================================
+     HISTORY
+  ========================================= */
+
+  historyScreen: {
+    paddingHorizontal: 18,
+    paddingTop: 14,
+    paddingBottom: 170,
+  },
+
+  historyOverview: {
+    padding: 19,
+    borderRadius: 23,
+    backgroundColor: C.card,
+    borderWidth: 1,
+    borderColor: C.line,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+
+  overviewLabel: {
+    color: C.muted2,
+    fontSize: 7,
+    fontWeight: "900",
+    letterSpacing: 1.1,
+  },
+
+  overviewValue: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
+    color: C.ink,
+    fontSize: 24,
+    fontWeight: "900",
+    marginTop: 4,
+  },
+
+  overviewUnit: {
+    color: C.lime,
+    fontSize: 9,
+  },
+
+  historyItem: {
+    backgroundColor: C.card,
+    borderRadius: 21,
+    borderWidth: 1,
+    borderColor: C.line,
+    padding: 16,
+    marginBottom: 9,
+    shadowColor: "#101713",
+    shadowOpacity: 0.045,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 1,
+  },
+
+  historyItemTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  historyItemDate: {
+    color: C.muted,
+    fontSize: 9,
+    fontWeight: "800",
+  },
+
+  historyItemDistance: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
+    color: C.ink,
+    fontSize: 24,
+    fontWeight: "900",
+    marginTop: 2,
+  },
+
+  historyKm: {
+    color: C.lime,
+    fontSize: 9,
+  },
+
+  historyArrow: {
+    width: 35,
+    height: 35,
+    borderRadius: 12,
+    backgroundColor: C.card2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  historyItemStats: {
+    flexDirection: "row",
+    marginTop: 13,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: C.line,
+  },
+
+  historyStat: {
+    flex: 1,
+  },
+
+  historyStatLabel: {
+    color: C.muted2,
+    fontSize: 7,
+    fontWeight: "900",
+    letterSpacing: 0.8,
+  },
+
+  historyStatValue: {
+    color: C.ink,
+    fontSize: 10,
+    fontWeight: "800",
+    marginTop: 4,
+  },
+
+  emptyState: {
+    minHeight: height * 0.65,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 30,
+  },
+
+  emptyIcon: {
+    width: 70,
+    height: 70,
+    borderRadius: 24,
+    backgroundColor:
+      "rgba(184,255,39,0.06)",
+    borderWidth: 1,
+    borderColor:
+      "rgba(183,201,138,0.09)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  emptyTitle: {
+    color: C.ink,
+    fontSize: 20,
+    fontWeight: "900",
+    marginTop: 17,
+    textAlign: "center",
+  },
+
+  emptyText: {
+    color: C.muted,
+    fontSize: 11,
+    lineHeight: 18,
+    textAlign: "center",
+    marginTop: 7,
+  },
+
+  emptyButton: {
+    height: 48,
+    paddingHorizontal: 18,
+    borderRadius: 15,
+    backgroundColor: C.lime,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 20,
+  },
+
+  emptyButtonText: {
+    color: C.black,
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 0.8,
+  },
+
+  /* =========================================
+     PROFILE
+  ========================================= */
+
+  profileScreen: {
+    paddingHorizontal: 18,
+    paddingTop: 14,
+    paddingBottom: 175,
+  },
+
+  profileHero: {
+    minHeight: 105,
+    padding: 17,
+    borderRadius: 23,
+    backgroundColor: C.card,
+    borderWidth: 1,
+    borderColor: C.line,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  profileAvatar: {
+    width: 61,
+    height: 61,
+    borderRadius: 21,
+    backgroundColor: C.lime,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  profileHeroText: {
+    flex: 1,
+    marginLeft: 14,
+  },
+
+  profileName: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
+    color: C.ink,
+    fontSize: 18,
+    fontWeight: "900",
+  },
+
+  profileSubtitle: {
+    color: C.muted,
+    fontSize: 10,
+    marginTop: 3,
+  },
+
+  profileSectionTitle: {
+    color: C.muted2,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 1.5,
+    marginTop: 25,
+    marginBottom: 10,
+  },
+
+  profileGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 9,
+  },
+
+  profileStat: {
+    width: (width - 45) / 2,
+    minHeight: 112,
+    padding: 14,
+    borderRadius: 20,
+    backgroundColor: C.card,
+    borderWidth: 1,
+    borderColor: C.line,
+    shadowColor: "#101713",
+    shadowOpacity: 0.045,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 1,
+  },
+
+  profileStatValue: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
+    color: C.ink,
+    fontSize: 27,
+    fontWeight: "900",
+    marginTop: 13,
+  },
+
+  profileStatLabel: {
+    color: C.muted2,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 1,
+    marginTop: 2,
+  },
+
+  pbCard: {
+    padding: 6,
+    borderRadius: 21,
+    backgroundColor: C.card,
+    borderWidth: 1,
+    borderColor: C.line,
+    shadowColor: "#101713",
+    shadowOpacity: 0.045,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 1,
+  },
+
+  pbRow: {
+    minHeight: 61,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: C.line,
+  },
+
+  pbIcon: {
+    width: 39,
+    height: 39,
+    borderRadius: 13,
+    backgroundColor:
+      "rgba(184,255,39,0.06)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  pbLabel: {
+    flex: 1,
+    color: C.muted,
+    fontSize: 11,
+    fontWeight: "700",
+    marginLeft: 11,
+  },
+
+  pbValue: {
+    color: C.ink,
+    fontSize: 12,
+    fontWeight: "900",
+  },
+
+  valueCard: {
+    padding: 8,
+    borderRadius: 21,
+    backgroundColor: C.card,
+    borderWidth: 1,
+    borderColor: C.line,
+    shadowColor: "#101713",
+    shadowOpacity: 0.045,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 1,
+  },
+
+  valueRow: {
+    minHeight: 69,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 7,
+  },
+
+  valueIcon: {
+    width: 39,
+    height: 39,
+    borderRadius: 13,
+    backgroundColor:
+      "rgba(184,255,39,0.06)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  valueContent: {
+    flex: 1,
+    marginLeft: 11,
+  },
+
+  valueTitle: {
+    color: C.ink,
+    fontSize: 11,
+    fontWeight: "900",
+  },
+
+  valueText: {
+    color: C.muted2,
+    fontSize: 9,
+    marginTop: 3,
+  },
+
+  versionText: {
+    color: C.muted2,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 1.5,
+    textAlign: "center",
+    marginTop: 25,
+  },
+
+  /* =========================================
+     MODALS
+  ========================================= */
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor:
+      "rgba(0,0,0,0.72)",
+    justifyContent: "flex-end",
+  },
+
+  missionSheet: {
+    backgroundColor: C.card,
+    borderTopLeftRadius: 31,
+    borderTopRightRadius: 31,
+    paddingHorizontal: 18,
+    paddingTop: 10,
+    paddingBottom:
+      Platform.OS === "ios"
+        ? 30
+        : 18,
+    borderTopWidth: 1,
+    borderColor: C.line,
   },
 
   sheetHandle: {
     width: 38,
     height: 4,
-    borderRadius: 5,
-    backgroundColor: '#2A3531',
-    alignSelf: 'center',
-    marginTop: 10,
+    borderRadius: 4,
+    backgroundColor: "#31413A",
+    alignSelf: "center",
+    marginBottom: 19,
   },
 
   sheetHeader: {
-    paddingHorizontal: 20,
-    paddingTop: 15,
-    paddingBottom: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 15,
+  },
+
+  sheetKicker: {
+    color: C.lime,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 1.5,
   },
 
   sheetTitle: {
-    color: COLORS.white,
-    fontSize: 21,
-    fontWeight: '850',
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
+    color: C.ink,
+    fontSize: 25,
+    fontWeight: "900",
+    marginTop: 4,
   },
 
-  closeButton: {
+  sheetClose: {
     width: 38,
     height: 38,
-    borderRadius: 19,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderRadius: 13,
+    backgroundColor: C.card2,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
-  sheetContent: {
-    paddingHorizontal: 20,
-  },
-
-  confirmIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 22,
-    backgroundColor: `${COLORS.green}0D`,
-    borderWidth: 1,
-    borderColor: `${COLORS.green}25`,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 8,
-  },
-
-  confirmTitle: {
-    color: COLORS.white,
-    fontSize: 20,
-    fontWeight: '850',
-    marginTop: 17,
-  },
-
-  confirmText: {
-    color: COLORS.muted,
-    fontSize: 13,
-    lineHeight: 20,
-    marginTop: 7,
-    maxWidth: 340,
-  },
-
-  sheetPrimaryButton: {
-    minHeight: 55,
+  missionOption: {
+    minHeight: 68,
     borderRadius: 18,
-    backgroundColor: COLORS.green,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 22,
-  },
-
-  sheetPrimaryText: {
-    color: COLORS.bg,
-    fontSize: 11,
-    fontWeight: '950',
-    letterSpacing: 1,
-  },
-
-  sheetSecondaryButton: {
-    minHeight: 52,
-    borderRadius: 17,
-    backgroundColor: COLORS.surface,
+    backgroundColor: C.card,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 9,
+    borderColor: C.line,
+    paddingHorizontal: 11,
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 7,
   },
 
-  sheetSecondaryText: {
-    color: COLORS.secondary,
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-
-  /* Detail */
-
-  detailTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 5,
-  },
-
-  detailIcon: {
-    width: 55,
-    height: 55,
-    borderRadius: 18,
-    backgroundColor: `${COLORS.green}0D`,
-    borderWidth: 1,
-    borderColor: `${COLORS.green}22`,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  detailHeading: {
-    marginLeft: 13,
-  },
-
-  detailTitle: {
-    color: COLORS.white,
-    fontSize: 18,
-    fontWeight: '850',
-  },
-
-  detailDate: {
-    color: COLORS.muted,
-    fontSize: 11,
-    marginTop: 4,
-  },
-
-  detailGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 9,
-    marginTop: 17,
-  },
-
-  detailMetric: {
-    flexBasis: '31%',
-    flexGrow: 1,
-    minHeight: 72,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 16,
-    padding: 11,
-    justifyContent: 'center',
-  },
-
-  detailMetricValue: {
-    color: COLORS.white,
-    fontSize: 12,
-    fontWeight: '800',
-  },
-
-  detailMetricLabel: {
-    color: COLORS.muted,
-    fontSize: 7,
-    fontWeight: '900',
-    letterSpacing: 0.7,
-    marginTop: 5,
-  },
-
-  detailGraphCard: {
-    marginTop: 10,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 19,
-    padding: 14,
-  },
-
-  detailGraphTitle: {
-    color: COLORS.muted,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-
-  detailGraph: {
-    height: 90,
-    marginTop: 11,
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-  },
-
-  detailGraphBar: {
-    width: '7%',
-    borderRadius: 5,
-    backgroundColor: COLORS.green,
-  },
-
-  /* Notifications */
-
-  notificationRow: {
-    minHeight: 80,
-    flexDirection: 'row',
-    alignItems: 'center',
-    position: 'relative',
-  },
-
-  notificationBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-
-  notificationIcon: {
-    width: 42,
-    height: 42,
+  missionOptionIcon: {
+    width: 44,
+    height: 44,
     borderRadius: 14,
-    backgroundColor: COLORS.surface,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
 
-  notificationIconUnread: {
-    backgroundColor: `${COLORS.green}0D`,
-    borderColor: `${COLORS.green}25`,
-  },
-
-  notificationContent: {
+  missionOptionContent: {
     flex: 1,
-    marginLeft: 12,
-    paddingRight: 15,
+    marginLeft: 11,
   },
 
-  notificationTitleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  missionOptionTitle: {
+    color: C.ink,
+    fontSize: 12,
+    fontWeight: "900",
   },
 
-  notificationTitle: {
-    color: COLORS.white,
-    fontSize: 13,
-    fontWeight: '800',
-  },
-
-  notificationTime: {
-    color: COLORS.muted,
+  missionOptionSubtitle: {
+    color: C.muted2,
     fontSize: 9,
-  },
-
-  notificationMessage: {
-    color: COLORS.secondary,
-    fontSize: 11,
-    lineHeight: 17,
-    marginTop: 4,
-  },
-
-  notificationUnread: {
-    position: 'absolute',
-    right: 0,
-    width: 6,
-    height: 6,
-    borderRadius: 5,
-    backgroundColor: COLORS.green,
-  },
-
-  emptyNotifications: {
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-
-  /* Settings */
-
-  settingsSectionTitle: {
-    color: COLORS.muted,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 1.2,
-    marginTop: 9,
-    marginBottom: 8,
-  },
-
-  settingSwitchRow: {
-    minHeight: 70,
-    paddingHorizontal: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-
-  settingSwitchText: {
-    flex: 1,
-    paddingRight: 14,
-  },
-
-  settingTitle: {
-    color: COLORS.white,
-    fontSize: 13,
-    fontWeight: '750',
-  },
-
-  settingSubtitle: {
-    color: COLORS.muted,
-    fontSize: 10,
-    lineHeight: 15,
     marginTop: 3,
   },
 
-  settingChoiceRow: {
-    minHeight: 70,
-    paddingHorizontal: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  modalSafe: {
+    flex: 1,
+    backgroundColor: C.bg,
   },
 
-  settingChoiceTitle: {
-    color: COLORS.white,
-    fontSize: 13,
-    fontWeight: '750',
+  modalHeader: {
+    minHeight: 78,
+    paddingHorizontal: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
 
-  choicePills: {
-    flexDirection: 'row',
-    gap: 6,
+  modalKicker: {
+    color: C.lime,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 1.5,
   },
 
-  choicePill: {
-    minWidth: 45,
-    height: 33,
-    paddingHorizontal: 9,
-    borderRadius: 11,
-    backgroundColor: COLORS.elevated,
+  modalTitle: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
+    color: C.ink,
+    fontSize: 28,
+    fontWeight: "900",
+    marginTop: 3,
+  },
+
+  closeButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: C.card,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: C.line,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
-  choicePillActive: {
-    backgroundColor: `${COLORS.green}13`,
-    borderColor: `${COLORS.green}30`,
-  },
-
-  choicePillText: {
-    color: COLORS.muted,
-    fontSize: 10,
-    fontWeight: '800',
-  },
-
-  choicePillTextActive: {
-    color: COLORS.green,
-  },
-
-  settingsFooter: {
-    alignItems: 'center',
-    paddingVertical: 30,
-  },
-
-  settingsFooterBrand: {
-    color: COLORS.green,
-    fontSize: 12,
-    fontWeight: '950',
-    letterSpacing: 3,
-  },
-
-  settingsFooterText: {
-    color: COLORS.muted,
-    fontSize: 10,
-    marginTop: 6,
-  },
-
-  /* Goal edit */
-
-  goalEditHero: {
-    alignItems: 'center',
-    paddingTop: 5,
-  },
-
-  goalEditIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 22,
-    backgroundColor: `${COLORS.green}0D`,
-    borderWidth: 1,
-    borderColor: `${COLORS.green}22`,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  goalEditTitle: {
-    color: COLORS.white,
-    fontSize: 19,
-    fontWeight: '850',
-    marginTop: 13,
-  },
-
-  goalEditText: {
-    color: COLORS.muted,
-    fontSize: 12,
-    lineHeight: 19,
-    textAlign: 'center',
-    marginTop: 6,
-    maxWidth: 330,
-  },
-
-  inputLabel: {
-    color: COLORS.muted,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 1,
-    marginTop: 23,
-    marginBottom: 8,
-  },
-
-  goalInputRow: {
-    height: 61,
-    borderRadius: 18,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.borderStrong,
-    flexDirection: 'row',
-    alignItems: 'center',
+  summaryScroll: {
     paddingHorizontal: 16,
+    paddingBottom: 35,
   },
 
-  goalInput: {
-    flex: 1,
-    color: COLORS.white,
-    fontSize: 25,
-    fontWeight: '850',
-    padding: 0,
+  missionComplete: {
+    minHeight: 68,
+    borderRadius: 19,
+    backgroundColor:
+      "rgba(184,255,39,0.06)",
+    borderWidth: 1,
+    borderColor:
+      "rgba(184,255,39,0.18)",
+    paddingHorizontal: 15,
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
   },
 
-  goalInputUnit: {
-    color: COLORS.green,
-    fontSize: 11,
-    fontWeight: '900',
+  missionCompleteText: {
+    marginLeft: 11,
+  },
+
+  missionCompleteTitle: {
+    color: C.lime,
+    fontSize: 10,
+    fontWeight: "900",
     letterSpacing: 1,
   },
 
-  goalPresets: {
-    flexDirection: 'row',
-    gap: 7,
-    marginTop: 10,
+  missionCompleteSub: {
+    color: C.muted,
+    fontSize: 9,
+    marginTop: 3,
   },
 
-  goalPreset: {
-    flex: 1,
-    minHeight: 40,
-    borderRadius: 13,
-    backgroundColor: COLORS.surface,
+  summaryHero: {
+    padding: 24,
+    borderRadius: 25,
+    backgroundColor: C.card,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: C.line,
+    alignItems: "center",
+    marginBottom: 10,
   },
 
-  goalPresetActive: {
-    backgroundColor: `${COLORS.green}12`,
-    borderColor: `${COLORS.green}30`,
+  summaryHeroLabel: {
+    color: C.muted2,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 1.5,
   },
 
-  goalPresetText: {
-    color: COLORS.muted,
-    fontSize: 10,
-    fontWeight: '800',
+  summaryHeroValue: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
+    color: C.ink,
+    fontSize: 43,
+    fontWeight: "900",
+    letterSpacing: -1.5,
+    marginTop: 2,
   },
 
-  goalPresetTextActive: {
-    color: COLORS.green,
+  summaryHeroUnit: {
+    color: C.lime,
+    fontSize: 12,
   },
 
-  /* Toast */
-
-  toastContainer: {
-    position: 'absolute',
-    left: 20,
-    right: 20,
-    bottom: Platform.OS === 'android' ? 94 : 102,
-    alignItems: 'center',
-  },
-
-  toast: {
-    minHeight: 48,
-    paddingHorizontal: 14,
-    borderRadius: 17,
-    backgroundColor: '#16221E',
-    borderWidth: 1,
-    borderColor: COLORS.borderStrong,
-    flexDirection: 'row',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 15,
-    shadowOffset: { width: 0, height: 6 },
-  },
-
-  toastIcon: {
-    width: 25,
-    height: 25,
-    borderRadius: 9,
-    backgroundColor: COLORS.green,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 9,
-  },
-
-  toastText: {
-    color: COLORS.white,
+  summaryHeroTime: {
+    color: C.muted,
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: "800",
+    marginTop: 3,
   },
 
-  /* Icons */
-
-  iconBox: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
+  summaryMap: {
+    height: 275,
+    borderRadius: 23,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: C.line,
+    backgroundColor: C.card,
+    marginBottom: 10,
   },
 
-  homeRoof: {
-    position: 'absolute',
-    width: '62%',
-    height: '62%',
-    top: '8%',
-    transform: [{ rotate: '45deg' }],
+  summaryStats: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
   },
 
-  homeBody: {
-    position: 'absolute',
-    width: '58%',
-    height: '45%',
-    bottom: '7%',
-    borderRadius: 4,
+  summaryMetric: {
+    width: (width - 41) / 2,
+    minHeight: 96,
+    padding: 13,
+    borderRadius: 18,
+    backgroundColor: C.card,
+    borderWidth: 1,
+    borderColor: C.line,
   },
 
-  runnerHead: {
-    position: 'absolute',
-    borderRadius: 10,
-    top: '7%',
-    left: '47%',
+  summaryMetricLabel: {
+    color: C.muted2,
+    fontSize: 7,
+    fontWeight: "900",
+    letterSpacing: 1,
+    marginTop: 9,
   },
 
-  runnerBody: {
-    position: 'absolute',
-    borderRadius: 4,
+  summaryMetricValue: {
+    color: C.ink,
+    fontSize: 14,
+    fontWeight: "900",
+    marginTop: 4,
   },
 
-  runnerArm: {
-    position: 'absolute',
-    borderRadius: 4,
+  spectrumCard: {
+    marginTop: 10,
+    padding: 15,
+    borderRadius: 19,
+    backgroundColor: C.card,
+    borderWidth: 1,
+    borderColor: C.line,
   },
 
-  runnerLeg: {
-    position: 'absolute',
-    borderRadius: 4,
+  spectrumTitle: {
+    color: C.muted,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 1.2,
+    marginBottom: 9,
   },
 
-  rowIcon: {
-    flexDirection: 'row',
+  spectrumBar: {
+    height: 9,
+    borderRadius: 9,
+    overflow: "hidden",
+    flexDirection: "row",
   },
+
+  spectrumSegment: {
+    flex: 1,
+  },
+
+  spectrumLabels: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 6,
+  },
+
+  spectrumLabel: {
+    color: C.muted2,
+    fontSize: 7,
+    fontWeight: "900",
+  },
+
+  doneButton: {
+    height: 54,
+    borderRadius: 17,
+    backgroundColor: C.ink,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 11,
+  },
+
+  doneButtonText: {
+    color: C.black,
+    fontSize: 11,
+    fontWeight: "900",
+    letterSpacing: 1,
+  },
+
+  detailDate: {
+    color: C.muted,
+    fontSize: 10,
+    marginBottom: 10,
+  },
+
+  /* =========================================
+     ONBOARDING
+  ========================================= */
+
+  onboarding: {
+    flex: 1,
+    backgroundColor: C.bg,
+    paddingHorizontal: 23,
+    paddingTop: 20,
+    paddingBottom:
+      Platform.OS === "ios"
+        ? 20
+        : 15,
+    overflow: "hidden",
+  },
+
+  onboardingGlow: {
+    position: "absolute",
+    width: 330,
+    height: 330,
+    borderRadius: 165,
+    backgroundColor: "transparent",
+    opacity: 0.2,
+    top: height * 0.18,
+    left: width * 0.1,
+  },
+
+  onboardingTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  onboardingLogo: {
+    color: C.ink,
+    fontSize: 19,
+    fontWeight: "900",
+    letterSpacing: -0.5,
+  },
+
+  onboardingPill: {
+    height: 27,
+    paddingHorizontal: 9,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor:
+      "rgba(183,201,138,0.10)",
+    backgroundColor:
+      "rgba(184,255,39,0.05)",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+
+  onboardingDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: C.lime,
+  },
+
+  onboardingPillText: {
+    color: C.lime,
+    fontSize: 6,
+    fontWeight: "900",
+    letterSpacing: 0.8,
+  },
+
+  onboardingCenter: {
+    flex: 1,
+    justifyContent: "center",
+  },
+
+  onboardingIcon: {
+    width: 95,
+    height: 95,
+    borderRadius: 34,
+    backgroundColor:
+      "rgba(184,255,39,0.06)",
+    borderWidth: 1,
+    borderColor:
+      "rgba(183,201,138,0.10)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 30,
+  },
+
+  onboardingTitle: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
+    color: C.ink,
+    fontSize: 48,
+    lineHeight: 47,
+    fontWeight: "900",
+    letterSpacing: -2.8,
+  },
+
+  onboardingAccent: {
+    color: C.lime,
+  },
+
+  onboardingText: {
+    color: C.muted,
+    fontSize: 13,
+    lineHeight: 21,
+    maxWidth: 330,
+    marginTop: 20,
+  },
+
+  onboardingFeatures: {
+    gap: 9,
+    marginBottom: 14,
+  },
+
+  onboardingFeature: {
+    minHeight: 51,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  onboardingFeatureIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor:
+      "rgba(184,255,39,0.06)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
+
+  onboardingFeatureTitle: {
+    color: C.ink,
+    fontSize: 10,
+    fontWeight: "900",
+  },
+
+  onboardingFeatureText: {
+    color: C.muted2,
+    fontSize: 8,
+    marginTop: 2,
+  },
+
+  onboardingButton: {
+    height: 55,
+    borderRadius: 17,
+    backgroundColor: C.lime,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 9,
+  },
+
+  onboardingButtonText: {
+    color: C.black,
+    fontSize: 12,
+    fontWeight: "900",
+    letterSpacing: 1,
+  },
+
+  /* =========================================
+     MARKERS
+  ========================================= */
+
+  startMarker: {
+    width: 23,
+    height: 23,
+    borderRadius: 12,
+    backgroundColor: C.lime,
+    borderWidth: 3,
+    borderColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  startMarkerInner: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: C.black,
+  },
+
+  finishMarker: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: C.blue,
+    borderWidth: 3,
+    borderColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  liveMarker: {
+    width: 29,
+    height: 29,
+    borderRadius: 15,
+    backgroundColor:
+      "rgba(183,201,138,0.13)",
+    borderWidth: 1,
+    borderColor:
+      "rgba(183,201,138,0.22)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  liveMarkerInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: C.lime,
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+  },
+
+  /* =========================================================
+     RAFTAAR 3.0 — NEW PRODUCT UI
+  ========================================================= */
+  neoScroll:{paddingHorizontal:18,paddingTop:18,paddingBottom:125},
+  neoHeader:{flexDirection:"row",alignItems:"center",justifyContent:"space-between",marginBottom:20},
+  neoOverline:{fontSize:10,fontWeight:"900",letterSpacing:1.8,color:C.muted2},
+  neoGreeting:{fontSize:29,fontWeight:"900",color:C.white,letterSpacing:-1,marginTop:4},
+  neoDot:{color:C.lime},
+  neoAvatar:{width:46,height:46,borderRadius:23,backgroundColor:C.card3,borderWidth:1,borderColor:C.line,alignItems:"center",justifyContent:"center",position:"relative"},
+  neoAvatarText:{fontSize:17,fontWeight:"900",color:C.lime},
+  neoOnline:{position:"absolute",right:1,bottom:2,width:10,height:10,borderRadius:5,backgroundColor:C.lime,borderWidth:2,borderColor:C.bg},
+  neoHero:{backgroundColor:C.card2,borderRadius:28,borderWidth:1,borderColor:C.line,padding:20,overflow:"hidden",marginBottom:25},
+  neoHeroGlow:{position:"absolute",width:190,height:190,borderRadius:95,backgroundColor:"rgba(92,255,138,.07)",right:-90,top:-70},
+  neoHeroTop:{flexDirection:"row",justifyContent:"space-between",alignItems:"center"},
+  neoLabel:{fontSize:9,fontWeight:"900",letterSpacing:1.5,color:C.muted2},
+  neoHeroNumber:{fontSize:62,fontWeight:"900",color:C.white,letterSpacing:-3,marginTop:2},
+  neoHeroUnit:{fontSize:10,fontWeight:"900",letterSpacing:2,color:C.lime,marginTop:-5},
+  neoRing:{width:94,height:94,borderRadius:47,borderWidth:7,borderColor:C.lime2,alignItems:"center",justifyContent:"center",backgroundColor:"rgba(184,255,39,.04)"},
+  neoRingInner:{alignItems:"center"}, neoRingValue:{fontSize:19,fontWeight:"900",color:C.white},neoRingText:{fontSize:7,fontWeight:"900",letterSpacing:1.2,color:C.muted2,marginTop:2},
+  neoProgressTrack:{height:7,backgroundColor:"rgba(255,255,255,.06)",borderRadius:5,overflow:"hidden",marginTop:18},neoProgressFill:{height:"100%",backgroundColor:C.lime,borderRadius:5},
+  neoHeroBottom:{flexDirection:"row",justifyContent:"space-between",marginTop:9},neoMuted:{fontSize:10,color:C.muted},
+  neoPrimary:{height:56,borderRadius:18,backgroundColor:C.lime,flexDirection:"row",alignItems:"center",justifyContent:"center",gap:10,marginTop:19},neoPlay:{width:27,height:27,borderRadius:14,backgroundColor:"rgba(0,0,0,.08)",alignItems:"center",justifyContent:"center"},neoPrimaryText:{fontSize:12,fontWeight:"900",letterSpacing:1,color:C.black},
+  neoSectionHead:{flexDirection:"row",alignItems:"flex-end",justifyContent:"space-between",marginBottom:12},neoSectionTitle:{fontSize:19,fontWeight:"800",color:C.white,marginTop:4},neoLink:{fontSize:11,fontWeight:"800",color:C.lime},
+  neoGrid:{flexDirection:"row",flexWrap:"wrap",gap:10,marginBottom:25},neoMetric:{width:"48.2%",backgroundColor:C.card2,borderWidth:1,borderColor:C.line,borderRadius:20,padding:15,minHeight:122},neoMetricIcon:{width:35,height:35,borderRadius:12,alignItems:"center",justifyContent:"center",marginBottom:13},neoMetricValue:{fontSize:25,fontWeight:"900",color:C.white},neoMetricLabel:{fontSize:8,fontWeight:"900",letterSpacing:1.2,color:C.muted2,marginTop:3},
+  neoLatest:{backgroundColor:C.card2,borderWidth:1,borderColor:C.line,borderRadius:20,padding:14,flexDirection:"row",alignItems:"center",gap:12,marginBottom:18},neoLatestIcon:{width:45,height:45,borderRadius:15,backgroundColor:C.limeDark,alignItems:"center",justifyContent:"center"},neoLatestTitle:{fontSize:14,fontWeight:"800",color:C.white},neoLatestSub:{fontSize:10,color:C.muted,marginTop:4},neoQuote:{backgroundColor:"rgba(184,255,39,.08)",borderRadius:20,padding:16,flexDirection:"row",alignItems:"center",gap:12},neoQuoteMark:{width:30,height:30,borderRadius:10,backgroundColor:C.lime2,alignItems:"center",justifyContent:"center"},neoQuoteText:{flex:1,fontSize:12,lineHeight:18,color:C.white,fontWeight:"700"},
+  runNeoScroll:{paddingHorizontal:14,paddingTop:14,paddingBottom:125},runNeoHeader:{flexDirection:"row",justifyContent:"space-between",alignItems:"center",paddingHorizontal:4,marginBottom:13},runNeoTitle:{fontSize:26,fontWeight:"900",color:C.white,marginTop:4},gpsNeo:{flexDirection:"row",alignItems:"center",gap:7,paddingHorizontal:10,paddingVertical:8,borderRadius:13,backgroundColor:C.card2,borderWidth:1,borderColor:C.line},gpsNeoDot:{width:7,height:7,borderRadius:4},gpsNeoText:{fontSize:8,fontWeight:"900",letterSpacing:1,color:C.muted},
+  runMapNeo:{height:300,borderRadius:27,overflow:"hidden",borderWidth:1,borderColor:C.line,backgroundColor:C.card2},mapNeoTop:{position:"absolute",top:12,left:12},mapLiveBadge:{backgroundColor:"rgba(5,8,7,.82)",paddingHorizontal:10,paddingVertical:7,borderRadius:11,flexDirection:"row",alignItems:"center",gap:6},mapLiveDot:{width:6,height:6,borderRadius:3},mapLiveText:{fontSize:8,fontWeight:"900",letterSpacing:1,color:C.white},mapNeoControls:{position:"absolute",right:12,bottom:12,gap:8},mapNeoButton:{width:38,height:38,borderRadius:12,backgroundColor:"rgba(5,8,7,.82)",alignItems:"center",justifyContent:"center",borderWidth:1,borderColor:"rgba(255,255,255,.09)"},
+  runNeoPrimaryCard:{backgroundColor:C.card2,borderWidth:1,borderColor:C.line,borderRadius:24,padding:18,marginTop:12},runNeoDistanceRow:{flexDirection:"row",alignItems:"flex-end",marginTop:1},runNeoDistance:{fontSize:60,fontWeight:"900",color:C.white,letterSpacing:-3},runNeoUnit:{fontSize:12,fontWeight:"900",color:C.lime,letterSpacing:1.5,marginBottom:12,marginLeft:7},runNeoTime:{alignSelf:"flex-start",flexDirection:"row",alignItems:"center",gap:6,backgroundColor:"rgba(255,255,255,.04)",borderRadius:10,paddingHorizontal:9,paddingVertical:6},runNeoTimeText:{fontSize:11,fontWeight:"700",color:C.muted},
+  runNeoStats:{flexDirection:"row",backgroundColor:C.card2,borderWidth:1,borderColor:C.line,borderRadius:20,marginTop:10,overflow:"hidden"},runNeoStat:{flex:1,paddingVertical:17,alignItems:"center",borderRightWidth:1,borderRightColor:C.line},runNeoStatValue:{fontSize:17,fontWeight:"900",color:C.white},runNeoStatLabel:{fontSize:7,fontWeight:"900",letterSpacing:1,color:C.muted2,marginTop:4},neoChartCard:{backgroundColor:C.card2,borderWidth:1,borderColor:C.line,borderRadius:20,padding:15,marginTop:10},neoChartHead:{flexDirection:"row",justifyContent:"space-between",alignItems:"center",marginBottom:8},neoChartTitle:{fontSize:15,fontWeight:"800",color:C.white,marginTop:3},neoChartHint:{fontSize:8,fontWeight:"900",color:C.muted2,letterSpacing:1},runNeoStart:{height:58,borderRadius:18,backgroundColor:C.lime,flexDirection:"row",alignItems:"center",justifyContent:"center",gap:10,marginTop:12},runNeoStartText:{fontSize:12,fontWeight:"900",letterSpacing:1,color:C.black},runNeoActions:{flexDirection:"row",gap:10,marginTop:12},runNeoPause:{flex:1,height:57,borderRadius:18,backgroundColor:C.card3,borderWidth:1,borderColor:C.line,flexDirection:"row",alignItems:"center",justifyContent:"center",gap:9},runNeoFinish:{flex:1,height:57,borderRadius:18,backgroundColor:C.red,flexDirection:"row",alignItems:"center",justifyContent:"center",gap:9},runNeoActionText:{fontSize:11,fontWeight:"900",letterSpacing:1,color:C.white},
+  neoCount:{minWidth:42,height:42,borderRadius:14,backgroundColor:C.card2,borderWidth:1,borderColor:C.line,alignItems:"center",justifyContent:"center"},neoCountText:{fontSize:13,fontWeight:"900",color:C.lime},activitySummary:{backgroundColor:C.card2,borderRadius:22,borderWidth:1,borderColor:C.line,padding:18,flexDirection:"row",justifyContent:"space-between",marginBottom:15},activityBig:{fontSize:29,fontWeight:"900",color:C.white,marginTop:4},activityUnit:{fontSize:10,color:C.lime,fontWeight:"900"},activityRow:{backgroundColor:C.card2,borderWidth:1,borderColor:C.line,borderRadius:19,padding:13,marginBottom:9,flexDirection:"row",alignItems:"center"},activityDate:{width:48,height:48,borderRadius:14,backgroundColor:"rgba(92,255,138,.08)",alignItems:"center",justifyContent:"center",marginRight:12},activityDay:{fontSize:18,fontWeight:"900",color:C.lime},activityMonth:{fontSize:7,fontWeight:"900",color:C.muted2,letterSpacing:1},activityMain:{flex:1},activityDistance:{fontSize:15,fontWeight:"800",color:C.white},activitySub:{fontSize:10,color:C.muted,marginTop:4},activityArrow:{width:28,height:28,borderRadius:10,backgroundColor:"rgba(255,255,255,.04)",alignItems:"center",justifyContent:"center"},neoEmpty:{alignItems:"center",backgroundColor:C.card2,borderWidth:1,borderColor:C.line,borderRadius:24,padding:30},neoEmptyIcon:{width:60,height:60,borderRadius:20,backgroundColor:C.limeDark,alignItems:"center",justifyContent:"center",marginBottom:15},neoEmptyTitle:{fontSize:19,fontWeight:"900",color:C.white},neoEmptyText:{fontSize:11,lineHeight:18,color:C.muted,textAlign:"center",marginTop:7},neoSmallButton:{marginTop:18,borderRadius:13,backgroundColor:C.lime,paddingHorizontal:17,paddingVertical:12},neoSmallButtonText:{fontSize:9,fontWeight:"900",letterSpacing:1,color:C.black},
+  profileNeoAvatar:{width:46,height:46,borderRadius:23,backgroundColor:C.lime,alignItems:"center",justifyContent:"center"},profileNeoAvatarText:{fontSize:17,fontWeight:"900",color:C.black},profileNeoHero:{backgroundColor:C.card2,borderRadius:24,borderWidth:1,borderColor:C.line,padding:18,flexDirection:"row",alignItems:"center",gap:13},profileNeoBadge:{width:46,height:46,borderRadius:15,backgroundColor:C.lime2,alignItems:"center",justifyContent:"center"},profileNeoName:{fontSize:22,fontWeight:"900",color:C.white},profileNeoSub:{fontSize:10,color:C.muted,marginTop:3},profileNeoStats:{flexDirection:"row",marginTop:10,backgroundColor:C.card2,borderRadius:20,borderWidth:1,borderColor:C.line,overflow:"hidden"},profileNeoStatsItem:{flex:1},profileNeoVersion:{textAlign:"center",fontSize:9,color:C.muted2,letterSpacing:1,marginTop:28},
+  statsPulse:{width:42,height:42,borderRadius:14,backgroundColor:"rgba(92,255,138,.09)",alignItems:"center",justifyContent:"center"},statsPulseDot:{width:10,height:10,borderRadius:5,backgroundColor:C.lime},statsHero:{backgroundColor:C.card2,borderRadius:24,borderWidth:1,borderColor:C.line,padding:20,marginBottom:10},statsHeroValue:{fontSize:52,fontWeight:"900",color:C.white,letterSpacing:-2,marginTop:3},statsHeroUnit:{fontSize:12,color:C.lime,letterSpacing:1},statsChartCard:{backgroundColor:C.card2,borderRadius:24,borderWidth:1,borderColor:C.line,padding:17,marginBottom:10},statsChartTotal:{fontSize:11,fontWeight:"800",color:C.lime},barChart:{height:145,flexDirection:"row",alignItems:"flex-end",justifyContent:"space-between",paddingTop:12},barSlot:{height:"100%",width:25,alignItems:"center",justifyContent:"flex-end"},barFill:{width:10,borderRadius:5,backgroundColor:C.lime,minHeight:5},barLabel:{fontSize:8,color:C.muted2,fontWeight:"800",marginTop:7},statsGrid:{flexDirection:"row",flexWrap:"wrap",gap:10},statsCard:{width:"48.2%",backgroundColor:C.card2,borderRadius:19,borderWidth:1,borderColor:C.line,padding:15,minHeight:105},statsValue:{fontSize:24,fontWeight:"900",color:C.white,marginTop:7},statsUnit:{fontSize:8,color:C.muted2,fontWeight:"900",letterSpacing:1,marginTop:2},insightCard:{marginTop:10,borderRadius:20,backgroundColor:"rgba(184,255,39,.08)",padding:15,flexDirection:"row",gap:12,borderWidth:1,borderColor:"rgba(184,255,39,.12)"},insightIcon:{width:37,height:37,borderRadius:12,backgroundColor:C.lime2,alignItems:"center",justifyContent:"center"},insightTitle:{fontSize:9,fontWeight:"900",letterSpacing:1,color:C.lime2},insightText:{fontSize:11,lineHeight:17,color:C.white,marginTop:4},
+  neoNavWrap:{paddingHorizontal:12,paddingBottom:6,paddingTop:8,backgroundColor:C.bg},neoNav:{height:67,borderRadius:22,backgroundColor:"rgba(13,21,19,.98)",borderWidth:1,borderColor:C.line,flexDirection:"row",alignItems:"center",justifyContent:"space-around",paddingHorizontal:4},neoNavItem:{flex:1,alignItems:"center",justifyContent:"center",height:60,position:"relative"},neoNavIcon:{width:34,height:28,borderRadius:10,alignItems:"center",justifyContent:"center"},neoNavText:{fontSize:7,fontWeight:"900",letterSpacing:.5,marginTop:2},neoNavLive:{position:"absolute",top:6,right:"28%",width:5,height:5,borderRadius:3,backgroundColor:C.red},
+
 });
