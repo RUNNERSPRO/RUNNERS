@@ -41,28 +41,29 @@ const { width, height } = Dimensions.get("window");
 ========================================================= */
 
 const C = {
-  bg: "#000000",
-  bg2: "#050505",
-  card: "#0A0D0A",
-  card2: "#0F120F",
-  card3: "#141814",
+  bg: "#F5F7F2",
+  bg2: "#EEF2EA",
+  card: "#FFFFFF",
+  card2: "#F0F4EC",
+  card3: "#E8EFE2",
 
-  white: "#F4F6F1",
-  muted: "#8A9088",
-  muted2: "#60675F",
-  line: "#1C211C",
+  white: "#FFFFFF",
+  ink: "#101713",
+  muted: "#667168",
+  muted2: "#8A948B",
+  line: "#E2E8DF",
 
-  lime: "#B8FF27",
-  lime2: "#A6F51F",
-  limeDark: "#17210B",
+  lime: "#7CFF3A",
+  lime2: "#68E82B",
+  limeDark: "#DFF8CF",
 
-  red: "#FF4D4D",
-  orange: "#FF9F43",
-  yellow: "#F8D94E",
-  blue: "#5BA7FF",
-  purple: "#A88BFF",
+  red: "#FF5A5F",
+  orange: "#FF9B4A",
+  yellow: "#F3C84B",
+  blue: "#4C8DFF",
+  purple: "#8B78FF",
 
-  black: "#000000",
+  black: "#101713",
 };
 
 const RADIUS = {
@@ -867,6 +868,7 @@ export default function App() {
       // bottom bar cannot sit underneath the system navigation controls.
       NavigationBar.setPositionAsync("relative").catch(() => {});
       NavigationBar.setBackgroundColorAsync(C.bg).catch(() => {});
+      NavigationBar.setButtonStyleAsync("dark").catch(() => {});
     }
 
     const unsubscribe =
@@ -2972,10 +2974,10 @@ export default function App() {
       style={styles.safe}
     >
       <StatusBar
-        hidden={true}
-        barStyle="light-content"
+        hidden={false}
+        barStyle="dark-content"
         backgroundColor={C.bg}
-        translucent={true}
+        translucent={false}
       />
 
       <View
@@ -4635,17 +4637,17 @@ const styles = StyleSheet.create({
 
   homeScroll: {
     paddingHorizontal: 18,
-    paddingTop: 18,
-    paddingBottom: 150,
+    paddingTop: 14,
+    paddingBottom: 175,
   },
 
   hero: {
-    minHeight: 365,
+    minHeight: 355,
     borderRadius: 30,
-    padding: 24,
-    backgroundColor: C.card,
+    padding: 22,
+    backgroundColor: C.ink,
     borderWidth: 1,
-    borderColor: C.line,
+    borderColor: "#18201A",
     overflow: "hidden",
     position: "relative",
   },
@@ -4698,7 +4700,7 @@ const styles = StyleSheet.create({
   },
 
   heroDescription: {
-    color: C.muted,
+    color: "#B8C1BA",
     fontSize: 13,
     lineHeight: 20,
     marginTop: 24,
@@ -4708,7 +4710,7 @@ const styles = StyleSheet.create({
   heroStart: {
     height: 55,
     borderRadius: 17,
-    backgroundColor: C.white,
+    backgroundColor: C.lime,
     marginTop: 25,
     paddingHorizontal: 20,
     flexDirection: "row",
@@ -4738,7 +4740,7 @@ const styles = StyleSheet.create({
   },
 
   heroMetaText: {
-    color: C.muted2,
+    color: "#8F9A91",
     fontSize: 8,
     fontWeight: "900",
     letterSpacing: 0.8,
@@ -4761,7 +4763,7 @@ const styles = StyleSheet.create({
   },
 
   sectionTitle: {
-    color: C.white,
+    color: C.ink,
     fontSize: 25,
     fontWeight: "900",
     letterSpacing: -0.8,
@@ -4779,6 +4781,11 @@ const styles = StyleSheet.create({
     backgroundColor: C.card,
     borderWidth: 1,
     borderColor: C.line,
+    shadowColor: "#101713",
+    shadowOpacity: 0.06,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 2,
   },
 
   weekMain: {
@@ -4787,7 +4794,7 @@ const styles = StyleSheet.create({
   },
 
   weekValue: {
-    color: C.white,
+    color: C.ink,
     fontSize: 43,
     fontWeight: "900",
     letterSpacing: -1.5,
@@ -4807,8 +4814,8 @@ const styles = StyleSheet.create({
   },
 
   weekProgress: {
-    height: 8,
-    backgroundColor: "#1B201A",
+    height: 9,
+    backgroundColor: "#E8EEE4",
     borderRadius: 8,
     overflow: "hidden",
     marginTop: 20,
@@ -4847,10 +4854,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: C.line,
     padding: 15,
+    shadowColor: "#101713",
+    shadowOpacity: 0.045,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 1,
   },
 
   miniMetricValue: {
-    color: C.white,
+    color: C.ink,
     fontSize: 27,
     fontWeight: "900",
     marginTop: 13,
@@ -4880,9 +4892,9 @@ const styles = StyleSheet.create({
     width: 47,
     height: 47,
     borderRadius: 15,
-    backgroundColor: "rgba(184,255,39,0.06)",
+    backgroundColor: C.limeDark,
     borderWidth: 1,
-    borderColor: "rgba(184,255,39,0.14)",
+    borderColor: "#CDEEBB",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -4893,7 +4905,7 @@ const styles = StyleSheet.create({
   },
 
   featureTitle: {
-    color: C.white,
+    color: C.ink,
     fontSize: 14,
     fontWeight: "900",
   },
@@ -4909,14 +4921,14 @@ const styles = StyleSheet.create({
     marginTop: 20,
     padding: 24,
     borderRadius: 27,
-    backgroundColor: C.card2,
+    backgroundColor: C.ink,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: C.line,
   },
 
   bottomCTAKicker: {
-    color: "rgba(0,0,0,0.55)",
+    color: "rgba(255,255,255,0.55)",
     fontSize: 9,
     fontWeight: "900",
     letterSpacing: 1.7,
@@ -4974,7 +4986,7 @@ const styles = StyleSheet.create({
   },
 
   runTitle: {
-    color: C.white,
+    color: C.ink,
     fontSize: 21,
     fontWeight: "900",
     marginTop: 3,
@@ -5044,7 +5056,7 @@ const styles = StyleSheet.create({
   },
 
   livePillText: {
-    color: C.white,
+    color: C.ink,
     fontSize: 8,
     fontWeight: "900",
     letterSpacing: 0.7,
@@ -5086,7 +5098,7 @@ const styles = StyleSheet.create({
   },
 
   runDistance: {
-    color: C.white,
+    color: C.ink,
     fontSize: 42,
     fontWeight: "900",
     letterSpacing: -1.8,
@@ -5142,7 +5154,7 @@ const styles = StyleSheet.create({
   },
 
   liveStatValue: {
-    color: C.white,
+    color: C.ink,
     fontSize: 16,
     fontWeight: "900",
     marginTop: 4,
@@ -5171,7 +5183,7 @@ const styles = StyleSheet.create({
   },
 
   graphTitle: {
-    color: C.white,
+    color: C.ink,
     fontSize: 8,
     fontWeight: "900",
     letterSpacing: 1.2,
@@ -5263,7 +5275,7 @@ const styles = StyleSheet.create({
   },
 
   actionText: {
-    color: C.white,
+    color: C.ink,
     fontSize: 11,
     fontWeight: "900",
     letterSpacing: 0.7,
@@ -5298,7 +5310,7 @@ const styles = StyleSheet.create({
   },
 
   offlineRunMetric: {
-    color: C.white,
+    color: C.ink,
     fontSize: 55,
     fontWeight: "900",
     letterSpacing: -2,
@@ -5337,7 +5349,7 @@ const styles = StyleSheet.create({
   },
 
   offlineExtraValue: {
-    color: C.white,
+    color: C.ink,
     fontSize: 16,
     fontWeight: "900",
     marginTop: 4,
@@ -5354,22 +5366,22 @@ const styles = StyleSheet.create({
 
   navWrap: {
     paddingHorizontal: 12,
-    paddingTop: 7,
-    // Extra bottom breathing room keeps the app navigation clear of
-    // Android's system navigation buttons / gesture area.
-    paddingBottom:
-      Platform.OS === "android"
-        ? 38
-        : 10,
+    paddingTop: 8,
+    paddingBottom: Platform.OS === "android" ? 34 : 12,
     backgroundColor: C.bg,
   },
 
   bottomNav: {
-    height: 70,
-    borderRadius: 22,
-    backgroundColor: "#080A08",
+    height: 72,
+    borderRadius: 24,
+    backgroundColor: C.card,
     borderWidth: 1,
-    borderColor: "#202720",
+    borderColor: C.line,
+    shadowColor: "#101713",
+    shadowOpacity: 0.10,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 7,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-around",
@@ -5385,10 +5397,9 @@ const styles = StyleSheet.create({
   },
 
   navItemActive: {
-    backgroundColor:
-      "rgba(184,255,39,0.10)",
+    backgroundColor: C.limeDark,
     borderWidth: 1,
-    borderColor: "rgba(184,255,39,0.08)",
+    borderColor: "#CBEFBA",
   },
 
   navIconWrap: {
@@ -5408,7 +5419,7 @@ const styles = StyleSheet.create({
   },
 
   navLabel: {
-    color: "#737A71",
+    color: C.muted,
     fontSize: 9,
     fontWeight: "800",
     marginTop: 4,
@@ -5437,7 +5448,7 @@ const styles = StyleSheet.create({
   },
 
   screenTitle: {
-    color: C.white,
+    color: C.ink,
     fontSize: 29,
     fontWeight: "900",
     letterSpacing: -1,
@@ -5449,11 +5460,9 @@ const styles = StyleSheet.create({
     height: 34,
     paddingHorizontal: 9,
     borderRadius: 17,
-    backgroundColor:
-      "rgba(184,255,39,0.08)",
+    backgroundColor: C.limeDark,
     borderWidth: 1,
-    borderColor:
-      "rgba(184,255,39,0.18)",
+    borderColor: "#CDEEBB",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -5493,7 +5502,7 @@ const styles = StyleSheet.create({
   },
 
   overviewValue: {
-    color: C.white,
+    color: C.ink,
     fontSize: 24,
     fontWeight: "900",
     marginTop: 4,
@@ -5511,6 +5520,11 @@ const styles = StyleSheet.create({
     borderColor: C.line,
     padding: 16,
     marginBottom: 9,
+    shadowColor: "#101713",
+    shadowOpacity: 0.045,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 1,
   },
 
   historyItemTop: {
@@ -5526,7 +5540,7 @@ const styles = StyleSheet.create({
   },
 
   historyItemDistance: {
-    color: C.white,
+    color: C.ink,
     fontSize: 24,
     fontWeight: "900",
     marginTop: 2,
@@ -5566,7 +5580,7 @@ const styles = StyleSheet.create({
   },
 
   historyStatValue: {
-    color: C.white,
+    color: C.ink,
     fontSize: 10,
     fontWeight: "800",
     marginTop: 4,
@@ -5593,7 +5607,7 @@ const styles = StyleSheet.create({
   },
 
   emptyTitle: {
-    color: C.white,
+    color: C.ink,
     fontSize: 20,
     fontWeight: "900",
     marginTop: 17,
@@ -5661,7 +5675,7 @@ const styles = StyleSheet.create({
   },
 
   profileName: {
-    color: C.white,
+    color: C.ink,
     fontSize: 18,
     fontWeight: "900",
   },
@@ -5695,10 +5709,15 @@ const styles = StyleSheet.create({
     backgroundColor: C.card,
     borderWidth: 1,
     borderColor: C.line,
+    shadowColor: "#101713",
+    shadowOpacity: 0.045,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 1,
   },
 
   profileStatValue: {
-    color: C.white,
+    color: C.ink,
     fontSize: 27,
     fontWeight: "900",
     marginTop: 13,
@@ -5718,6 +5737,11 @@ const styles = StyleSheet.create({
     backgroundColor: C.card,
     borderWidth: 1,
     borderColor: C.line,
+    shadowColor: "#101713",
+    shadowOpacity: 0.045,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 1,
   },
 
   pbRow: {
@@ -5748,7 +5772,7 @@ const styles = StyleSheet.create({
   },
 
   pbValue: {
-    color: C.white,
+    color: C.ink,
     fontSize: 12,
     fontWeight: "900",
   },
@@ -5759,6 +5783,11 @@ const styles = StyleSheet.create({
     backgroundColor: C.card,
     borderWidth: 1,
     borderColor: C.line,
+    shadowColor: "#101713",
+    shadowOpacity: 0.045,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 1,
   },
 
   valueRow: {
@@ -5784,7 +5813,7 @@ const styles = StyleSheet.create({
   },
 
   valueTitle: {
-    color: C.white,
+    color: C.ink,
     fontSize: 11,
     fontWeight: "900",
   },
@@ -5816,7 +5845,7 @@ const styles = StyleSheet.create({
   },
 
   missionSheet: {
-    backgroundColor: "#0A0C0A",
+    backgroundColor: C.card,
     borderTopLeftRadius: 31,
     borderTopRightRadius: 31,
     paddingHorizontal: 18,
@@ -5833,7 +5862,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 4,
     borderRadius: 4,
-    backgroundColor: "#303530",
+    backgroundColor: "#C7D0C7",
     alignSelf: "center",
     marginBottom: 19,
   },
@@ -5853,7 +5882,7 @@ const styles = StyleSheet.create({
   },
 
   sheetTitle: {
-    color: C.white,
+    color: C.ink,
     fontSize: 25,
     fontWeight: "900",
     marginTop: 4,
@@ -5895,7 +5924,7 @@ const styles = StyleSheet.create({
   },
 
   missionOptionTitle: {
-    color: C.white,
+    color: C.ink,
     fontSize: 12,
     fontWeight: "900",
   },
@@ -5927,7 +5956,7 @@ const styles = StyleSheet.create({
   },
 
   modalTitle: {
-    color: C.white,
+    color: C.ink,
     fontSize: 28,
     fontWeight: "900",
     marginTop: 3,
@@ -5998,7 +6027,7 @@ const styles = StyleSheet.create({
   },
 
   summaryHeroValue: {
-    color: C.white,
+    color: C.ink,
     fontSize: 43,
     fontWeight: "900",
     letterSpacing: -1.5,
@@ -6052,7 +6081,7 @@ const styles = StyleSheet.create({
   },
 
   summaryMetricValue: {
-    color: C.white,
+    color: C.ink,
     fontSize: 14,
     fontWeight: "900",
     marginTop: 4,
@@ -6101,7 +6130,7 @@ const styles = StyleSheet.create({
   doneButton: {
     height: 54,
     borderRadius: 17,
-    backgroundColor: C.white,
+    backgroundColor: C.ink,
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
@@ -6156,7 +6185,7 @@ const styles = StyleSheet.create({
   },
 
   onboardingLogo: {
-    color: C.white,
+    color: C.ink,
     fontSize: 19,
     fontWeight: "900",
     letterSpacing: -0.5,
@@ -6210,7 +6239,7 @@ const styles = StyleSheet.create({
   },
 
   onboardingTitle: {
-    color: C.white,
+    color: C.ink,
     fontSize: 48,
     lineHeight: 47,
     fontWeight: "900",
@@ -6252,7 +6281,7 @@ const styles = StyleSheet.create({
   },
 
   onboardingFeatureTitle: {
-    color: C.white,
+    color: C.ink,
     fontSize: 10,
     fontWeight: "900",
   },
@@ -6266,7 +6295,7 @@ const styles = StyleSheet.create({
   onboardingButton: {
     height: 55,
     borderRadius: 17,
-    backgroundColor: C.white,
+    backgroundColor: C.lime,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
