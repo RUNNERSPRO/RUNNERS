@@ -41,29 +41,29 @@ const { width, height } = Dimensions.get("window");
 ========================================================= */
 
 const C = {
-  bg: "#F5F7F2",
-  bg2: "#EEF2EA",
-  card: "#FFFFFF",
-  card2: "#F0F4EC",
-  card3: "#E8EFE2",
+  bg: "#050807",
+  bg2: "#08110F",
+  card: "rgba(14,24,21,0.94)",
+  card2: "#0D1714",
+  card3: "#12211C",
 
-  white: "#FFFFFF",
-  ink: "#101713",
-  muted: "#667168",
-  muted2: "#8A948B",
-  line: "#E2E8DF",
+  white: "#F7FFF4",
+  ink: "#F4FAF1",
+  muted: "#93A49B",
+  muted2: "#64756D",
+  line: "rgba(190,255,218,0.11)",
 
-  lime: "#7CFF3A",
-  lime2: "#68E82B",
-  limeDark: "#DFF8CF",
+  lime: "#B8FF27",
+  lime2: "#72FF5B",
+  limeDark: "rgba(184,255,39,0.10)",
 
-  red: "#FF5A5F",
-  orange: "#FF9B4A",
-  yellow: "#F3C84B",
-  blue: "#4C8DFF",
-  purple: "#8B78FF",
+  red: "#FF5A68",
+  orange: "#FF9D4D",
+  yellow: "#FFD75A",
+  blue: "#55A6FF",
+  purple: "#9B82FF",
 
-  black: "#101713",
+  black: "#030504",
 };
 
 const RADIUS = {
@@ -867,8 +867,8 @@ export default function App() {
       // Keep Android navigation in the normal layout flow so the app
       // bottom bar cannot sit underneath the system navigation controls.
       NavigationBar.setPositionAsync("relative").catch(() => {});
-      NavigationBar.setBackgroundColorAsync(C.bg).catch(() => {});
-      NavigationBar.setButtonStyleAsync("dark").catch(() => {});
+      NavigationBar.setBackgroundColorAsync(C.black).catch(() => {});
+      NavigationBar.setButtonStyleAsync("light").catch(() => {});
     }
 
     const unsubscribe =
@@ -1842,6 +1842,8 @@ export default function App() {
         {/* HERO */}
 
         <View style={styles.hero}>
+          <View style={styles.heroGlow} />
+          <View style={styles.heroGlowSmall} />
           <View style={styles.heroTop}>
             <View>
               <Text style={styles.eyebrow}>
@@ -1876,7 +1878,19 @@ export default function App() {
           </Text>
 
           <TouchableOpacity
-            style={styles.heroStart}
+            style={[
+              styles.heroStart,
+              {
+                transform: [
+                  {
+                    scale: pulseAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [1, 1.018],
+                    }),
+                  },
+                ],
+              },
+            ]}
             activeOpacity={0.85}
             onPress={() =>
               setMissionVisible(true)
@@ -2430,7 +2444,19 @@ export default function App() {
 
         {!running ? (
           <TouchableOpacity
-            style={styles.bigStart}
+            style={[
+              styles.bigStart,
+              {
+                transform: [
+                  {
+                    scale: pulseAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [1, 1.015],
+                    }),
+                  },
+                ],
+              },
+            ]}
             activeOpacity={0.86}
             onPress={() =>
               setMissionVisible(true)
@@ -4026,6 +4052,22 @@ function MiniMetric({
       >
         {label}
       </Text>
+
+      <View style={styles.microSparkline}>
+        {[0.28, 0.42, 0.34, 0.62, 0.48, 0.76, 0.58, 0.9].map((v, i) => (
+          <View
+            key={i}
+            style={[
+              styles.microSparkBar,
+              {
+                height: 3 + v * 11,
+                backgroundColor: accent,
+                opacity: 0.25 + i * 0.09,
+              },
+            ]}
+          />
+        ))}
+      </View>
     </View>
   );
 }
@@ -4487,82 +4529,79 @@ function OfflineRunView({
 }
 
 function LiveGraph({ values }) {
-  const data =
-    values.length > 1
-      ? values
-      : [0, 1, 0, 1, 0, 1, 0];
+  const data = values.length > 1
+    ? values.slice(-18)
+    : [0.2, 0.35, 0.28, 0.58, 0.42, 0.72, 0.55, 0.86, 0.68, 0.9];
 
-  const max =
-    Math.max(...data, 1);
-
-  const min =
-    Math.min(...data, 0);
-
-  const range =
-    max - min || 1;
+  const max = Math.max(...data, 1);
+  const min = Math.min(...data, 0);
+  const range = max - min || 1;
 
   return (
-    <View
-      style={styles.liveGraph}
-    >
-      <View
-        style={
-          styles.graphGridLine
-        }
-      />
+    <View style={styles.liveGraph}>
+      <View style={styles.graphGridLine} />
+      <View style={[styles.graphGridLine, { top: "50%" }]} />
+      <View style={[styles.graphGridLine, { top: "100%" }]} />
 
-      <View
-        style={[
-          styles.graphGridLine,
-          {
-            top: "50%",
-          },
-        ]}
-      />
+      <View style={styles.graphBars}>
+        {data.map((value, index) => {
+          const normalized = (value - min) / range;
+          const y = 30 - normalized * 24;
+          const next = data[index + 1] ?? value;
+          const nextNormalized = (next - min) / range;
+          const nextY = 30 - nextNormalized * 24;
+          const dx = 100 / Math.max(1, data.length - 1);
+          const dy = nextY - y;
+          const length = Math.sqrt(dx * dx + dy * dy);
+          const angle = Math.atan2(dy, dx) * (180 / Math.PI);
 
-      <View
-        style={[
-          styles.graphGridLine,
-          {
-            top: "100%",
-          },
-        ]}
-      />
-
-      <View
-        style={
-          styles.graphBars
-        }
-      >
-        {data.map(
-          (value, index) => {
-            const normalized =
-              (value - min) /
-              range;
-
-            const barHeight =
-              12 +
-              normalized * 55;
-
-            return (
-              <View
-                key={index}
-                style={[
-                  styles.graphBar,
-                  {
-                    height:
-                      barHeight,
-                    opacity:
-                      0.35 +
-                      (index /
-                        data.length) *
-                        0.65,
-                  },
-                ]}
-              />
-            );
-          }
-        )}
+          return (
+            <View
+              key={index}
+              style={{
+                position: "absolute",
+                left: `${(index / Math.max(1, data.length - 1)) * 100}%`,
+                top: `${y}%`,
+                width: `${Math.max(12, length)}%`,
+                height: 2,
+                borderRadius: 2,
+                backgroundColor: C.lime,
+                opacity: 0.45 + (index / data.length) * 0.55,
+                transform: [{ rotate: `${angle}deg` }],
+                transformOrigin: "left center",
+                shadowColor: C.lime,
+                shadowOpacity: 0.9,
+                shadowRadius: 5,
+                shadowOffset: { width: 0, height: 0 },
+                elevation: 3,
+              }}
+            />
+          );
+        })}
+        {data.map((value, index) => {
+          const normalized = (value - min) / range;
+          return (
+            <View
+              key={`dot-${index}`}
+              style={{
+                position: "absolute",
+                left: `${(index / Math.max(1, data.length - 1)) * 100}%`,
+                top: `${30 - normalized * 24}%`,
+                width: 5,
+                height: 5,
+                borderRadius: 3,
+                marginLeft: -2,
+                marginTop: -2,
+                backgroundColor: C.lime,
+                shadowColor: C.lime,
+                shadowOpacity: 0.85,
+                shadowRadius: 5,
+                shadowOffset: { width: 0, height: 0 },
+                elevation: 3,
+              }}
+            />
+          );
+        })}
       </View>
     </View>
   );
@@ -4638,29 +4677,44 @@ const styles = StyleSheet.create({
   homeScroll: {
     paddingHorizontal: 18,
     paddingTop: 14,
-    paddingBottom: 175,
+    paddingBottom: 190,
   },
 
   hero: {
     minHeight: 355,
     borderRadius: 30,
     padding: 22,
-    backgroundColor: C.ink,
+    backgroundColor: "#08110D",
     borderWidth: 1,
-    borderColor: "#18201A",
+    borderColor: "rgba(184,255,39,0.16)",
     overflow: "hidden",
     position: "relative",
+    shadowColor: C.lime,
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 8,
   },
 
   heroGlow: {
     position: "absolute",
-    width: 240,
-    height: 240,
-    borderRadius: 120,
-    backgroundColor: "transparent",
-    opacity: 0,
-    right: -80,
-    top: -80,
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    backgroundColor: "rgba(184,255,39,0.08)",
+    opacity: 1,
+    right: -90,
+    top: -90,
+  },
+
+  heroGlowSmall: {
+    position: "absolute",
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    backgroundColor: "rgba(82,255,135,0.06)",
+    right: 15,
+    top: 35,
   },
 
   heroTop: {
@@ -4677,6 +4731,7 @@ const styles = StyleSheet.create({
   },
 
   heroTitle: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
     color: C.white,
     fontSize: 45,
     lineHeight: 45,
@@ -4700,6 +4755,7 @@ const styles = StyleSheet.create({
   },
 
   heroDescription: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
     color: "#B8C1BA",
     fontSize: 13,
     lineHeight: 20,
@@ -4708,8 +4764,8 @@ const styles = StyleSheet.create({
   },
 
   heroStart: {
-    height: 55,
-    borderRadius: 17,
+    height: 57,
+    borderRadius: 18,
     backgroundColor: C.lime,
     marginTop: 25,
     paddingHorizontal: 20,
@@ -4717,6 +4773,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 9,
+    shadowColor: C.lime,
+    shadowOpacity: 0.48,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 10,
   },
 
   heroStartText: {
@@ -4763,6 +4824,7 @@ const styles = StyleSheet.create({
   },
 
   sectionTitle: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
     color: C.ink,
     fontSize: 25,
     fontWeight: "900",
@@ -4778,14 +4840,14 @@ const styles = StyleSheet.create({
   weekCard: {
     padding: 20,
     borderRadius: 24,
-    backgroundColor: C.card,
+    backgroundColor: "rgba(13,24,20,0.92)",
     borderWidth: 1,
-    borderColor: C.line,
-    shadowColor: "#101713",
-    shadowOpacity: 0.06,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 2,
+    borderColor: "rgba(190,255,218,0.13)",
+    shadowColor: C.lime,
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4,
   },
 
   weekMain: {
@@ -4794,6 +4856,7 @@ const styles = StyleSheet.create({
   },
 
   weekValue: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
     color: C.ink,
     fontSize: 43,
     fontWeight: "900",
@@ -4814,17 +4877,24 @@ const styles = StyleSheet.create({
   },
 
   weekProgress: {
-    height: 9,
-    backgroundColor: "#E8EEE4",
+    height: 10,
+    backgroundColor: "#14201B",
     borderRadius: 8,
     overflow: "hidden",
     marginTop: 20,
+    borderWidth: 1,
+    borderColor: "rgba(184,255,39,0.08)",
   },
 
   weekProgressFill: {
     height: "100%",
     borderRadius: 8,
     backgroundColor: C.lime,
+    shadowColor: C.lime,
+    shadowOpacity: 0.9,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 4,
   },
 
   weekBottom: {
@@ -4848,20 +4918,21 @@ const styles = StyleSheet.create({
 
   miniMetric: {
     width: (width - 45) / 2,
-    minHeight: 115,
+    minHeight: 122,
     borderRadius: 20,
-    backgroundColor: C.card,
+    backgroundColor: "rgba(12,21,18,0.88)",
     borderWidth: 1,
-    borderColor: C.line,
+    borderColor: "rgba(190,255,218,0.10)",
     padding: 15,
-    shadowColor: "#101713",
+    shadowColor: C.lime,
     shadowOpacity: 0.045,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 1,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 2,
   },
 
   miniMetricValue: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
     color: C.ink,
     fontSize: 27,
     fontWeight: "900",
@@ -4876,12 +4947,27 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
+  microSparkline: {
+    height: 18,
+    marginTop: 8,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 3,
+    opacity: 0.95,
+  },
+
+  microSparkBar: {
+    width: 4,
+    minHeight: 3,
+    borderRadius: 3,
+  },
+
   featureCard: {
     minHeight: 91,
     borderRadius: 21,
-    backgroundColor: C.card,
+    backgroundColor: "rgba(12,21,18,0.82)",
     borderWidth: 1,
-    borderColor: C.line,
+    borderColor: "rgba(190,255,218,0.10)",
     padding: 14,
     marginBottom: 9,
     flexDirection: "row",
@@ -4892,11 +4978,16 @@ const styles = StyleSheet.create({
     width: 47,
     height: 47,
     borderRadius: 15,
-    backgroundColor: C.limeDark,
+    backgroundColor: "rgba(184,255,39,0.09)",
     borderWidth: 1,
-    borderColor: "#CDEEBB",
+    borderColor: "rgba(184,255,39,0.22)",
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: C.lime,
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 3,
   },
 
   featureContent: {
@@ -4905,6 +4996,7 @@ const styles = StyleSheet.create({
   },
 
   featureTitle: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
     color: C.ink,
     fontSize: 14,
     fontWeight: "900",
@@ -4921,10 +5013,15 @@ const styles = StyleSheet.create({
     marginTop: 20,
     padding: 24,
     borderRadius: 27,
-    backgroundColor: C.ink,
+    backgroundColor: "#0A1411",
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: C.line,
+    borderColor: "rgba(184,255,39,0.15)",
+    shadowColor: C.lime,
+    shadowOpacity: 0.07,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4,
   },
 
   bottomCTAKicker: {
@@ -4935,7 +5032,8 @@ const styles = StyleSheet.create({
   },
 
   bottomCTATitle: {
-    color: C.black,
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
+    color: C.white,
     fontSize: 32,
     fontWeight: "900",
     marginTop: 5,
@@ -4943,18 +5041,23 @@ const styles = StyleSheet.create({
   },
 
   ctaButton: {
-    height: 50,
+    height: 52,
     marginTop: 20,
-    borderRadius: 15,
-    backgroundColor: C.black,
+    borderRadius: 16,
+    backgroundColor: C.lime,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
+    shadowColor: C.lime,
+    shadowOpacity: 0.38,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 8,
   },
 
   ctaButtonText: {
-    color: C.white,
+    color: C.black,
     fontSize: 11,
     fontWeight: "900",
     letterSpacing: 1,
@@ -4986,6 +5089,7 @@ const styles = StyleSheet.create({
   },
 
   runTitle: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
     color: C.ink,
     fontSize: 21,
     fontWeight: "900",
@@ -5022,8 +5126,13 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: C.line,
+    borderColor: "rgba(184,255,39,0.16)",
     backgroundColor: C.card,
+    shadowColor: C.lime,
+    shadowOpacity: 0.10,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 5,
   },
 
   map: {
@@ -5056,7 +5165,7 @@ const styles = StyleSheet.create({
   },
 
   livePillText: {
-    color: C.ink,
+    color: C.white,
     fontSize: 8,
     fontWeight: "900",
     letterSpacing: 0.7,
@@ -5098,6 +5207,7 @@ const styles = StyleSheet.create({
   },
 
   runDistance: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
     color: C.ink,
     fontSize: 42,
     fontWeight: "900",
@@ -5138,12 +5248,12 @@ const styles = StyleSheet.create({
 
   liveStat: {
     flex: 1,
-    minHeight: 58,
+    minHeight: 64,
     borderRadius: 15,
-    backgroundColor: C.card,
+    backgroundColor: "rgba(12,21,18,0.86)",
     borderWidth: 1,
-    borderColor: C.line,
-    padding: 8,
+    borderColor: "rgba(190,255,218,0.10)",
+    padding: 9,
   },
 
   liveStatLabel: {
@@ -5154,6 +5264,7 @@ const styles = StyleSheet.create({
   },
 
   liveStatValue: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
     color: C.ink,
     fontSize: 16,
     fontWeight: "900",
@@ -5167,13 +5278,13 @@ const styles = StyleSheet.create({
   },
 
   graphCard: {
-    height: 82,
+    height: 88,
     marginTop: 8,
     padding: 10,
     borderRadius: 17,
-    backgroundColor: C.card,
+    backgroundColor: "rgba(10,19,16,0.92)",
     borderWidth: 1,
-    borderColor: C.line,
+    borderColor: "rgba(184,255,39,0.13)",
   },
 
   graphHeader: {
@@ -5213,26 +5324,37 @@ const styles = StyleSheet.create({
   graphBars: {
     height: "100%",
     flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 3,
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 1,
   },
 
   graphBar: {
-    flex: 1,
-    minWidth: 2,
-    borderRadius: 5,
+    width: 5,
+    height: 5,
+    borderRadius: 3,
     backgroundColor: C.lime,
+    shadowColor: C.lime,
+    shadowOpacity: 0.75,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 2,
   },
 
   bigStart: {
-    height: 52,
-    borderRadius: 16,
-    backgroundColor: C.white,
+    height: 54,
+    borderRadius: 17,
+    backgroundColor: C.lime,
     marginTop: 8,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
+    shadowColor: C.lime,
+    shadowOpacity: 0.48,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 9,
   },
 
   bigStartText: {
@@ -5252,9 +5374,9 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 52,
     borderRadius: 16,
-    backgroundColor: C.card2,
+    backgroundColor: "rgba(17,30,25,0.95)",
     borderWidth: 1,
-    borderColor: C.line,
+    borderColor: "rgba(190,255,218,0.13)",
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
@@ -5275,7 +5397,7 @@ const styles = StyleSheet.create({
   },
 
   actionText: {
-    color: C.ink,
+    color: C.white,
     fontSize: 11,
     fontWeight: "900",
     letterSpacing: 0.7,
@@ -5374,14 +5496,14 @@ const styles = StyleSheet.create({
   bottomNav: {
     height: 72,
     borderRadius: 24,
-    backgroundColor: C.card,
+    backgroundColor: "rgba(9,16,14,0.96)",
     borderWidth: 1,
-    borderColor: C.line,
-    shadowColor: "#101713",
+    borderColor: "rgba(190,255,218,0.14)",
+    shadowColor: C.lime,
     shadowOpacity: 0.10,
-    shadowRadius: 18,
+    shadowRadius: 20,
     shadowOffset: { width: 0, height: 8 },
-    elevation: 7,
+    elevation: 9,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-around",
@@ -5397,9 +5519,14 @@ const styles = StyleSheet.create({
   },
 
   navItemActive: {
-    backgroundColor: C.limeDark,
+    backgroundColor: "rgba(184,255,39,0.10)",
     borderWidth: 1,
-    borderColor: "#CBEFBA",
+    borderColor: "rgba(184,255,39,0.24)",
+    shadowColor: C.lime,
+    shadowOpacity: 0.22,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 4,
   },
 
   navIconWrap: {
@@ -5448,6 +5575,7 @@ const styles = StyleSheet.create({
   },
 
   screenTitle: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
     color: C.ink,
     fontSize: 29,
     fontWeight: "900",
@@ -5480,7 +5608,7 @@ const styles = StyleSheet.create({
   historyScreen: {
     paddingHorizontal: 18,
     paddingTop: 14,
-    paddingBottom: 145,
+    paddingBottom: 170,
   },
 
   historyOverview: {
@@ -5502,6 +5630,7 @@ const styles = StyleSheet.create({
   },
 
   overviewValue: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
     color: C.ink,
     fontSize: 24,
     fontWeight: "900",
@@ -5540,6 +5669,7 @@ const styles = StyleSheet.create({
   },
 
   historyItemDistance: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
     color: C.ink,
     fontSize: 24,
     fontWeight: "900",
@@ -5626,7 +5756,7 @@ const styles = StyleSheet.create({
     height: 48,
     paddingHorizontal: 18,
     borderRadius: 15,
-    backgroundColor: C.white,
+    backgroundColor: C.lime,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 20,
@@ -5646,7 +5776,7 @@ const styles = StyleSheet.create({
   profileScreen: {
     paddingHorizontal: 18,
     paddingTop: 14,
-    paddingBottom: 155,
+    paddingBottom: 175,
   },
 
   profileHero: {
@@ -5675,6 +5805,7 @@ const styles = StyleSheet.create({
   },
 
   profileName: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
     color: C.ink,
     fontSize: 18,
     fontWeight: "900",
@@ -5717,6 +5848,7 @@ const styles = StyleSheet.create({
   },
 
   profileStatValue: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
     color: C.ink,
     fontSize: 27,
     fontWeight: "900",
@@ -5825,7 +5957,7 @@ const styles = StyleSheet.create({
   },
 
   versionText: {
-    color: "#343934",
+    color: C.muted2,
     fontSize: 8,
     fontWeight: "900",
     letterSpacing: 1.5,
@@ -5862,7 +5994,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 4,
     borderRadius: 4,
-    backgroundColor: "#C7D0C7",
+    backgroundColor: "#31413A",
     alignSelf: "center",
     marginBottom: 19,
   },
@@ -5882,6 +6014,7 @@ const styles = StyleSheet.create({
   },
 
   sheetTitle: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
     color: C.ink,
     fontSize: 25,
     fontWeight: "900",
@@ -5956,6 +6089,7 @@ const styles = StyleSheet.create({
   },
 
   modalTitle: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
     color: C.ink,
     fontSize: 28,
     fontWeight: "900",
@@ -6027,6 +6161,7 @@ const styles = StyleSheet.create({
   },
 
   summaryHeroValue: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
     color: C.ink,
     fontSize: 43,
     fontWeight: "900",
@@ -6239,6 +6374,7 @@ const styles = StyleSheet.create({
   },
 
   onboardingTitle: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
     color: C.ink,
     fontSize: 48,
     lineHeight: 47,
