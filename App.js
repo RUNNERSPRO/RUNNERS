@@ -32,6 +32,7 @@ import {
   MaterialCommunityIcons,
 } from "@expo/vector-icons";
 import NetInfo from "@react-native-community/netinfo";
+import * as NavigationBar from "expo-navigation-bar";
 
 const { width, height } = Dimensions.get("window");
 
@@ -51,9 +52,9 @@ const C = {
   muted2: "#5C625B",
   line: "#20231F",
 
-  lime: "#B8FF27",
-  lime2: "#8CFF00",
-  limeDark: "#253D08",
+  lime: "#B7C98A",
+  lime2: "#AFC48A",
+  limeDark: "#1B2117",
 
   red: "#FF4D4D",
   orange: "#FF9F43",
@@ -856,6 +857,13 @@ export default function App() {
 
   useEffect(() => {
     initializeApp();
+
+    // Keep Android system navigation controls out of the app UI.
+    if (Platform.OS === "android") {
+      NavigationBar.setVisibilityAsync("hidden").catch(() => {});
+      NavigationBar.setBehaviorAsync("overlay-swipe").catch(() => {});
+      NavigationBar.setBackgroundColorAsync(C.bg).catch(() => {});
+    }
 
     const unsubscribe =
       NetInfo.addEventListener((state) => {
@@ -1828,8 +1836,6 @@ export default function App() {
         {/* HERO */}
 
         <View style={styles.hero}>
-          <View style={styles.heroGlow} />
-
           <View style={styles.heroTop}>
             <View>
               <Text style={styles.eyebrow}>
@@ -2962,8 +2968,10 @@ export default function App() {
       style={styles.safe}
     >
       <StatusBar
+        hidden={true}
         barStyle="light-content"
         backgroundColor={C.bg}
+        translucent={true}
       />
 
       <View
@@ -3008,12 +3016,6 @@ export default function App() {
             styles.onboarding
           }
         >
-          <View
-            style={
-              styles.onboardingGlow
-            }
-          />
-
           <View
             style={
               styles.onboardingTop
@@ -4630,7 +4632,7 @@ const styles = StyleSheet.create({
   homeScroll: {
     paddingHorizontal: 18,
     paddingTop: 18,
-    paddingBottom: 125,
+    paddingBottom: 108,
   },
 
   hero: {
@@ -4649,8 +4651,8 @@ const styles = StyleSheet.create({
     width: 240,
     height: 240,
     borderRadius: 120,
-    backgroundColor: C.limeDark,
-    opacity: 0.3,
+    backgroundColor: "transparent",
+    opacity: 0,
     right: -80,
     top: -80,
   },
@@ -4684,9 +4686,9 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 15,
-    backgroundColor: "rgba(184,255,39,0.08)",
+    backgroundColor: "rgba(183,201,138,0.06)",
     borderWidth: 1,
-    borderColor: "rgba(184,255,39,0.18)",
+    borderColor: "rgba(183,201,138,0.12)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -4702,7 +4704,7 @@ const styles = StyleSheet.create({
   heroStart: {
     height: 55,
     borderRadius: 17,
-    backgroundColor: C.lime,
+    backgroundColor: C.white,
     marginTop: 25,
     paddingHorizontal: 20,
     flexDirection: "row",
@@ -4874,7 +4876,7 @@ const styles = StyleSheet.create({
     width: 47,
     height: 47,
     borderRadius: 15,
-    backgroundColor: "rgba(184,255,39,0.07)",
+    backgroundColor: "rgba(183,201,138,0.05)",
     borderWidth: 1,
     borderColor: "rgba(184,255,39,0.14)",
     alignItems: "center",
@@ -4903,8 +4905,10 @@ const styles = StyleSheet.create({
     marginTop: 20,
     padding: 24,
     borderRadius: 27,
-    backgroundColor: C.lime,
+    backgroundColor: C.card2,
     overflow: "hidden",
+    borderWidth: 1,
+    borderColor: C.line,
   },
 
   bottomCTAKicker: {
@@ -5022,7 +5026,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: "rgba(5,6,5,0.88)",
     borderWidth: 1,
-    borderColor: "rgba(184,255,39,0.18)",
+    borderColor: "rgba(183,201,138,0.12)",
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
@@ -5207,7 +5211,7 @@ const styles = StyleSheet.create({
   bigStart: {
     height: 52,
     borderRadius: 16,
-    backgroundColor: C.lime,
+    backgroundColor: C.white,
     marginTop: 8,
     flexDirection: "row",
     alignItems: "center",
@@ -5376,7 +5380,7 @@ const styles = StyleSheet.create({
 
   navItemActive: {
     backgroundColor:
-      "rgba(184,255,39,0.07)",
+      "rgba(255,255,255,0.055)",
   },
 
   navIconWrap: {
@@ -5438,10 +5442,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
     borderRadius: 17,
     backgroundColor:
-      "rgba(184,255,39,0.08)",
+      "rgba(183,201,138,0.06)",
     borderWidth: 1,
     borderColor:
-      "rgba(184,255,39,0.18)",
+      "rgba(183,201,138,0.12)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -5459,7 +5463,7 @@ const styles = StyleSheet.create({
   historyScreen: {
     paddingHorizontal: 18,
     paddingTop: 14,
-    paddingBottom: 120,
+    paddingBottom: 104,
   },
 
   historyOverview: {
@@ -5572,10 +5576,10 @@ const styles = StyleSheet.create({
     height: 70,
     borderRadius: 24,
     backgroundColor:
-      "rgba(184,255,39,0.07)",
+      "rgba(183,201,138,0.05)",
     borderWidth: 1,
     borderColor:
-      "rgba(184,255,39,0.15)",
+      "rgba(183,201,138,0.09)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -5600,7 +5604,7 @@ const styles = StyleSheet.create({
     height: 48,
     paddingHorizontal: 18,
     borderRadius: 15,
-    backgroundColor: C.lime,
+    backgroundColor: C.white,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 20,
@@ -5722,7 +5726,7 @@ const styles = StyleSheet.create({
     height: 39,
     borderRadius: 13,
     backgroundColor:
-      "rgba(184,255,39,0.07)",
+      "rgba(183,201,138,0.05)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -5761,7 +5765,7 @@ const styles = StyleSheet.create({
     height: 39,
     borderRadius: 13,
     backgroundColor:
-      "rgba(184,255,39,0.07)",
+      "rgba(183,201,138,0.05)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -5941,10 +5945,10 @@ const styles = StyleSheet.create({
     minHeight: 68,
     borderRadius: 19,
     backgroundColor:
-      "rgba(184,255,39,0.07)",
+      "rgba(183,201,138,0.05)",
     borderWidth: 1,
     borderColor:
-      "rgba(184,255,39,0.18)",
+      "rgba(183,201,138,0.12)",
     paddingHorizontal: 15,
     flexDirection: "row",
     alignItems: "center",
@@ -6089,7 +6093,7 @@ const styles = StyleSheet.create({
   doneButton: {
     height: 54,
     borderRadius: 17,
-    backgroundColor: C.lime,
+    backgroundColor: C.white,
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
@@ -6131,7 +6135,7 @@ const styles = StyleSheet.create({
     width: 330,
     height: 330,
     borderRadius: 165,
-    backgroundColor: C.limeDark,
+    backgroundColor: "transparent",
     opacity: 0.2,
     top: height * 0.18,
     left: width * 0.1,
@@ -6156,7 +6160,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor:
-      "rgba(184,255,39,0.16)",
+      "rgba(183,201,138,0.10)",
     backgroundColor:
       "rgba(184,255,39,0.05)",
     flexDirection: "row",
@@ -6188,10 +6192,10 @@ const styles = StyleSheet.create({
     height: 95,
     borderRadius: 34,
     backgroundColor:
-      "rgba(184,255,39,0.07)",
+      "rgba(183,201,138,0.05)",
     borderWidth: 1,
     borderColor:
-      "rgba(184,255,39,0.16)",
+      "rgba(183,201,138,0.10)",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 30,
@@ -6233,7 +6237,7 @@ const styles = StyleSheet.create({
     height: 38,
     borderRadius: 12,
     backgroundColor:
-      "rgba(184,255,39,0.07)",
+      "rgba(183,201,138,0.05)",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 10,
@@ -6254,7 +6258,7 @@ const styles = StyleSheet.create({
   onboardingButton: {
     height: 55,
     borderRadius: 17,
-    backgroundColor: C.lime,
+    backgroundColor: C.white,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -6306,10 +6310,10 @@ const styles = StyleSheet.create({
     height: 29,
     borderRadius: 15,
     backgroundColor:
-      "rgba(184,255,39,0.22)",
+      "rgba(183,201,138,0.13)",
     borderWidth: 1,
     borderColor:
-      "rgba(184,255,39,0.45)",
+      "rgba(183,201,138,0.22)",
     alignItems: "center",
     justifyContent: "center",
   },
