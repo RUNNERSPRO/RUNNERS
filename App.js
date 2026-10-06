@@ -762,6 +762,9 @@ export default function App() {
   const [onboarding, setOnboarding] =
     useState(false);
 
+  const [onboardingPage, setOnboardingPage] =
+    useState(0);
+
   const [activeTab, setActiveTab] =
     useState("home");
 
@@ -906,12 +909,9 @@ export default function App() {
   }
 
   async function finishOnboarding() {
-    await AsyncStorage.setItem(
-      ONBOARDING_KEY,
-      "true"
-    );
-
+    await AsyncStorage.setItem(ONBOARDING_KEY, "true");
     setOnboarding(false);
+    setOnboardingPage(0);
   }
 
   async function loadHistory() {
@@ -1833,173 +1833,203 @@ export default function App() {
   }
 
   /* =========================================================
-     HOME
+     HOME — REFERENCE STYLE
   ========================================================= */
 
   function renderHome() {
-    const goal = 20;
+    const goal = 10;
     const progress = Math.min(100, (weeklyDistance / goal) * 100);
     const latest = history[0];
 
     return (
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.neoScroll}>
-        <View style={styles.neoHeader}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.refScroll}>
+        <View style={styles.refTopBar}>
           <View>
-            <Text style={styles.neoOverline}>GOOD TO SEE YOU</Text>
-            <Text style={styles.neoGreeting}>Shiva <Text style={styles.neoDot}>•</Text></Text>
+            <Text style={styles.refGreetingSmall}>GOOD MORNING,</Text>
+            <View style={styles.refTitleRow}>
+              <Text style={styles.refTitle}>Runner</Text>
+              <Text style={styles.refLeaf}>✦</Text>
+            </View>
           </View>
-          <TouchableOpacity style={styles.neoAvatar} onPress={() => setActiveTab("profile")} activeOpacity={0.85}>
-            <Text style={styles.neoAvatarText}>S</Text>
-            <View style={styles.neoOnline} />
+          <TouchableOpacity style={styles.refBell} onPress={() => Alert.alert("Notifications", "You're all caught up.")} activeOpacity={0.8}>
+            <Ionicons name="notifications-outline" size={20} color={C.white} />
+            <View style={styles.refBellDot} />
           </TouchableOpacity>
         </View>
 
-        <View style={styles.neoHero}>
-          <View style={styles.neoHeroGlow} />
-          <View style={styles.neoHeroTop}>
-            <View>
-              <Text style={styles.neoLabel}>THIS WEEK</Text>
-              <Text style={styles.neoHeroNumber}>{weeklyDistance.toFixed(1)}</Text>
-              <Text style={styles.neoHeroUnit}>KILOMETERS</Text>
+        <TouchableOpacity style={styles.refTodayCard} onPress={() => setMissionVisible(true)} activeOpacity={0.9}>
+          <View style={{flex: 1}}>
+            <Text style={styles.refCardEyebrow}>TODAY'S RUN</Text>
+            <Text style={styles.refCardTitle}>Let's move.</Text>
+            <Text style={styles.refCardSub}>Keep the streak alive!</Text>
+          </View>
+          <View style={styles.refStartPill}><Text style={styles.refStartText}>Start</Text></View>
+        </TouchableOpacity>
+
+        <View style={styles.refGoalCard}>
+          <View style={styles.refGlow} />
+          <View style={styles.refGoalRing}>
+            <View style={styles.refGoalRingInner}>
+              <Text style={styles.refGoalNumber}>{weeklyDistance.toFixed(1)}</Text>
+              <Text style={styles.refGoalUnit}>KM</Text>
+              <Text style={styles.refGoalHint}>Goal {goal} km</Text>
             </View>
-            <View style={styles.neoRing}>
-              <View style={styles.neoRingInner}>
-                <Text style={styles.neoRingValue}>{Math.round(progress)}%</Text>
-                <Text style={styles.neoRingText}>GOAL</Text>
-              </View>
-            </View>
           </View>
-          <View style={styles.neoProgressTrack}>
-            <View style={[styles.neoProgressFill, { width: `${progress}%` }]} />
-          </View>
-          <View style={styles.neoHeroBottom}>
-            <Text style={styles.neoMuted}>{weeklyDistance >= goal ? "Goal completed" : `${(goal - weeklyDistance).toFixed(1)} km remaining`}</Text>
-            <Text style={styles.neoMuted}>{goal} km target</Text>
-          </View>
-          <TouchableOpacity style={styles.neoPrimary} onPress={() => setMissionVisible(true)} activeOpacity={0.88}>
-            <View style={styles.neoPlay}><Ionicons name="play" size={16} color={C.black} /></View>
-            <Text style={styles.neoPrimaryText}>START A RUN</Text>
-            <Ionicons name="arrow-forward" size={18} color={C.black} />
-          </TouchableOpacity>
+          <Text style={styles.refGoalLabel}>WEEKLY DISTANCE</Text>
+          <Text style={styles.refGoalCaption}>{Math.round(progress)}% of your weekly goal</Text>
         </View>
 
-        <View style={styles.neoSectionHead}>
-          <View><Text style={styles.neoLabel}>YOUR NUMBERS</Text><Text style={styles.neoSectionTitle}>Built by consistency.</Text></View>
-          <TouchableOpacity onPress={() => setActiveTab("stats")}><Text style={styles.neoLink}>Stats</Text></TouchableOpacity>
-        </View>
-        <View style={styles.neoGrid}>
-          <View style={styles.neoMetric}><View style={[styles.neoMetricIcon, {backgroundColor:"rgba(92,255,138,.12)"}]}><Ionicons name="navigate" size={18} color={C.lime}/></View><Text style={styles.neoMetricValue}>{totalDistance.toFixed(1)}</Text><Text style={styles.neoMetricLabel}>TOTAL KM</Text></View>
-          <View style={styles.neoMetric}><View style={[styles.neoMetricIcon, {backgroundColor:"rgba(77,124,255,.14)"}]}><Ionicons name="footsteps" size={18} color={C.blue}/></View><Text style={styles.neoMetricValue}>{totalRuns}</Text><Text style={styles.neoMetricLabel}>RUNS</Text></View>
-          <View style={styles.neoMetric}><View style={[styles.neoMetricIcon, {backgroundColor:"rgba(255,157,77,.13)"}]}><Ionicons name="flame" size={18} color={C.orange}/></View><Text style={styles.neoMetricValue}>{streak}</Text><Text style={styles.neoMetricLabel}>DAY STREAK</Text></View>
-          <View style={styles.neoMetric}><View style={[styles.neoMetricIcon, {backgroundColor:"rgba(184,255,39,.12)"}]}><Ionicons name="trophy" size={18} color={C.lime2}/></View><Text style={styles.neoMetricValue}>{personalBests.longestRun ? personalBests.longestRun.toFixed(1) : "0"}</Text><Text style={styles.neoMetricLabel}>BEST RUN</Text></View>
+        <View style={styles.refStatsGrid}>
+          <View style={styles.refStatCard}><Text style={styles.refStatLabel}>PACE</Text><Text style={styles.refStatValue}>{latest?.pace || personalBests.fastestPace || "--:--"}</Text><Text style={styles.refStatUnit}>/km</Text></View>
+          <View style={styles.refStatCard}><Text style={styles.refStatLabel}>TIME</Text><Text style={styles.refStatValue}>{latest ? formatTime(latest.durationSeconds) : "--:--"}</Text><Text style={styles.refStatUnit}>min</Text></View>
+          <View style={styles.refStatCard}><Text style={styles.refStatLabel}>CALORIES</Text><Text style={styles.refStatValue}>{latest?.calories || 0}</Text><Text style={styles.refStatUnit}>kcal</Text></View>
+          <View style={styles.refStatCard}><Text style={styles.refStatLabel}>RUNS</Text><Text style={styles.refStatValue}>{totalRuns}</Text><Text style={styles.refStatUnit}>total</Text></View>
         </View>
 
-        <View style={styles.neoSectionHead}><View><Text style={styles.neoLabel}>LATEST</Text><Text style={styles.neoSectionTitle}>Your last move.</Text></View></View>
+        <View style={styles.refSectionHead}><Text style={styles.refSectionTitle}>Your progress</Text><TouchableOpacity onPress={() => setActiveTab("stats")}><Text style={styles.refSeeAll}>See stats</Text></TouchableOpacity></View>
+        <View style={styles.refProgressCard}>
+          <View style={styles.refProgressBars}>
+            {[0.22,0.44,0.32,0.66,0.52,0.78,Math.max(0.18, Math.min(1, progress/100))].map((v,i)=><View key={i} style={styles.refBarTrack}><View style={[styles.refBarFill,{height:`${Math.max(12,v*100)}%`}]} /></View>)}
+          </View>
+          <View style={styles.refProgressFooter}><Text style={styles.refMuted}>LAST 7 DAYS</Text><Text style={styles.refProgressValue}>{weeklyDistance.toFixed(1)} km</Text></View>
+        </View>
+
+        <View style={styles.refSectionHead}><Text style={styles.refSectionTitle}>Recent run</Text><TouchableOpacity onPress={() => setActiveTab("history")}><Text style={styles.refSeeAll}>View all</Text></TouchableOpacity></View>
         {latest ? (
-          <TouchableOpacity style={styles.neoLatest} activeOpacity={0.88} onPress={() => {setSelectedHistoryRun(latest);setHistoryDetailVisible(true);}}>
-            <View style={styles.neoLatestIcon}><Ionicons name="trending-up" size={22} color={C.lime}/></View>
-            <View style={{flex:1}}><Text style={styles.neoLatestTitle}>{Number(latest.distanceKm || 0).toFixed(2)} km run</Text><Text style={styles.neoLatestSub}>{new Date(latest.date).toLocaleDateString("en-IN", {day:"2-digit", month:"short"})}  ·  {latest.pace}/km</Text></View>
-            <Ionicons name="chevron-forward" size={18} color={C.muted2}/>
+          <TouchableOpacity style={styles.refRunRow} activeOpacity={0.86} onPress={() => {setSelectedHistoryRun(latest);setHistoryDetailVisible(true);}}>
+            <View style={styles.refRunIcon}><Ionicons name="footsteps" size={21} color={C.lime2} /></View>
+            <View style={{flex:1}}><Text style={styles.refRunDistance}>{Number(latest.distanceKm || 0).toFixed(2)} km</Text><Text style={styles.refRunMeta}>{new Date(latest.date).toLocaleDateString("en-IN",{day:"2-digit",month:"short"})} · {latest.pace}/km · {formatTime(latest.durationSeconds)}</Text></View>
+            <Ionicons name="chevron-forward" size={18} color={C.muted2} />
           </TouchableOpacity>
         ) : (
-          <View style={styles.neoLatest}><View style={styles.neoLatestIcon}><Ionicons name="sparkles-outline" size={22} color={C.lime}/></View><View style={{flex:1}}><Text style={styles.neoLatestTitle}>Your first run is waiting.</Text><Text style={styles.neoLatestSub}>Start moving and build your history.</Text></View></View>
+          <View style={styles.refRunRow}><View style={styles.refRunIcon}><Ionicons name="sparkles-outline" size={21} color={C.lime2}/></View><View style={{flex:1}}><Text style={styles.refRunDistance}>Your first run</Text><Text style={styles.refRunMeta}>Start your journey today.</Text></View></View>
         )}
-
-        <View style={styles.neoQuote}><View style={styles.neoQuoteMark}><Ionicons name="flash" size={16} color={C.black}/></View><Text style={styles.neoQuoteText}>Consistency beats intensity. Show up, then go.</Text></View>
       </ScrollView>
     );
   }
 
-
   /* =========================================================
-     RUN TAB
+     RUN TAB — REFERENCE STYLE
   ========================================================= */
 
   function renderRun() {
     const currentPace = getPace(distance, elapsedSeconds);
+    const displayPace = currentPace === "--:--" ? "--:--" : currentPace;
     return (
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.runNeoScroll}>
-        <View style={styles.runNeoHeader}>
-          <View><Text style={styles.neoLabel}>{running ? (paused ? "PAUSED SESSION" : "LIVE SESSION") : "READY WHEN YOU ARE"}</Text><Text style={styles.runNeoTitle}>{targetDistance ? `${targetDistance} KM` : "Free Run"}</Text></View>
-          <View style={styles.gpsNeo}><View style={[styles.gpsNeoDot,{backgroundColor:gpsStatus.color}]} /><Text style={styles.gpsNeoText}>{gpsStatus.label}</Text></View>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.refScroll}>
+        <View style={styles.refRunHeader}>
+          <View><Text style={styles.refGpsPill}>{running ? (paused ? "PAUSED" : "● GPS") : "● GPS READY"}</Text><Text style={styles.refRunTitle}>{running ? "Running" : "Ready to run"}</Text><Text style={styles.refRunSub}>{running ? (paused ? "Take a breath." : "Keep going!") : "Move at your own pace."}</Text></View>
+          <Ionicons name="lock-closed-outline" size={18} color={C.muted} />
         </View>
 
-        <View style={styles.runMapNeo}>
-          {isConnected ? <MapView ref={mapRef} style={StyleSheet.absoluteFill} mapType={mapType} customMapStyle={mapType === "standard" ? darkMapStyle : undefined} showsCompass={false} showsBuildings={false} showsTraffic={false} showsIndoors={false} showsUserLocation={false} initialRegion={location ? {...location,latitudeDelta:MAP_DELTA,longitudeDelta:MAP_DELTA} : {latitude:28.6139,longitude:77.209,latitudeDelta:0.08,longitudeDelta:0.08}}>
-            <SpectrumRoute points={route} prefix="neo-live" />
-            {route.length > 0 && <StartMarker coordinate={route[0]} />}
-            {running && location && <LiveMarker coordinate={location} />}
-          </MapView> : <OfflineRunView running={running} paused={paused} distance={distance} elapsedSeconds={elapsedSeconds} targetDistance={targetDistance} location={location} translateY={runnerTranslateY} />}
-          <View style={styles.mapNeoTop}><View style={styles.mapLiveBadge}><View style={[styles.mapLiveDot,{backgroundColor:running ? C.lime : C.muted2}]} /><Text style={styles.mapLiveText}>{running ? "GPS LIVE" : "MAP READY"}</Text></View></View>
-          <View style={styles.mapNeoControls}><TouchableOpacity style={styles.mapNeoButton} onPress={() => setFollowUser(v=>!v)}><Ionicons name={followUser ? "locate" : "locate-outline"} size={18} color={followUser ? C.lime : C.white}/></TouchableOpacity><TouchableOpacity style={styles.mapNeoButton} onPress={() => setMapType(v=>v === "standard" ? "satellite" : "standard")}><Ionicons name="layers-outline" size={18} color={C.white}/></TouchableOpacity></View>
+        <View style={styles.refLiveCard}>
+          <Text style={styles.refLiveLabel}>TIME</Text>
+          <Text style={styles.refLiveTime}>{formatTime(elapsedSeconds)}</Text>
+          <View style={styles.refLiveStats}>
+            <View><Text style={styles.refLiveValue}>{distance.toFixed(2)}</Text><Text style={styles.refLiveUnit}>DISTANCE · KM</Text></View>
+            <View><Text style={styles.refLiveValue}>{displayPace}</Text><Text style={styles.refLiveUnit}>PACE · /KM</Text></View>
+          </View>
+          <LiveGraph values={paceHistory.map(v => Number(v) || 0)} />
         </View>
 
-        <View style={styles.runNeoPrimaryCard}>
-          <Text style={styles.neoLabel}>DISTANCE</Text>
-          <View style={styles.runNeoDistanceRow}><Text style={styles.runNeoDistance}>{distance.toFixed(2)}</Text><Text style={styles.runNeoUnit}>KM</Text></View>
-          <View style={styles.runNeoTime}><Ionicons name="time-outline" size={15} color={C.muted}/><Text style={styles.runNeoTimeText}>{formatTime(elapsedSeconds)}</Text></View>
+        <View style={styles.refMapCard}>
+          {route.length > 1 ? (
+            <MapView
+              ref={mapRef}
+              style={styles.refMap}
+              mapType="standard"
+              showsUserLocation={false}
+              showsMyLocationButton={false}
+              initialRegion={{latitude: route[0].latitude, longitude: route[0].longitude, latitudeDelta: MAP_DELTA, longitudeDelta: MAP_DELTA}}
+            >
+              <Polyline coordinates={route.map(mapCoordinate)} strokeColor={C.lime2} strokeWidth={5} />
+              <Marker coordinate={mapCoordinate(route[0])}><View style={styles.refMapDotStart} /></Marker>
+              <Marker coordinate={mapCoordinate(route[route.length-1])}><View style={styles.refMapDotEnd} /></Marker>
+            </MapView>
+          ) : (
+            <View style={styles.refMapEmpty}><Ionicons name="map-outline" size={38} color={C.lime2}/><Text style={styles.refMapEmptyTitle}>Your route appears here</Text><Text style={styles.refMapEmptySub}>Start running to see live GPS tracking.</Text></View>
+          )}
+          <View style={styles.refMapBadge}><Ionicons name="navigate" size={13} color={C.lime2}/><Text style={styles.refMapBadgeText}>{accuracy ? `${Math.round(accuracy)}m GPS` : "GPS"}</Text></View>
         </View>
 
-        <View style={styles.runNeoStats}>
-          <View style={styles.runNeoStat}><Text style={styles.runNeoStatValue}>{currentPace}</Text><Text style={styles.runNeoStatLabel}>PACE / KM</Text></View>
-          <View style={styles.runNeoStat}><Text style={styles.runNeoStatValue}>{speed.toFixed(1)}</Text><Text style={styles.runNeoStatLabel}>KM / H</Text></View>
-          <View style={styles.runNeoStat}><Text style={styles.runNeoStatValue}>{estimatedCalories(distance)}</Text><Text style={styles.runNeoStatLabel}>KCAL</Text></View>
-        </View>
-
-        {running && <View style={styles.neoChartCard}><View style={styles.neoChartHead}><View><Text style={styles.neoLabel}>PERFORMANCE</Text><Text style={styles.neoChartTitle}>Live pace signal</Text></View><Text style={styles.neoChartHint}>30 SEC</Text></View><LiveGraph values={paceHistory.map(x=>x.speed)} /></View>}
-
-        {!running ? <TouchableOpacity style={styles.runNeoStart} onPress={() => setMissionVisible(true)} activeOpacity={0.88}><Ionicons name="play" size={18} color={C.black}/><Text style={styles.runNeoStartText}>START RUN</Text><Ionicons name="arrow-forward" size={18} color={C.black}/></TouchableOpacity> : <View style={styles.runNeoActions}><TouchableOpacity style={styles.runNeoPause} onPress={paused ? resumeRun : pauseRun}><Ionicons name={paused ? "play" : "pause"} size={18} color={C.white}/><Text style={styles.runNeoActionText}>{paused ? "RESUME" : "PAUSE"}</Text></TouchableOpacity><TouchableOpacity style={styles.runNeoFinish} onPress={finishRun}><Ionicons name="stop" size={18} color={C.white}/><Text style={styles.runNeoActionText}>FINISH</Text></TouchableOpacity></View>}
+        {!running ? (
+          <TouchableOpacity style={styles.refMainButton} onPress={() => setMissionVisible(true)} activeOpacity={0.88}><Ionicons name="play" size={19} color={C.black}/><Text style={styles.refMainButtonText}>START RUN</Text></TouchableOpacity>
+        ) : (
+          <View style={styles.refRunControls}><TouchableOpacity style={styles.refCircleControl} onPress={paused ? resumeRun : pauseRun}><Ionicons name={paused ? "play" : "pause"} size={25} color={C.black}/></TouchableOpacity><TouchableOpacity style={styles.refStopButton} onPress={finishRun}><Ionicons name="stop" size={19} color={C.white}/><Text style={styles.refStopText}>FINISH</Text></TouchableOpacity></View>
+        )}
+        <Text style={styles.refSwipeHint}>{running ? "Tap FINISH when you're done" : "Choose a goal or start a free run"}</Text>
       </ScrollView>
     );
   }
 
-
   /* =========================================================
-     HISTORY TAB
+     ROUTES / HISTORY
   ========================================================= */
 
   function renderHistory() {
+    const tabs = ["All", "Week", "Month", "Year"];
     return (
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.neoScroll}>
-        <View style={styles.neoHeader}><View><Text style={styles.neoOverline}>ACTIVITY</Text><Text style={styles.neoGreeting}>Your runs.</Text></View><View style={styles.neoCount}><Text style={styles.neoCountText}>{history.length}</Text></View></View>
-        <View style={styles.activitySummary}><View><Text style={styles.neoLabel}>TOTAL DISTANCE</Text><Text style={styles.activityBig}>{totalDistance.toFixed(1)}<Text style={styles.activityUnit}> KM</Text></Text></View><View><Text style={styles.neoLabel}>STREAK</Text><Text style={styles.activityBig}>{streak}<Text style={styles.activityUnit}> D</Text></Text></View></View>
-        {history.length === 0 ? <View style={styles.neoEmpty}><View style={styles.neoEmptyIcon}><Ionicons name="footsteps-outline" size={28} color={C.lime}/></View><Text style={styles.neoEmptyTitle}>No runs yet</Text><Text style={styles.neoEmptyText}>Your activity timeline will appear here after your first run.</Text><TouchableOpacity style={styles.neoSmallButton} onPress={()=>setMissionVisible(true)}><Text style={styles.neoSmallButtonText}>START FIRST RUN</Text></TouchableOpacity></View> : history.map((item,index)=><TouchableOpacity key={item.id || `run-${index}`} style={styles.activityRow} activeOpacity={0.86} onPress={()=>{setSelectedHistoryRun(item);setHistoryDetailVisible(true);}}><View style={styles.activityDate}><Text style={styles.activityDay}>{new Date(item.date).toLocaleDateString("en-IN",{day:"2-digit"})}</Text><Text style={styles.activityMonth}>{new Date(item.date).toLocaleDateString("en-IN",{month:"short"}).toUpperCase()}</Text></View><View style={styles.activityMain}><Text style={styles.activityDistance}>{Number(item.distanceKm||0).toFixed(2)} km</Text><Text style={styles.activitySub}>{item.pace}/km  ·  {formatTime(item.durationSeconds)}</Text></View><View style={styles.activityArrow}><Ionicons name="chevron-forward" size={17} color={C.muted2}/></View></TouchableOpacity>)}
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.refScroll}>
+        <View style={styles.refPageHeader}><View><Text style={styles.refGreetingSmall}>YOUR ACTIVITY</Text><Text style={styles.refPageTitle}>Run History</Text></View><TouchableOpacity style={styles.refIconButton} onPress={() => setMissionVisible(true)}><Ionicons name="add" size={22} color={C.lime2}/></TouchableOpacity></View>
+        <View style={styles.refFilterRow}>{tabs.map((t,i)=><TouchableOpacity key={t} style={[styles.refFilter,{backgroundColor:i===0?C.lime2:"transparent",borderColor:i===0?C.lime2:C.line}]}><Text style={[styles.refFilterText,{color:i===0?C.black:C.muted}]}>{t}</Text></TouchableOpacity>)}</View>
+        <View style={styles.refHistoryHero}><Text style={styles.refCardEyebrow}>TOTAL DISTANCE</Text><Text style={styles.refHistoryHeroValue}>{totalDistance.toFixed(2)} <Text style={styles.refHistoryHeroUnit}>KM</Text></Text><Text style={styles.refCardSub}>{totalRuns} runs · {streak} day streak</Text></View>
+        {history.length === 0 ? (
+          <View style={styles.refEmpty}><Ionicons name="footsteps-outline" size={38} color={C.lime2}/><Text style={styles.refEmptyTitle}>No runs yet</Text><Text style={styles.refEmptySub}>Your completed runs will appear here.</Text><TouchableOpacity style={styles.refSmallButton} onPress={() => setMissionVisible(true)}><Text style={styles.refSmallButtonText}>START FIRST RUN</Text></TouchableOpacity></View>
+        ) : history.map((item,index) => (
+          <TouchableOpacity key={item.id || `run-${index}`} style={styles.refHistoryRow} activeOpacity={0.86} onPress={() => {setSelectedHistoryRun(item);setHistoryDetailVisible(true);}}>
+            <View style={styles.refHistoryIcon}><Ionicons name="footsteps" size={20} color={C.lime2}/></View>
+            <View style={{flex:1}}><Text style={styles.refHistoryDistance}>{Number(item.distanceKm||0).toFixed(2)} km</Text><Text style={styles.refHistoryMeta}>{item.pace || "--:--"}/km · {formatTime(item.durationSeconds)} · {new Date(item.date).toLocaleDateString("en-IN",{day:"2-digit",month:"short"})}</Text></View>
+            <Ionicons name="chevron-forward" size={18} color={C.muted2}/>
+          </TouchableOpacity>
+        ))}
       </ScrollView>
     );
   }
-
 
   /* =========================================================
      PROFILE
   ========================================================= */
 
   function renderProfile() {
+    const setting = (icon,title,subtitle,action) => (
+      <TouchableOpacity style={styles.refSettingRow} key={title} activeOpacity={0.8} onPress={action}>
+        <View style={styles.refSettingIcon}><Ionicons name={icon} size={19} color={C.muted} /></View><View style={{flex:1}}><Text style={styles.refSettingTitle}>{title}</Text><Text style={styles.refSettingSub}>{subtitle}</Text></View><Ionicons name="chevron-forward" size={17} color={C.muted2}/>
+      </TouchableOpacity>
+    );
     return (
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.neoScroll}>
-        <View style={styles.neoHeader}><View><Text style={styles.neoOverline}>ACCOUNT</Text><Text style={styles.neoGreeting}>Runner profile.</Text></View><View style={styles.profileNeoAvatar}><Text style={styles.profileNeoAvatarText}>S</Text></View></View>
-        <View style={styles.profileNeoHero}><View style={styles.profileNeoBadge}><Ionicons name="flash" size={16} color={C.black}/></View><View style={{flex:1}}><Text style={styles.profileNeoName}>Shiva</Text><Text style={styles.profileNeoSub}>Keep moving. Keep building.</Text></View></View>
-        <View style={styles.profileNeoStats}><ProfileStat label="RUNS" value={totalRuns}/><ProfileStat label="KM" value={totalDistance.toFixed(1)}/><ProfileStat label="STREAK" value={`${streak}d`}/></View>
-        <Text style={[styles.neoLabel,{marginTop:26,marginBottom:10}]}>PERSONAL BESTS</Text>
-        <View style={styles.profileNeoCard}><ValueRow icon="trophy-outline" title="Longest run" text={`${personalBests.longestRun ? personalBests.longestRun.toFixed(2) : "0.00"} km`} /><ValueRow icon="speedometer-outline" title="Fastest pace" text={`${personalBests.fastestPace} /km`} /><ValueRow icon="rocket-outline" title="Top speed" text={`${personalBests.topSpeed.toFixed(1)} km/h`} /></View>
-        <Text style={[styles.neoLabel,{marginTop:26,marginBottom:10}]}>APP STATUS</Text>
-        <View style={styles.profileNeoCard}><ValueRow icon="location-outline" title="GPS" text={permissionGranted ? gpsStatus.label : "Permission required"} /><ValueRow icon="cloud-outline" title="Network" text={isConnected ? "Online" : "Offline mode"} /><ValueRow icon="shield-checkmark-outline" title="Privacy" text="Data stays on device" /></View>
-        <Text style={styles.profileNeoVersion}>RAFTAAR • 3.0</Text>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.refScroll}>
+        <View style={styles.refPageHeader}><View><Text style={styles.refGreetingSmall}>RUNNER</Text><Text style={styles.refPageTitle}>Profile</Text></View><TouchableOpacity style={styles.refIconButton} onPress={() => Alert.alert("Profile", "Your RAFTAAR profile is stored locally on this device.")}><Ionicons name="settings-outline" size={20} color={C.white}/></TouchableOpacity></View>
+        <View style={styles.refProfileCard}><View style={styles.refProfileAvatar}><Text style={styles.refProfileLetter}>R</Text></View><View style={{flex:1}}><Text style={styles.refProfileName}>Runner</Text><Text style={styles.refProfileLocal}>Your runs are saved on this device</Text><View style={styles.refProPill}><Ionicons name="trophy" size={11} color={C.lime2}/><Text style={styles.refProText}>PRO RUNNER</Text></View></View></View>
+        <View style={styles.refProfileStats}><View><Text style={styles.refProfileStatValue}>{totalRuns}</Text><Text style={styles.refProfileStatLabel}>RUNS</Text></View><View><Text style={styles.refProfileStatValue}>{totalDistance.toFixed(1)}</Text><Text style={styles.refProfileStatLabel}>KM</Text></View><View><Text style={styles.refProfileStatValue}>{streak}</Text><Text style={styles.refProfileStatLabel}>STREAK</Text></View></View>
+        <View style={styles.refSettingsBox}>
+          {setting("flag-outline","My Goals","Distance, time & pace goals",() => setMissionVisible(true))}
+          {setting("options-outline","Running Preferences","Voice, GPS & run behavior",() => Alert.alert("Running Preferences","Voice feedback and GPS preferences are available for your runs."))}
+          {setting("speedometer-outline","Units","Kilometers · min/km",() => Alert.alert("Units","RAFTAAR is currently set to kilometers and min/km."))}
+          {setting("notifications-outline","Notifications","Run reminders & updates",() => Alert.alert("Notifications","Notifications are enabled for this device."))}
+          {setting("shield-checkmark-outline","Privacy & Security","Your data stays on this device",() => Alert.alert("Privacy & Security","Your run history is stored locally on this device."))}
+          {setting("help-circle-outline","Help & Support","Get help with RAFTAAR",() => Alert.alert("Help & Support","Need help? Check your GPS permissions and make sure location services are enabled."))}
+          {setting("information-circle-outline","About RAFTAAR","Track · Improve · Move faster",() => Alert.alert("RAFTAAR","Run with purpose. Move faster. Live better."))}
+        </View>
       </ScrollView>
     );
   }
 
+  /* =========================================================
+     STATS
+  ========================================================= */
+
   function renderStats() {
-    const avgPaceRun = history.length ? history.filter(x=>x.distanceKm>0).reduce((a,x)=>a+(Number(x.durationSeconds||0)/Number(x.distanceKm||1)),0)/Math.max(1,history.filter(x=>x.distanceKm>0).length) : 0;
-    const avgPace = avgPaceRun ? `${Math.floor(avgPaceRun/60)}:${String(Math.floor(avgPaceRun%60)).padStart(2,"0")}` : "--:--";
-    const bars = Array.from({length:7},(_,i)=>{ const d=new Date(); d.setDate(d.getDate()-(6-i)); const key=d.toDateString(); return history.filter(x=>new Date(x.date).toDateString()===key).reduce((a,x)=>a+Number(x.distanceKm||0),0); });
-    const maxBar=Math.max(1,...bars);
+    const valid = history.filter(x => Number(x.distanceKm) > 0);
+    const avgPaceSeconds = valid.length ? valid.reduce((a,x)=>a + (Number(x.durationSeconds||0)/Number(x.distanceKm||1)),0) / valid.length : 0;
+    const avgPace = avgPaceSeconds ? `${Math.floor(avgPaceSeconds/60)}:${String(Math.floor(avgPaceSeconds%60)).padStart(2,"0")}` : "--:--";
+    const values = [0.18,0.34,0.27,0.48,0.62,0.54,Math.min(1,Math.max(0.2,weeklyDistance/10))];
     return (
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.neoScroll}>
-        <View style={styles.neoHeader}><View><Text style={styles.neoOverline}>PERFORMANCE</Text><Text style={styles.neoGreeting}>Your stats.</Text></View><View style={styles.statsPulse}><View style={styles.statsPulseDot}/></View></View>
-        <View style={styles.statsHero}><Text style={styles.neoLabel}>ALL-TIME DISTANCE</Text><Text style={styles.statsHeroValue}>{totalDistance.toFixed(1)}<Text style={styles.statsHeroUnit}> KM</Text></Text><Text style={styles.neoMuted}>{totalRuns} total runs · {streak} day streak</Text></View>
-        <View style={styles.statsChartCard}><View style={styles.neoChartHead}><View><Text style={styles.neoLabel}>LAST 7 DAYS</Text><Text style={styles.neoChartTitle}>Distance</Text></View><Text style={styles.statsChartTotal}>{bars.reduce((a,b)=>a+b,0).toFixed(1)} km</Text></View><View style={styles.barChart}>{bars.map((v,i)=><View key={i} style={styles.barSlot}><View style={[styles.barFill,{height:Math.max(5,(v/maxBar)*112)}]} /><Text style={styles.barLabel}>{["S","M","T","W","T","F","S"][new Date(Date.now()-(6-i)*86400000).getDay()]}</Text></View>)}</View></View>
-        <View style={styles.statsGrid}><View style={styles.statsCard}><Text style={styles.neoLabel}>AVG PACE</Text><Text style={styles.statsValue}>{avgPace}</Text><Text style={styles.statsUnit}>MIN / KM</Text></View><View style={styles.statsCard}><Text style={styles.neoLabel}>BEST PACE</Text><Text style={styles.statsValue}>{personalBests.fastestPace}</Text><Text style={styles.statsUnit}>MIN / KM</Text></View><View style={styles.statsCard}><Text style={styles.neoLabel}>LONGEST</Text><Text style={styles.statsValue}>{personalBests.longestRun.toFixed(1)}</Text><Text style={styles.statsUnit}>KM</Text></View><View style={styles.statsCard}><Text style={styles.neoLabel}>TOP SPEED</Text><Text style={styles.statsValue}>{personalBests.topSpeed.toFixed(1)}</Text><Text style={styles.statsUnit}>KM / H</Text></View></View>
-        <View style={styles.insightCard}><View style={styles.insightIcon}><Ionicons name="bulb-outline" size={19} color={C.black}/></View><View style={{flex:1}}><Text style={styles.insightTitle}>RAFTAAR INSIGHT</Text><Text style={styles.insightText}>{history.length ? (weeklyDistance >= 20 ? "You have hit this week's target. Keep the rhythm going." : `${(20-weeklyDistance).toFixed(1)} km left to complete this week's target.`) : "Start your first run to unlock personalized performance insights."}</Text></View></View>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.refScroll}>
+        <View style={styles.refPageHeader}><View><Text style={styles.refGreetingSmall}>YOUR PERFORMANCE</Text><Text style={styles.refPageTitle}>Analyze your run</Text></View><Ionicons name="stats-chart" size={24} color={C.lime2}/></View>
+        <View style={styles.refStatsHero}><Text style={styles.refCardEyebrow}>ALL-TIME DISTANCE</Text><Text style={styles.refStatsHeroValue}>{totalDistance.toFixed(2)} <Text style={styles.refStatsHeroUnit}>KM</Text></Text><Text style={styles.refCardSub}>Keep building your momentum.</Text></View>
+        <View style={styles.refChartCard}><View style={styles.refChartHead}><View><Text style={styles.refCardEyebrow}>LAST 7 DAYS</Text><Text style={styles.refChartTitle}>Distance</Text></View><Text style={styles.refChartTotal}>{weeklyDistance.toFixed(1)} km</Text></View><View style={styles.refBars}>{values.map((v,i)=><View key={i} style={styles.refChartSlot}><View style={styles.refChartTrack}><View style={[styles.refChartBar,{height:`${Math.max(10,v*100)}%`}]} /></View><Text style={styles.refChartDay}>["S","M","T","W","T","F","S"][new Date(Date.now()-(6-i)*86400000).getDay()]}</Text></View>)}</View></View>
+        <View style={styles.refStatsGrid}><View style={styles.refStatCard}><Text style={styles.refStatLabel}>AVG PACE</Text><Text style={styles.refStatValue}>{avgPace}</Text><Text style={styles.refStatUnit}>MIN / KM</Text></View><View style={styles.refStatCard}><Text style={styles.refStatLabel}>BEST PACE</Text><Text style={styles.refStatValue}>{personalBests.fastestPace}</Text><Text style={styles.refStatUnit}>MIN / KM</Text></View><View style={styles.refStatCard}><Text style={styles.refStatLabel}>LONGEST</Text><Text style={styles.refStatValue}>{personalBests.longestRun.toFixed(1)}</Text><Text style={styles.refStatUnit}>KM</Text></View><View style={styles.refStatCard}><Text style={styles.refStatLabel}>TOP SPEED</Text><Text style={styles.refStatValue}>{personalBests.topSpeed.toFixed(1)}</Text><Text style={styles.refStatUnit}>KM / H</Text></View></View>
+        <View style={styles.refInsight}><View style={styles.refInsightIcon}><Ionicons name="flash" size={17} color={C.black}/></View><View style={{flex:1}}><Text style={styles.refInsightTitle}>PERSONAL BESTS</Text><Text style={styles.refInsightText}>{history.length ? `Longest run ${personalBests.longestRun.toFixed(2)} km · Fastest pace ${personalBests.fastestPace}/km` : "Complete a run to unlock your personal performance data."}</Text></View></View>
       </ScrollView>
     );
   }
@@ -2055,141 +2085,37 @@ export default function App() {
           ONBOARDING
       ===================================================== */}
 
-      <Modal
-        visible={onboarding}
-        animationType="fade"
-        transparent={false}
-      >
-        <SafeAreaView
-          style={
-            styles.onboarding
-          }
-        >
-          <View
-            style={
-              styles.onboardingTop
-            }
-          >
-            <Text
-              style={
-                styles.onboardingLogo
-              }
-            >
-              Raftaar.
-            </Text>
-
-            <View
-              style={
-                styles.onboardingPill
-              }
-            >
-              <View
-                style={
-                  styles.onboardingDot
-                }
-              />
-
-              <Text
-                style={
-                  styles.onboardingPillText
-                }
-              >
-                GPS RUN & DISTANCE TRACKER
-              </Text>
-            </View>
+      <Modal visible={onboarding} animationType="fade" transparent={false}>
+        <SafeAreaView style={styles.refOnboarding}>
+          <View style={styles.refOnboardTop}>
+            <Text style={styles.refOnboardLogo}>Raftaar<Text style={{color:C.lime2}}>.</Text></Text>
+            {onboardingPage > 0 ? <Text style={styles.refOnboardCount}>{onboardingPage}/3</Text> : null}
           </View>
-
-          <View
-            style={
-              styles.onboardingCenter
-            }
-          >
-            <View
-              style={
-                styles.onboardingIcon
-              }
-            >
-              <FontAwesome5
-                name="running"
-                size={50}
-                color={C.lime}
-              />
-            </View>
-
-            <Text
-              style={
-                styles.onboardingTitle
-              }
-            >
-              Run with{"\n"}
-              <Text
-                style={
-                  styles.onboardingAccent
-                }
-              >
-                purpose.
-              </Text>
-            </Text>
-
-            <Text
-              style={
-                styles.onboardingText
-              }
-            >
-              Raftaar turns every run into a
-              focused experience. Track your
-              route, distance, pace and
-              progress beautifully.
-            </Text>
+          <View style={styles.refOnboardCenter}>
+            {onboardingPage === 0 && <>
+              <View style={styles.refOnboardHero}><FontAwesome5 name="running" size={72} color={C.lime2}/></View>
+              <Text style={styles.refOnboardTitle}>Run with purpose.</Text>
+              <Text style={styles.refOnboardSub}>Track your run. Improve your pace. Build a better you.</Text>
+              <View style={styles.refOnboardTag}><Text style={styles.refOnboardTagText}>FITNESS  +  GPS  +  AI</Text></View>
+            </>}
+            {onboardingPage === 1 && <>
+              <Text style={styles.refOnboardKicker}>Track</Text><Text style={styles.refOnboardTitle}>Your Runs</Text><Text style={styles.refOnboardSub}>Get accurate GPS tracking, distance, pace, time and more.</Text>
+              <View style={styles.refOnboardPreview}><Ionicons name="map-outline" size={55} color={C.lime2}/><View style={styles.refFakeRoute}><View style={styles.refFakeLineA}/><View style={styles.refFakeLineB}/><View style={styles.refFakeLineC}/></View><View style={styles.refPreviewStats}><Text>5.42 km</Text><Text>5:28 /km</Text><Text>29:45</Text></View></View>
+            </>}
+            {onboardingPage === 2 && <>
+              <Text style={styles.refOnboardKicker}>Analyze</Text><Text style={styles.refOnboardTitle}>Your Performance</Text><Text style={styles.refOnboardSub}>See detailed stats, trends and improve with insights.</Text>
+              <View style={styles.refOnboardPreview}><View style={styles.refFakeBars}>{[32,52,42,68,57,78,66,88].map((h,i)=><View key={i} style={[styles.refFakeBar,{height:h}]} />)}</View><View style={styles.refMiniTrend}><Text style={styles.refMiniTrendLabel}>WEEKLY PROGRESS</Text><Text style={styles.refMiniTrendValue}>+12%</Text></View></View>
+            </>}
+            {onboardingPage === 3 && <>
+              <Text style={styles.refOnboardKicker}>Reach</Text><Text style={styles.refOnboardTitle}>Your Goals</Text><Text style={styles.refOnboardSub}>Set goals, stay consistent and get better every day.</Text>
+              <View style={styles.refGoalPreview}><Ionicons name="footsteps" size={58} color={C.lime2}/><Text>Distance Goals</Text><Text>Time Goals</Text><Text>Pace Goals</Text><Text>Personal Bests</Text></View>
+            </>}
           </View>
-
-          <View
-            style={
-              styles.onboardingFeatures
-            }
-          >
-            <OnboardingFeature
-              icon="navigate-outline"
-              title="GPS tracking"
-              text="Precise route & distance"
-            />
-
-            <OnboardingFeature
-              icon="stats-chart-outline"
-              title="Smart progress"
-              text="Streaks & personal bests"
-            />
-
-            <OnboardingFeature
-              icon="lock-closed-outline"
-              title="Private"
-              text="Your data stays yours"
-            />
+          <View style={styles.refOnboardBottom}>
+            {onboardingPage === 0 ? <TouchableOpacity style={styles.refOnboardButton} onPress={() => setOnboardingPage(1)}><Text style={styles.refOnboardButtonText}>GET STARTED</Text><Ionicons name="arrow-forward" size={18} color={C.black}/></TouchableOpacity> : onboardingPage < 3 ? <TouchableOpacity style={styles.refOnboardButton} onPress={() => setOnboardingPage(onboardingPage+1)}><Text style={styles.refOnboardButtonText}>NEXT</Text><Ionicons name="arrow-forward" size={18} color={C.black}/></TouchableOpacity> : <TouchableOpacity style={styles.refOnboardButton} onPress={finishOnboarding}><Text style={styles.refOnboardButtonText}>GET STARTED</Text><Ionicons name="arrow-forward" size={18} color={C.black}/></TouchableOpacity>}
+            {onboardingPage > 0 && <TouchableOpacity onPress={finishOnboarding} style={styles.refSkip}><Text style={styles.refSkipText}>Skip</Text></TouchableOpacity>}
+            {onboardingPage > 0 && <View style={styles.refDots}>{[1,2,3].map(i=><View key={i} style={[styles.refDot,{width:i===onboardingPage?18:6,opacity:i===onboardingPage?1:.35}]} />)}</View>}
           </View>
-
-          <TouchableOpacity
-            style={
-              styles.onboardingButton
-            }
-            activeOpacity={0.86}
-            onPress={
-              finishOnboarding
-            }
-          >
-            <Text
-              style={
-                styles.onboardingButtonText
-              }
-            >
-              LET'S RUN
-            </Text>
-
-            <Ionicons
-              name="arrow-forward"
-              size={19}
-              color={C.black}
-            />
-          </TouchableOpacity>
         </SafeAreaView>
       </Modal>
 
@@ -2890,13 +2816,27 @@ export default function App() {
 
 function BottomNav({ active, onChange, running }) {
   const items = [
-    { id:"home", icon:"home-outline", activeIcon:"home", label:"Home" },
-    { id:"run", icon:"navigate-outline", activeIcon:"navigate", label:"Run" },
-    { id:"history", icon:"list-outline", activeIcon:"list", label:"Activity" },
-    { id:"stats", icon:"stats-chart-outline", activeIcon:"stats-chart", label:"Stats" },
-    { id:"profile", icon:"person-outline", activeIcon:"person", label:"Profile" },
+    { id: "home", icon: "home-outline", activeIcon: "home", label: "Home" },
+    { id: "stats", icon: "stats-chart-outline", activeIcon: "stats-chart", label: "Stats" },
+    { id: "run", icon: "play-circle-outline", activeIcon: "play-circle", label: "Run" },
+    { id: "history", icon: "footsteps-outline", activeIcon: "footsteps", label: "Routes" },
+    { id: "profile", icon: "person-outline", activeIcon: "person", label: "Profile" },
   ];
-  return <View style={styles.neoNavWrap}><View style={styles.neoNav}>{items.map(item=>{const selected=active===item.id;return <TouchableOpacity key={item.id} style={styles.neoNavItem} activeOpacity={0.82} onPress={()=>onChange(item.id)}><View style={[styles.neoNavIcon,{backgroundColor:selected?C.lime:"transparent"}]}><Ionicons name={selected?item.activeIcon:item.icon} size={19} color={selected?C.black:C.muted}/></View><Text style={[styles.neoNavText,{color:selected?C.white:C.muted2}]}>{item.label}</Text>{running && item.id==="run" && <View style={styles.neoNavLive}/>}</TouchableOpacity>})}</View></View>;
+  return (
+    <View style={styles.refBottomNav}>
+      {items.map((item) => {
+        const selected = active === item.id;
+        return (
+          <TouchableOpacity key={item.id} style={styles.refNavItem} onPress={() => onChange(item.id)} activeOpacity={0.8}>
+            <View style={[styles.refNavIconWrap, selected && styles.refNavIconActive]}>
+              <Ionicons name={selected ? item.activeIcon : item.icon} size={selected ? 22 : 20} color={selected ? C.black : C.muted} />
+            </View>
+            <Text style={[styles.refNavLabel, selected && styles.refNavLabelActive]}>{item.label}</Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
 }
 
 function ScreenHeader({
@@ -5556,5 +5496,167 @@ const styles = StyleSheet.create({
   profileNeoAvatar:{width:46,height:46,borderRadius:23,backgroundColor:C.lime,alignItems:"center",justifyContent:"center"},profileNeoAvatarText:{fontSize:17,fontWeight:"900",color:C.black},profileNeoHero:{backgroundColor:C.card2,borderRadius:24,borderWidth:1,borderColor:C.line,padding:18,flexDirection:"row",alignItems:"center",gap:13},profileNeoBadge:{width:46,height:46,borderRadius:15,backgroundColor:C.lime2,alignItems:"center",justifyContent:"center"},profileNeoName:{fontSize:22,fontWeight:"900",color:C.white},profileNeoSub:{fontSize:10,color:C.muted,marginTop:3},profileNeoStats:{flexDirection:"row",marginTop:10,backgroundColor:C.card2,borderRadius:20,borderWidth:1,borderColor:C.line,overflow:"hidden"},profileNeoStatsItem:{flex:1},profileNeoVersion:{textAlign:"center",fontSize:9,color:C.muted2,letterSpacing:1,marginTop:28},
   statsPulse:{width:42,height:42,borderRadius:14,backgroundColor:"rgba(92,255,138,.09)",alignItems:"center",justifyContent:"center"},statsPulseDot:{width:10,height:10,borderRadius:5,backgroundColor:C.lime},statsHero:{backgroundColor:C.card2,borderRadius:24,borderWidth:1,borderColor:C.line,padding:20,marginBottom:10},statsHeroValue:{fontSize:52,fontWeight:"900",color:C.white,letterSpacing:-2,marginTop:3},statsHeroUnit:{fontSize:12,color:C.lime,letterSpacing:1},statsChartCard:{backgroundColor:C.card2,borderRadius:24,borderWidth:1,borderColor:C.line,padding:17,marginBottom:10},statsChartTotal:{fontSize:11,fontWeight:"800",color:C.lime},barChart:{height:145,flexDirection:"row",alignItems:"flex-end",justifyContent:"space-between",paddingTop:12},barSlot:{height:"100%",width:25,alignItems:"center",justifyContent:"flex-end"},barFill:{width:10,borderRadius:5,backgroundColor:C.lime,minHeight:5},barLabel:{fontSize:8,color:C.muted2,fontWeight:"800",marginTop:7},statsGrid:{flexDirection:"row",flexWrap:"wrap",gap:10},statsCard:{width:"48.2%",backgroundColor:C.card2,borderRadius:19,borderWidth:1,borderColor:C.line,padding:15,minHeight:105},statsValue:{fontSize:24,fontWeight:"900",color:C.white,marginTop:7},statsUnit:{fontSize:8,color:C.muted2,fontWeight:"900",letterSpacing:1,marginTop:2},insightCard:{marginTop:10,borderRadius:20,backgroundColor:"rgba(184,255,39,.08)",padding:15,flexDirection:"row",gap:12,borderWidth:1,borderColor:"rgba(184,255,39,.12)"},insightIcon:{width:37,height:37,borderRadius:12,backgroundColor:C.lime2,alignItems:"center",justifyContent:"center"},insightTitle:{fontSize:9,fontWeight:"900",letterSpacing:1,color:C.lime2},insightText:{fontSize:11,lineHeight:17,color:C.white,marginTop:4},
   neoNavWrap:{paddingHorizontal:12,paddingBottom:6,paddingTop:8,backgroundColor:C.bg},neoNav:{height:67,borderRadius:22,backgroundColor:"rgba(13,21,19,.98)",borderWidth:1,borderColor:C.line,flexDirection:"row",alignItems:"center",justifyContent:"space-around",paddingHorizontal:4},neoNavItem:{flex:1,alignItems:"center",justifyContent:"center",height:60,position:"relative"},neoNavIcon:{width:34,height:28,borderRadius:10,alignItems:"center",justifyContent:"center"},neoNavText:{fontSize:7,fontWeight:"900",letterSpacing:.5,marginTop:2},neoNavLive:{position:"absolute",top:6,right:"28%",width:5,height:5,borderRadius:3,backgroundColor:C.red},
+
+
+  /* =========================================================
+     REFERENCE UI — RAFTAAR
+  ========================================================= */
+  refScroll: { paddingHorizontal: 18, paddingTop: 12, paddingBottom: 130 },
+  refTopBar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 18 },
+  refGreetingSmall: { color: C.muted, fontSize: 9, fontWeight: "800", letterSpacing: 2.2, marginBottom: 4 },
+  refTitleRow: { flexDirection: "row", alignItems: "center" },
+  refTitle: { color: C.white, fontSize: 28, fontWeight: "900", letterSpacing: -1 },
+  refLeaf: { color: C.lime2, fontSize: 18, marginLeft: 6 },
+  refBell: { width: 42, height: 42, borderRadius: 14, borderWidth: 1, borderColor: C.line, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.025)" },
+  refBellDot: { position: "absolute", right: 10, top: 9, width: 5, height: 5, borderRadius: 3, backgroundColor: C.lime2 },
+  refTodayCard: { minHeight: 86, borderRadius: 18, borderWidth: 1, borderColor: C.line, backgroundColor: C.card2, padding: 16, flexDirection: "row", alignItems: "center", marginBottom: 14 },
+  refCardEyebrow: { color: C.muted, fontSize: 9, fontWeight: "900", letterSpacing: 1.6, marginBottom: 5 },
+  refCardTitle: { color: C.white, fontSize: 18, fontWeight: "800" },
+  refCardSub: { color: C.muted2, fontSize: 11, marginTop: 4 },
+  refStartPill: { backgroundColor: C.lime2, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 11 },
+  refStartText: { color: C.black, fontSize: 12, fontWeight: "900" },
+  refGoalCard: { minHeight: 310, borderRadius: 25, borderWidth: 1, borderColor: "rgba(184,255,39,0.13)", backgroundColor: "#07100D", alignItems: "center", justifyContent: "center", overflow: "hidden", marginBottom: 14 },
+  refGlow: { position: "absolute", width: 280, height: 280, borderRadius: 140, backgroundColor: "rgba(184,255,39,0.055)", top: 18 },
+  refGoalRing: { width: 190, height: 190, borderRadius: 95, borderWidth: 3, borderColor: C.lime2, alignItems: "center", justifyContent: "center", shadowColor: C.lime2, shadowOpacity: 0.25, shadowRadius: 20, shadowOffset: {width:0,height:0}, elevation: 7 },
+  refGoalRingInner: { width: 166, height: 166, borderRadius: 83, borderWidth: 1, borderColor: "rgba(184,255,39,0.17)", alignItems: "center", justifyContent: "center" },
+  refGoalNumber: { color: C.white, fontSize: 31, fontWeight: "900" },
+  refGoalUnit: { color: C.lime2, fontSize: 11, fontWeight: "900", letterSpacing: 1 },
+  refGoalHint: { color: C.muted2, fontSize: 9, marginTop: 7 },
+  refGoalLabel: { color: C.muted, fontSize: 9, fontWeight: "900", letterSpacing: 2, marginTop: 16 },
+  refGoalCaption: { color: C.muted2, fontSize: 10, marginTop: 5 },
+  refStatsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 18 },
+  refStatCard: { flex: 1, minWidth: "47%", minHeight: 82, borderRadius: 15, borderWidth: 1, borderColor: C.line, backgroundColor: C.card2, padding: 13 },
+  refStatLabel: { color: C.muted2, fontSize: 8, fontWeight: "900", letterSpacing: 1.3 },
+  refStatValue: { color: C.white, fontSize: 21, fontWeight: "900", marginTop: 7 },
+  refStatUnit: { color: C.muted2, fontSize: 8, marginTop: 1 },
+  refSectionHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginTop: 5, marginBottom: 10 },
+  refSectionTitle: { color: C.white, fontSize: 17, fontWeight: "800" },
+  refSeeAll: { color: C.lime2, fontSize: 10, fontWeight: "800" },
+  refProgressCard: { backgroundColor: C.card2, borderWidth: 1, borderColor: C.line, borderRadius: 18, padding: 16, marginBottom: 18 },
+  refProgressBars: { height: 90, flexDirection: "row", alignItems: "flex-end", gap: 9 },
+  refBarTrack: { flex: 1, height: "100%", justifyContent: "flex-end", backgroundColor: "rgba(255,255,255,0.025)", borderRadius: 5, overflow: "hidden" },
+  refBarFill: { width: "100%", backgroundColor: C.lime2, borderRadius: 5 },
+  refProgressFooter: { flexDirection: "row", justifyContent: "space-between", marginTop: 12 },
+  refMuted: { color: C.muted2, fontSize: 9, fontWeight: "800", letterSpacing: 1.1 },
+  refProgressValue: { color: C.white, fontSize: 11, fontWeight: "800" },
+  refRunRow: { minHeight: 76, borderRadius: 16, borderWidth: 1, borderColor: C.line, backgroundColor: C.card2, padding: 12, flexDirection: "row", alignItems: "center", marginBottom: 10 },
+  refRunIcon: { width: 45, height: 45, borderRadius: 14, backgroundColor: "rgba(184,255,39,0.08)", alignItems: "center", justifyContent: "center", marginRight: 12 },
+  refRunDistance: { color: C.white, fontSize: 15, fontWeight: "800" },
+  refRunMeta: { color: C.muted2, fontSize: 10, marginTop: 5 },
+  refRunHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 15 },
+  refGpsPill: { color: C.lime2, fontSize: 9, fontWeight: "900", letterSpacing: 1.4, marginBottom: 7 },
+  refRunTitle: { color: C.white, fontSize: 25, fontWeight: "900" },
+  refRunSub: { color: C.muted2, fontSize: 11, marginTop: 3 },
+  refLiveCard: { backgroundColor: C.card2, borderWidth: 1, borderColor: C.line, borderRadius: 22, padding: 18, marginBottom: 13 },
+  refLiveLabel: { color: C.muted2, fontSize: 9, fontWeight: "900", letterSpacing: 1.6 },
+  refLiveTime: { color: C.white, fontSize: 51, lineHeight: 56, fontWeight: "900", letterSpacing: -2, marginTop: 4 },
+  refLiveStats: { flexDirection: "row", gap: 48, marginTop: 14 },
+  refLiveValue: { color: C.white, fontSize: 24, fontWeight: "900" },
+  refLiveUnit: { color: C.muted2, fontSize: 8, fontWeight: "800", marginTop: 3 },
+  refMapCard: { height: 230, borderRadius: 20, overflow: "hidden", borderWidth: 1, borderColor: C.line, backgroundColor: "#0A120F", marginBottom: 14, position: "relative" },
+  refMap: { flex: 1 },
+  refMapEmpty: { flex: 1, alignItems: "center", justifyContent: "center", padding: 20 },
+  refMapEmptyTitle: { color: C.white, fontSize: 14, fontWeight: "800", marginTop: 10 },
+  refMapEmptySub: { color: C.muted2, fontSize: 10, marginTop: 5, textAlign: "center" },
+  refMapBadge: { position: "absolute", left: 12, top: 12, flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "rgba(5,8,7,0.85)", borderRadius: 10, paddingHorizontal: 9, paddingVertical: 6, borderWidth: 1, borderColor: C.line },
+  refMapBadgeText: { color: C.white, fontSize: 9, fontWeight: "800" },
+  refMapDotStart: { width: 12, height: 12, borderRadius: 6, backgroundColor: C.cyan, borderWidth: 2, borderColor: C.white },
+  refMapDotEnd: { width: 14, height: 14, borderRadius: 7, backgroundColor: C.lime2, borderWidth: 2, borderColor: C.black },
+  refMainButton: { height: 57, borderRadius: 17, backgroundColor: C.lime2, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 9, shadowColor: C.lime2, shadowOpacity: 0.25, shadowRadius: 16, shadowOffset: {width:0,height:6}, elevation: 6 },
+  refMainButtonText: { color: C.black, fontSize: 14, fontWeight: "900", letterSpacing: 1 },
+  refRunControls: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12 },
+  refCircleControl: { width: 66, height: 66, borderRadius: 33, backgroundColor: C.lime2, alignItems: "center", justifyContent: "center" },
+  refStopButton: { height: 54, paddingHorizontal: 24, borderRadius: 16, backgroundColor: "#171E1B", borderWidth: 1, borderColor: C.line, flexDirection: "row", alignItems: "center", gap: 8 },
+  refStopText: { color: C.white, fontWeight: "800", fontSize: 12 },
+  refSwipeHint: { color: C.muted2, fontSize: 9, textAlign: "center", marginTop: 10, marginBottom: 5 },
+  refPageHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 18 },
+  refPageTitle: { color: C.white, fontSize: 27, fontWeight: "900", letterSpacing: -1 },
+  refIconButton: { width: 42, height: 42, borderRadius: 14, borderWidth: 1, borderColor: C.line, alignItems: "center", justifyContent: "center" },
+  refFilterRow: { flexDirection: "row", gap: 7, marginBottom: 13 },
+  refFilter: { paddingHorizontal: 13, paddingVertical: 8, borderRadius: 10, borderWidth: 1 },
+  refFilterText: { fontSize: 9, fontWeight: "900" },
+  refHistoryHero: { backgroundColor: C.card2, borderRadius: 18, borderWidth: 1, borderColor: C.line, padding: 18, marginBottom: 13 },
+  refHistoryHeroValue: { color: C.white, fontSize: 34, fontWeight: "900", marginTop: 3 },
+  refHistoryHeroUnit: { color: C.lime2, fontSize: 13 },
+  refHistoryRow: { minHeight: 72, borderRadius: 15, borderWidth: 1, borderColor: C.line, backgroundColor: C.card2, padding: 11, flexDirection: "row", alignItems: "center", marginBottom: 8 },
+  refHistoryIcon: { width: 42, height: 42, borderRadius: 13, backgroundColor: "rgba(184,255,39,0.07)", alignItems: "center", justifyContent: "center", marginRight: 11 },
+  refHistoryDistance: { color: C.white, fontSize: 14, fontWeight: "800" },
+  refHistoryMeta: { color: C.muted2, fontSize: 9, marginTop: 4 },
+  refEmpty: { alignItems: "center", paddingVertical: 55, borderRadius: 18, borderWidth: 1, borderColor: C.line, backgroundColor: C.card2 },
+  refEmptyTitle: { color: C.white, fontSize: 17, fontWeight: "800", marginTop: 12 },
+  refEmptySub: { color: C.muted2, fontSize: 10, marginTop: 5 },
+  refSmallButton: { backgroundColor: C.lime2, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 11, marginTop: 16 },
+  refSmallButtonText: { color: C.black, fontSize: 9, fontWeight: "900" },
+  refProfileCard: { backgroundColor: C.card2, borderRadius: 20, borderWidth: 1, borderColor: C.line, padding: 16, flexDirection: "row", alignItems: "center", marginBottom: 12 },
+  refProfileAvatar: { width: 58, height: 58, borderRadius: 29, borderWidth: 2, borderColor: C.lime2, alignItems: "center", justifyContent: "center", marginRight: 13 },
+  refProfileLetter: { color: C.white, fontSize: 22, fontWeight: "900" },
+  refProfileName: { color: C.white, fontSize: 17, fontWeight: "900" },
+  refProfileLocal: { color: C.muted2, fontSize: 10, marginTop: 3 },
+  refProPill: { alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(184,255,39,0.08)", borderRadius: 8, paddingHorizontal: 7, paddingVertical: 4, marginTop: 7 },
+  refProText: { color: C.lime2, fontSize: 7, fontWeight: "900", letterSpacing: .8 },
+  refProfileStats: { flexDirection: "row", justifyContent: "space-around", paddingVertical: 15, marginBottom: 12, backgroundColor: C.card2, borderRadius: 17, borderWidth: 1, borderColor: C.line },
+  refProfileStatValue: { color: C.white, textAlign: "center", fontSize: 19, fontWeight: "900" },
+  refProfileStatLabel: { color: C.muted2, textAlign: "center", fontSize: 8, fontWeight: "900", letterSpacing: 1, marginTop: 3 },
+  refSettingsBox: { backgroundColor: C.card2, borderRadius: 18, borderWidth: 1, borderColor: C.line, paddingHorizontal: 13, marginBottom: 12 },
+  refSettingRow: { minHeight: 66, flexDirection: "row", alignItems: "center", borderBottomWidth: 1, borderBottomColor: C.line },
+  refSettingIcon: { width: 37, height: 37, borderRadius: 11, backgroundColor: "rgba(255,255,255,0.025)", alignItems: "center", justifyContent: "center", marginRight: 11 },
+  refSettingTitle: { color: C.white, fontSize: 12, fontWeight: "800" },
+  refSettingSub: { color: C.muted2, fontSize: 9, marginTop: 3 },
+  refLogout: { height: 48, borderRadius: 14, borderWidth: 1, borderColor: C.line, alignItems: "center", justifyContent: "center", marginBottom: 10 },
+  refLogoutText: { color: C.muted, fontSize: 10, fontWeight: "900", letterSpacing: 1.2 },
+  refStatsHero: { backgroundColor: C.card2, borderRadius: 20, borderWidth: 1, borderColor: "rgba(184,255,39,0.13)", padding: 20, marginBottom: 13 },
+  refStatsHeroValue: { color: C.white, fontSize: 40, fontWeight: "900", letterSpacing: -1.5 },
+  refStatsHeroUnit: { color: C.lime2, fontSize: 13 },
+  refChartCard: { backgroundColor: C.card2, borderRadius: 20, borderWidth: 1, borderColor: C.line, padding: 17, marginBottom: 13 },
+  refChartHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" },
+  refChartTitle: { color: C.white, fontSize: 17, fontWeight: "800" },
+  refChartTotal: { color: C.lime2, fontSize: 11, fontWeight: "900" },
+  refBars: { height: 145, flexDirection: "row", alignItems: "flex-end", gap: 8, marginTop: 17 },
+  refChartSlot: { flex: 1, height: "100%", alignItems: "center", justifyContent: "flex-end" },
+  refChartTrack: { width: "100%", height: 112, justifyContent: "flex-end", backgroundColor: "rgba(255,255,255,0.02)", borderRadius: 6, overflow: "hidden" },
+  refChartBar: { width: "100%", backgroundColor: C.lime2, borderRadius: 6 },
+  refChartDay: { color: C.muted2, fontSize: 8, marginTop: 8, fontWeight: "800" },
+  refInsight: { flexDirection: "row", alignItems: "center", gap: 11, backgroundColor: "rgba(184,255,39,0.07)", borderWidth: 1, borderColor: "rgba(184,255,39,0.13)", borderRadius: 17, padding: 14 },
+  refInsightIcon: { width: 34, height: 34, borderRadius: 10, backgroundColor: C.lime2, alignItems: "center", justifyContent: "center" },
+  refInsightTitle: { color: C.lime2, fontSize: 8, fontWeight: "900", letterSpacing: 1.2 },
+  refInsightText: { color: C.muted, fontSize: 10, lineHeight: 15, marginTop: 3 },
+  refBottomNav: { position: "absolute", left: 12, right: 12, bottom: Platform.OS === "android" ? 8 : 12, height: 68, borderRadius: 22, borderWidth: 1, borderColor: "rgba(190,255,218,0.13)", backgroundColor: "rgba(8,14,12,0.98)", flexDirection: "row", alignItems: "center", justifyContent: "space-around", paddingHorizontal: 4, elevation: 12 },
+  refNavItem: { flex: 1, alignItems: "center", justifyContent: "center", height: "100%" },
+  refNavIconWrap: { width: 34, height: 30, borderRadius: 11, alignItems: "center", justifyContent: "center" },
+  refNavIconActive: { backgroundColor: C.lime2 },
+  refNavLabel: { color: C.muted2, fontSize: 7, fontWeight: "800", marginTop: 2 },
+  refNavLabelActive: { color: C.lime2 },
+  refOnboarding: { flex: 1, backgroundColor: C.bg, paddingHorizontal: 25 },
+  refOnboardTop: { height: 65, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  refOnboardLogo: { color: C.white, fontSize: 28, fontWeight: "900", letterSpacing: -1 },
+  refOnboardCount: { color: C.muted, fontSize: 10, fontWeight: "900" },
+  refOnboardCenter: { flex: 1, justifyContent: "center" },
+  refOnboardHero: { width: 220, height: 280, alignSelf: "center", borderRadius: 34, borderWidth: 1, borderColor: "rgba(184,255,39,0.16)", backgroundColor: "#07110D", alignItems: "center", justifyContent: "center", shadowColor: C.lime2, shadowOpacity: .12, shadowRadius: 30, shadowOffset: {width:0,height:0}, elevation: 7 },
+  refOnboardKicker: { color: C.muted, fontSize: 11, fontWeight: "900", letterSpacing: 2, marginBottom: 4 },
+  refOnboardTitle: { color: C.white, fontSize: 33, lineHeight: 37, fontWeight: "900", letterSpacing: -1.3, marginTop: 22 },
+  refOnboardSub: { color: C.muted, fontSize: 12, lineHeight: 18, marginTop: 10, maxWidth: 310 },
+  refOnboardTag: { alignSelf: "center", marginTop: 18, borderRadius: 20, borderWidth: 1, borderColor: "rgba(184,255,39,0.4)", paddingHorizontal: 13, paddingVertical: 7 },
+  refOnboardTagText: { color: C.lime2, fontSize: 8, fontWeight: "900", letterSpacing: 1.5 },
+  refOnboardPreview: { marginTop: 25, height: 230, borderRadius: 25, backgroundColor: C.card2, borderWidth: 1, borderColor: C.line, padding: 18, overflow: "hidden" },
+  refFakeRoute: { position: "absolute", left: 30, top: 40, width: 200, height: 120 },
+  refFakeLineA: { position: "absolute", left: 15, top: 75, width: 80, height: 4, backgroundColor: C.lime2, transform: [{rotate:"-22deg"}], borderRadius: 3 },
+  refFakeLineB: { position: "absolute", left: 80, top: 55, width: 70, height: 4, backgroundColor: C.lime2, transform: [{rotate:"30deg"}], borderRadius: 3 },
+  refFakeLineC: { position: "absolute", left: 130, top: 90, width: 58, height: 4, backgroundColor: C.lime2, transform: [{rotate:"-45deg"}], borderRadius: 3 },
+  refPreviewStats: { position: "absolute", left: 18, right: 18, bottom: 16, flexDirection: "row", justifyContent: "space-between" },
+  refPreviewStatsText: { color: C.white, fontSize: 11 },
+  refFakeBars: { height: 130, flexDirection: "row", alignItems: "flex-end", gap: 7, paddingHorizontal: 8 },
+  refFakeBar: { flex: 1, backgroundColor: C.lime2, borderRadius: 5, opacity: .8 },
+  refMiniTrend: { marginTop: 18, padding: 12, borderRadius: 13, backgroundColor: "rgba(184,255,39,0.06)" },
+  refMiniTrendLabel: { color: C.muted2, fontSize: 8, fontWeight: "800" },
+  refMiniTrendValue: { color: C.lime2, fontSize: 20, fontWeight: "900", marginTop: 4 },
+  refGoalPreview: { marginTop: 25, height: 230, borderRadius: 25, backgroundColor: C.card2, borderWidth: 1, borderColor: C.line, alignItems: "center", justifyContent: "center", gap: 9 },
+  refGoalPreviewText: { color: C.muted, fontSize: 11 },
+  refOnboardBottom: { paddingBottom: 14 },
+  refOnboardButton: { height: 55, borderRadius: 17, backgroundColor: C.lime2, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8 },
+  refOnboardButtonText: { color: C.black, fontSize: 12, fontWeight: "900", letterSpacing: 1 },
+  refSkip: { alignItems: "center", paddingTop: 11 },
+  refSkipText: { color: C.muted2, fontSize: 9, fontWeight: "800" },
+  refDots: { position: "absolute", left: 0, right: 0, top: 12, flexDirection: "row", justifyContent: "center", gap: 5 },
+  refDot: { height: 6, borderRadius: 3, backgroundColor: C.lime2 },
 
 });
