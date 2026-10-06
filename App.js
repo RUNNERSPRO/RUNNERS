@@ -1183,9 +1183,8 @@ function HeroVisualization({ progress }) {
         </View>
       </View>
 
-      <View style={styles.routeLine routeLineA} />
-      <View style={styles.routeLine routeLineB} />
-    </View>
+      <View style={[styles.routeLine, styles.routeLineA]} />
+<View style={[styles.routeLine, styles.routeLineB]} />    </View>
   );
 }
 
