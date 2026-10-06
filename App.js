@@ -26,6 +26,7 @@ import * as TaskManager from "expo-task-manager";
 import * as Speech from "expo-speech";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import MapView, { Marker, Polyline } from "react-native-maps";
+import Svg, { Defs, LinearGradient as SvgLinearGradient, Stop, Path, Circle, Rect } from "react-native-svg";
 import {
   Ionicons,
   FontAwesome5,
@@ -53,15 +54,20 @@ const C = {
   muted2: "#64756D",
   line: "rgba(190,255,218,0.11)",
 
-  lime: "#B8FF27",
-  lime2: "#72FF5B",
-  limeDark: "rgba(184,255,39,0.10)",
+  lime: "#5CFF8A",
+  lime2: "#B8FF27",
+  limeDark: "rgba(92,255,138,0.10)",
+  cyan: "#27E8FF",
+  teal: "#00BFAE",
+  blue: "#4D7CFF",
+  blue2: "#24C6FF",
+  purple: "#8B7CFF",
+  gradientStart: "#27E8FF",
+  gradientEnd: "#5CFF8A",
 
   red: "#FF5A68",
   orange: "#FF9D4D",
   yellow: "#FFD75A",
-  blue: "#55A6FF",
-  purple: "#9B82FF",
 
   black: "#030504",
 };
@@ -88,10 +94,10 @@ const SPEED_STOPS = [
   { speed: 0, color: "#FF4D4D" },
   { speed: 4, color: "#FF9F43" },
   { speed: 7, color: "#F8D94E" },
-  { speed: 10, color: "#B8FF27" },
-  { speed: 13, color: "#55E86B" },
-  { speed: 16, color: "#35C8D8" },
-  { speed: 20, color: "#5B8CFF" },
+  { speed: 10, color: "#5CFF8A" },
+  { speed: 13, color: "#27E8FF" },
+  { speed: 16, color: "#4D7CFF" },
+  { speed: 20, color: "#8B7CFF" },
 ];
 
 /* =========================================================
@@ -1871,6 +1877,8 @@ export default function App() {
             </View>
           </View>
 
+          <HomeHeroVisual />
+
           <Text style={styles.heroDescription}>
             Track every run with precision.
             Distance, pace and progress —
@@ -1896,6 +1904,15 @@ export default function App() {
               setMissionVisible(true)
             }
           >
+            <Svg pointerEvents="none" style={StyleSheet.absoluteFill} width="100%" height="100%">
+              <Defs>
+                <SvgLinearGradient id="startGradient" x1="0" y1="0" x2="1" y2="1">
+                  <Stop offset="0" stopColor={C.gradientStart} />
+                  <Stop offset="1" stopColor={C.gradientEnd} />
+                </SvgLinearGradient>
+              </Defs>
+              <Rect x="0" y="0" width="100%" height="100%" rx="18" fill="url(#startGradient)" />
+            </Svg>
             <Ionicons
               name="play"
               size={18}
@@ -4002,6 +4019,28 @@ function ScreenHeader({
   );
 }
 
+function HomeHeroVisual() {
+  return (
+    <View pointerEvents="none" style={styles.heroVisual}>
+      <Svg width="190" height="150" viewBox="0 0 190 150">
+        <Defs>
+          <SvgLinearGradient id="heroGradient" x1="0" y1="0" x2="1" y2="1">
+            <Stop offset="0" stopColor={C.gradientStart} />
+            <Stop offset="1" stopColor={C.gradientEnd} />
+          </SvgLinearGradient>
+        </Defs>
+        <Circle cx="128" cy="70" r="52" fill="none" stroke="rgba(39,232,255,0.12)" strokeWidth="16" />
+        <Circle cx="128" cy="70" r="43" fill="none" stroke="url(#heroGradient)" strokeWidth="3" strokeDasharray="110 35" strokeLinecap="round" />
+        <Path d="M22 112 C48 88 62 124 86 101 S124 72 168 42" fill="none" stroke="url(#heroGradient)" strokeWidth="3" strokeLinecap="round" />
+        <Circle cx="22" cy="112" r="4" fill={C.cyan} />
+        <Circle cx="168" cy="42" r="5" fill={C.lime} />
+        <Path d="M113 50 l12 -10 11 7 8 17 -10 6 -8 -12 -9 8 -9 -6z" fill="url(#heroGradient)" opacity="0.95" />
+        <Circle cx="111" cy="31" r="7" fill={C.white} opacity="0.95" />
+      </Svg>
+    </View>
+  );
+}
+
 function HeroMeta({
   icon,
   text,
@@ -4684,9 +4723,9 @@ const styles = StyleSheet.create({
     minHeight: 355,
     borderRadius: 30,
     padding: 22,
-    backgroundColor: "#08110D",
+    backgroundColor: "#071117",
     borderWidth: 1,
-    borderColor: "rgba(184,255,39,0.16)",
+    borderColor: "rgba(39,232,255,0.18)",
     overflow: "hidden",
     position: "relative",
     shadowColor: C.lime,
@@ -4701,7 +4740,7 @@ const styles = StyleSheet.create({
     width: 260,
     height: 260,
     borderRadius: 130,
-    backgroundColor: "rgba(184,255,39,0.08)",
+    backgroundColor: "rgba(39,232,255,0.07)",
     opacity: 1,
     right: -90,
     top: -90,
@@ -4712,9 +4751,18 @@ const styles = StyleSheet.create({
     width: 130,
     height: 130,
     borderRadius: 65,
-    backgroundColor: "rgba(82,255,135,0.06)",
+    backgroundColor: "rgba(92,255,138,0.06)",
     right: 15,
     top: 35,
+  },
+
+  heroVisual: {
+    position: "absolute",
+    right: -4,
+    top: 72,
+    width: 190,
+    height: 150,
+    opacity: 0.96,
   },
 
   heroTop: {
@@ -4733,8 +4781,8 @@ const styles = StyleSheet.create({
   heroTitle: {
     fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
     color: C.white,
-    fontSize: 45,
-    lineHeight: 45,
+    fontSize: 41,
+    lineHeight: 42,
     fontWeight: "900",
     letterSpacing: -2.5,
   },
@@ -4747,7 +4795,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 15,
-    backgroundColor: "rgba(184,255,39,0.08)",
+    backgroundColor: "rgba(39,232,255,0.07)",
     borderWidth: 1,
     borderColor: "rgba(184,255,39,0.18)",
     alignItems: "center",
@@ -4760,21 +4808,21 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 20,
     marginTop: 24,
-    maxWidth: 320,
+    maxWidth: 255,
   },
 
   heroStart: {
     height: 57,
     borderRadius: 18,
-    backgroundColor: C.lime,
+    backgroundColor: "transparent",
     marginTop: 25,
     paddingHorizontal: 20,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 9,
-    shadowColor: C.lime,
-    shadowOpacity: 0.48,
+    shadowColor: C.cyan,
+    shadowOpacity: 0.34,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 0 },
     elevation: 10,
@@ -5126,7 +5174,7 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "rgba(184,255,39,0.16)",
+    borderColor: "rgba(39,232,255,0.18)",
     backgroundColor: C.card,
     shadowColor: C.lime,
     shadowOpacity: 0.10,
