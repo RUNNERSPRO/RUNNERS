@@ -41,20 +41,20 @@ const { width, height } = Dimensions.get("window");
 ========================================================= */
 
 const C = {
-  bg: "#050606",
-  bg2: "#090A09",
-  card: "#0D0F0E",
-  card2: "#111311",
-  card3: "#151815",
+  bg: "#000000",
+  bg2: "#050505",
+  card: "#0A0D0A",
+  card2: "#0F120F",
+  card3: "#141814",
 
-  white: "#F7F8F5",
-  muted: "#858982",
-  muted2: "#5C625B",
-  line: "#20231F",
+  white: "#F4F6F1",
+  muted: "#8A9088",
+  muted2: "#60675F",
+  line: "#1C211C",
 
-  lime: "#B7C98A",
-  lime2: "#AFC48A",
-  limeDark: "#1B2117",
+  lime: "#B8FF27",
+  lime2: "#A6F51F",
+  limeDark: "#17210B",
 
   red: "#FF4D4D",
   orange: "#FF9F43",
@@ -863,6 +863,9 @@ export default function App() {
     if (Platform.OS === "android") {
       NavigationBar.setVisibilityAsync("visible").catch(() => {});
       NavigationBar.setBehaviorAsync("inset-swipe").catch(() => {});
+      // Keep Android navigation in the normal layout flow so the app
+      // bottom bar cannot sit underneath the system navigation controls.
+      NavigationBar.setPositionAsync("relative").catch(() => {});
       NavigationBar.setBackgroundColorAsync(C.bg).catch(() => {});
     }
 
@@ -4633,7 +4636,7 @@ const styles = StyleSheet.create({
   homeScroll: {
     paddingHorizontal: 18,
     paddingTop: 18,
-    paddingBottom: 108,
+    paddingBottom: 150,
   },
 
   hero: {
@@ -4687,9 +4690,9 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 15,
-    backgroundColor: "rgba(183,201,138,0.06)",
+    backgroundColor: "rgba(184,255,39,0.08)",
     borderWidth: 1,
-    borderColor: "rgba(183,201,138,0.12)",
+    borderColor: "rgba(184,255,39,0.18)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -4877,7 +4880,7 @@ const styles = StyleSheet.create({
     width: 47,
     height: 47,
     borderRadius: 15,
-    backgroundColor: "rgba(183,201,138,0.05)",
+    backgroundColor: "rgba(184,255,39,0.06)",
     borderWidth: 1,
     borderColor: "rgba(184,255,39,0.14)",
     alignItems: "center",
@@ -5027,7 +5030,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: "rgba(5,6,5,0.88)",
     borderWidth: 1,
-    borderColor: "rgba(183,201,138,0.12)",
+    borderColor: "rgba(184,255,39,0.18)",
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
@@ -5356,17 +5359,17 @@ const styles = StyleSheet.create({
     // Android's system navigation buttons / gesture area.
     paddingBottom:
       Platform.OS === "android"
-        ? 16
-        : 6,
+        ? 38
+        : 10,
     backgroundColor: C.bg,
   },
 
   bottomNav: {
-    height: 66,
+    height: 70,
     borderRadius: 22,
-    backgroundColor: "#0C0E0C",
+    backgroundColor: "#080A08",
     borderWidth: 1,
-    borderColor: C.line,
+    borderColor: "#202720",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-around",
@@ -5375,7 +5378,7 @@ const styles = StyleSheet.create({
 
   navItem: {
     flex: 1,
-    height: 58,
+    height: 62,
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
@@ -5383,7 +5386,9 @@ const styles = StyleSheet.create({
 
   navItemActive: {
     backgroundColor:
-      "rgba(255,255,255,0.055)",
+      "rgba(184,255,39,0.10)",
+    borderWidth: 1,
+    borderColor: "rgba(184,255,39,0.08)",
   },
 
   navIconWrap: {
@@ -5403,8 +5408,8 @@ const styles = StyleSheet.create({
   },
 
   navLabel: {
-    color: C.muted2,
-    fontSize: 8,
+    color: "#737A71",
+    fontSize: 9,
     fontWeight: "800",
     marginTop: 4,
   },
@@ -5445,10 +5450,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
     borderRadius: 17,
     backgroundColor:
-      "rgba(183,201,138,0.06)",
+      "rgba(184,255,39,0.08)",
     borderWidth: 1,
     borderColor:
-      "rgba(183,201,138,0.12)",
+      "rgba(184,255,39,0.18)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -5466,7 +5471,7 @@ const styles = StyleSheet.create({
   historyScreen: {
     paddingHorizontal: 18,
     paddingTop: 14,
-    paddingBottom: 104,
+    paddingBottom: 145,
   },
 
   historyOverview: {
@@ -5579,7 +5584,7 @@ const styles = StyleSheet.create({
     height: 70,
     borderRadius: 24,
     backgroundColor:
-      "rgba(183,201,138,0.05)",
+      "rgba(184,255,39,0.06)",
     borderWidth: 1,
     borderColor:
       "rgba(183,201,138,0.09)",
@@ -5627,7 +5632,7 @@ const styles = StyleSheet.create({
   profileScreen: {
     paddingHorizontal: 18,
     paddingTop: 14,
-    paddingBottom: 120,
+    paddingBottom: 155,
   },
 
   profileHero: {
@@ -5729,7 +5734,7 @@ const styles = StyleSheet.create({
     height: 39,
     borderRadius: 13,
     backgroundColor:
-      "rgba(183,201,138,0.05)",
+      "rgba(184,255,39,0.06)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -5768,7 +5773,7 @@ const styles = StyleSheet.create({
     height: 39,
     borderRadius: 13,
     backgroundColor:
-      "rgba(183,201,138,0.05)",
+      "rgba(184,255,39,0.06)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -5948,10 +5953,10 @@ const styles = StyleSheet.create({
     minHeight: 68,
     borderRadius: 19,
     backgroundColor:
-      "rgba(183,201,138,0.05)",
+      "rgba(184,255,39,0.06)",
     borderWidth: 1,
     borderColor:
-      "rgba(183,201,138,0.12)",
+      "rgba(184,255,39,0.18)",
     paddingHorizontal: 15,
     flexDirection: "row",
     alignItems: "center",
@@ -6195,7 +6200,7 @@ const styles = StyleSheet.create({
     height: 95,
     borderRadius: 34,
     backgroundColor:
-      "rgba(183,201,138,0.05)",
+      "rgba(184,255,39,0.06)",
     borderWidth: 1,
     borderColor:
       "rgba(183,201,138,0.10)",
@@ -6240,7 +6245,7 @@ const styles = StyleSheet.create({
     height: 38,
     borderRadius: 12,
     backgroundColor:
-      "rgba(183,201,138,0.05)",
+      "rgba(184,255,39,0.06)",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 10,
