@@ -1,4706 +1,3182 @@
-import React, { useEffect, useRef, useState } from "react";
-import {
-  Alert,
-  Dimensions,
-  SafeAreaView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  Modal,
-  Vibration,
-  ScrollView,
-  Platform,
-  Animated,
-} from "react-native";
+import React,{useEffect,useRef,useState}from"react";
+import{Alert,Dimensions,SafeAreaView,StatusBar,StyleSheet,Text,TouchableOpacity,View,Modal,Vibration,ScrollView,Platform,Animated}from"react-native";
+import*as Location from"expo-location";
+import*as TaskManager from"expo-task-manager";
+import*as Speech from"expo-speech";
+import AsyncStorage from"@react-native-async-storage/async-storage";
+import MapView,{Marker,Polyline}from"react-native-maps";
+import{Ionicons,FontAwesome5}from"@expo/vector-icons";
+import NetInfo from"@react-native-community/netinfo";
 
-import * as Location from "expo-location";
-import * as TaskManager from "expo-task-manager";
-import * as Speech from "expo-speech";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import MapView, { Marker, Polyline } from "react-native-maps";
-import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
-import NetInfo from "@react-native-community/netinfo";
+const{width,height}=Dimensions.get("window");
 
-const { width, height } = Dimensions.get("window");
+const TASK="RUNNER_BACKGROUND_LOCATION";
+const SESSION="@runner_active_session_v6";
+const HISTORY="@runner_workout_history_v6";
 
-/* =========================================================
-   RAFTAAR DESIGN SYSTEM
-========================================================= */
+const MAX_ACCURACY=25;
+const MIN_MOVE=2;
+const MAX_SPEED=22;
+const MAX_POINTS=6000;
+const DELTA=.0045;
 
-const COLORS = {
-  bg: "#050505",
-  surface: "#0A0A0A",
-  surface2: "#0E0E0E",
-  surface3: "#131313",
-
-  white: "#F5F5F5",
-  muted: "#777777",
-  muted2: "#4A4A4A",
-
-  border: "#1C1C1C",
-  borderLight: "#282828",
-
-  lime: "#A8FF00",
-  limeDark: "#7FC700",
-
-  red: "#EF4444",
-  orange: "#FF8A00",
-  yellow: "#FFD000",
-};
-
-/* =========================================================
-   CONSTANTS
-========================================================= */
-
-const LOCATION_TASK_NAME = "RUNNER_BACKGROUND_LOCATION";
-const SESSION_KEY = "@runner_active_session_v6";
-const HISTORY_KEY = "@runner_workout_history_v6";
-
-const MAX_ACCURACY = 25;
-const MIN_MOVEMENT_METERS = 2;
-const MAX_RUNNING_SPEED_KMH = 22;
-const MAX_ROUTE_POINTS = 6000;
-const MAP_DELTA = 0.0045;
-
-const SPEED_STOPS = [
-  { speed: 0, color: "#EF4444" },
-  { speed: 4, color: "#FF8A00" },
-  { speed: 7, color: "#FFD000" },
-  { speed: 10, color: "#A8FF00" },
-  { speed: 13, color: "#62E000" },
-  { speed: 16, color: "#A8FF00" },
-  { speed: 20, color: "#A8FF00" },
+const STOPS=[
+ {s:0,c:"#EF4444"},
+ {s:4,c:"#FB923C"},
+ {s:7,c:"#FACC15"},
+ {s:10,c:"#A3E635"},
+ {s:13,c:"#22C55E"},
+ {s:16,c:"#06B6D4"},
+ {s:20,c:"#2563EB"}
 ];
 
-/* =========================================================
-   HELPERS
-========================================================= */
-
-function getDirection(heading) {
-  if (heading === null || heading === undefined || heading < 0) return "--";
-
-  const val = Math.floor(heading / 45 + 0.5);
-  const arr = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-
-  return arr[val % 8];
-}
-
-function hexToRgb(hex) {
-  const clean = hex.replace("#", "");
-
-  return {
-    r: parseInt(clean.substring(0, 2), 16),
-    g: parseInt(clean.substring(2, 4), 16),
-    b: parseInt(clean.substring(4, 6), 16),
-  };
-}
-
-function rgbToHex(r, g, b) {
-  return (
-    "#" +
-    [r, g, b]
-      .map((v) =>
-        Math.round(v)
-          .toString(16)
-          .padStart(2, "0")
-          .toUpperCase()
-      )
-      .join("")
-  );
-}
-
-function getSpectrumColor(speed) {
-  const s = Math.max(
-    SPEED_STOPS[0].speed,
-    Math.min(
-      SPEED_STOPS[SPEED_STOPS.length - 1].speed,
-      Number(speed) || 0
-    )
-  );
-
-  for (let i = 0; i < SPEED_STOPS.length - 1; i++) {
-    const current = SPEED_STOPS[i];
-    const next = SPEED_STOPS[i + 1];
-
-    if (s >= current.speed && s <= next.speed) {
-      const ratio =
-        (s - current.speed) / (next.speed - current.speed || 1);
-
-      const a = hexToRgb(current.color);
-      const b = hexToRgb(next.color);
-
-      return rgbToHex(
-        a.r + (b.r - a.r) * ratio,
-        a.g + (b.g - a.g) * ratio,
-        a.b + (b.b - a.b) * ratio
-      );
-    }
-  }
-
-  return SPEED_STOPS[SPEED_STOPS.length - 1].color;
-}
-
-function toRad(value) {
-  return (value * Math.PI) / 180;
-}
-
-function distanceMeters(lat1, lon1, lat2, lon2) {
-  const R = 6371000;
-
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) *
-      Math.cos(toRad(lat2)) *
-      Math.sin(dLon / 2) ** 2;
-
-  return (
-    2 *
-    R *
-    Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-  );
-}
-
-function isValidCoordinate(point) {
-  if (!point) return false;
-
-  const latitude = Number(point.latitude);
-  const longitude = Number(point.longitude);
-
-  return (
-    Number.isFinite(latitude) &&
-    Number.isFinite(longitude) &&
-    latitude >= -90 &&
-    latitude <= 90 &&
-    longitude >= -180 &&
-    longitude <= 180
-  );
-}
-
-function mapCoordinate(point) {
-  return {
-    latitude: Number(point.latitude),
-    longitude: Number(point.longitude),
-    altitude: point.altitude,
-    heading: point.heading,
-  };
-}
-
-function compressSegment(segment, maxPoints) {
-  if (!segment.length) return [];
-
-  if (segment.length <= maxPoints) {
-    return segment;
-  }
-
-  if (maxPoints <= 1) {
-    return [segment[segment.length - 1]];
-  }
-
-  const result = [];
-  const step = (segment.length - 1) / (maxPoints - 1);
-
-  for (let i = 0; i < maxPoints; i++) {
-    result.push(segment[Math.round(i * step)]);
-  }
-
-  return result;
-}
-
-function compactRoute(points, maxPoints = MAX_ROUTE_POINTS) {
-  if (!Array.isArray(points)) return [];
-
-  const valid = points.filter(isValidCoordinate);
-
-  if (valid.length <= maxPoints) {
-    return valid;
-  }
-
-  const segments = [];
-  let current = [];
-
-  valid.forEach((point, index) => {
-    if (index === 0) {
-      current = [point];
-      return;
-    }
-
-    if (point.breakBefore) {
-      if (current.length) {
-        segments.push(current);
-      }
-
-      current = [point];
-    } else {
-      current.push(point);
-    }
-  });
-
-  if (current.length) {
-    segments.push(current);
-  }
-
-  if (segments.length === 1) {
-    return compressSegment(segments[0], maxPoints);
-  }
-
-  const minimumPerSegment = 2;
-  const allocation = segments.map(() => 0);
-
-  let remaining = maxPoints;
-
-  segments.forEach((segment, index) => {
-    if (remaining >= minimumPerSegment) {
-      allocation[index] = Math.min(
-        minimumPerSegment,
-        segment.length
-      );
-
-      remaining -= allocation[index];
-    }
-  });
-
-  while (remaining > 0) {
-    let largestIndex = -1;
-    let largestAvailable = 0;
-
-    segments.forEach((segment, index) => {
-      const available =
-        segment.length - allocation[index];
-
-      if (available > largestAvailable) {
-        largestAvailable = available;
-        largestIndex = index;
-      }
-    });
-
-    if (
-      largestIndex === -1 ||
-      largestAvailable <= 0
-    ) {
-      break;
-    }
-
-    allocation[largestIndex]++;
-    remaining--;
-  }
-
-  const result = [];
-
-  segments.forEach((segment, index) => {
-    const compressed = compressSegment(
-      segment,
-      Math.max(1, allocation[index])
-    );
-
-    if (index > 0 && compressed.length) {
-      compressed[0] = {
-        ...compressed[0],
-        breakBefore: true,
-      };
-    }
-
-    result.push(...compressed);
-  });
-
-  return result;
-}
-
-function formatTime(seconds) {
-  const total = Math.max(
-    0,
-    Math.floor(Number(seconds) || 0)
-  );
-
-  const hours = Math.floor(total / 3600);
-  const minutes = Math.floor((total % 3600) / 60);
-  const secs = total % 60;
-
-  if (hours > 0) {
-    return `${String(hours).padStart(
-      2,
-      "0"
-    )}:${String(minutes).padStart(
-      2,
-      "0"
-    )}:${String(secs).padStart(2, "0")}`;
-  }
-
-  return `${String(minutes).padStart(
-    2,
-    "0"
-  )}:${String(secs).padStart(2, "0")}`;
-}
-
-function getPace(distanceKm, seconds) {
-  if (
-    !distanceKm ||
-    distanceKm <= 0 ||
-    !seconds ||
-    seconds <= 0
-  ) {
-    return "--:--";
-  }
-
-  const paceSeconds = seconds / distanceKm;
-
-  return `${Math.floor(
-    paceSeconds / 60
-  )}:${String(
-    Math.floor(paceSeconds % 60)
-  ).padStart(2, "0")}`;
-}
-
-function estimatedCalories(distanceKm) {
-  return Math.round(
-    Math.max(0, Number(distanceKm) || 0) * 65
-  );
-}
-
-function getGpsStatus(accuracy) {
-  if (!Number.isFinite(Number(accuracy))) {
-    return {
-      label: "SEARCHING",
-      color: "#F59E0B",
-    };
-  }
-
-  if (accuracy <= 10) {
-    return {
-      label: "EXCELLENT",
-      color: COLORS.lime,
-    };
-  }
-
-  if (accuracy <= 20) {
-    return {
-      label: "GOOD",
-      color: COLORS.lime,
-    };
-  }
-
-  if (accuracy <= 30) {
-    return {
-      label: "FAIR",
-      color: COLORS.yellow,
-    };
-  }
-
-  return {
-    label: "WEAK",
-    color: COLORS.red,
-  };
-}
-
-function smoothSpeed(previous, current) {
-  return (
-    (Number(previous) || 0) * 0.85 +
-    (Number(current) || 0) * 0.15
-  );
-}
-
-/* =========================================================
-   PREMIUM DARK MAP
-========================================================= */
-
-const darkMapStyle = [
-  {
-    elementType: "geometry",
-    stylers: [{ color: "#090909" }],
-  },
-  {
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#666666" }],
-  },
-  {
-    elementType: "labels.text.stroke",
-    stylers: [{ color: "#090909" }],
-  },
-  {
-    featureType: "administrative",
-    elementType: "geometry",
-    stylers: [{ color: "#191919" }],
-  },
-  {
-    featureType: "road",
-    elementType: "geometry",
-    stylers: [{ color: "#171717" }],
-  },
-  {
-    featureType: "road",
-    elementType: "geometry.stroke",
-    stylers: [{ color: "#0A0A0A" }],
-  },
-  {
-    featureType: "road.highway",
-    elementType: "geometry",
-    stylers: [{ color: "#202020" }],
-  },
-  {
-    featureType: "road.highway",
-    elementType: "geometry.stroke",
-    stylers: [{ color: "#0A0A0A" }],
-  },
-  {
-    featureType: "water",
-    elementType: "geometry",
-    stylers: [{ color: "#070707" }],
-  },
-  {
-    featureType: "poi",
-    elementType: "geometry",
-    stylers: [{ color: "#101010" }],
-  },
-  {
-    featureType: "poi",
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#555555" }],
-  },
-  {
-    featureType: "transit",
-    stylers: [{ visibility: "off" }],
-  },
+const mapStyle=[
+ {elementType:"geometry",stylers:[{color:"#101411"}]},
+ {elementType:"labels.text.fill",stylers:[{color:"#8C948C"}]},
+ {elementType:"labels.text.stroke",stylers:[{color:"#101411"}]},
+ {featureType:"road",elementType:"geometry",stylers:[{color:"#242A25"}]},
+ {featureType:"road.highway",elementType:"geometry",stylers:[{color:"#303832"}]},
+ {featureType:"road",elementType:"geometry.stroke",stylers:[{color:"#121612"}]},
+ {featureType:"water",elementType:"geometry",stylers:[{color:"#0B1210"}]},
+ {featureType:"poi",elementType:"geometry",stylers:[{color:"#172019"}]}
 ];
 
+function rgb(h){
+ h=h.replace("#","");
+ return[
+  parseInt(h.slice(0,2),16),
+  parseInt(h.slice(2,4),16),
+  parseInt(h.slice(4,6),16)
+ ];
+}
+
+function hex(r,g,b){
+ return"#"+[r,g,b]
+  .map(x=>Math.round(x).toString(16).padStart(2,"0"))
+  .join("")
+  .toUpperCase();
+}
+
+function speedColor(v){
+ let s=Math.max(0,Math.min(20,Number(v)||0));
+
+ for(let i=0;i<STOPS.length-1;i++){
+  let a=STOPS[i],b=STOPS[i+1];
+
+  if(s>=a.s&&s<=b.s){
+   let t=(s-a.s)/(b.s-a.s||1);
+   let x=rgb(a.c),y=rgb(b.c);
+
+   return hex(
+    x[0]+(y[0]-x[0])*t,
+    x[1]+(y[1]-x[1])*t,
+    x[2]+(y[2]-x[2])*t
+   );
+  }
+ }
+
+ return STOPS[STOPS.length-1].c;
+}
+
+function valid(p){
+ return p&&
+  Number.isFinite(Number(p.latitude))&&
+  Number.isFinite(Number(p.longitude));
+}
+
+function coord(p){
+ return{
+  latitude:Number(p.latitude),
+  longitude:Number(p.longitude)
+ };
+}
+
+function meters(a,b){
+ const R=6371000;
+
+ const d1=(b.latitude-a.latitude)*Math.PI/180;
+ const d2=(b.longitude-a.longitude)*Math.PI/180;
+
+ const x=
+  Math.sin(d1/2)**2+
+  Math.cos(a.latitude*Math.PI/180)*
+  Math.cos(b.latitude*Math.PI/180)*
+  Math.sin(d2/2)**2;
+
+ return 2*R*Math.atan2(
+  Math.sqrt(x),
+  Math.sqrt(1-x)
+ );
+}
+
+function timeFmt(s){
+ s=Math.max(0,Math.floor(Number(s)||0));
+
+ let h=Math.floor(s/3600);
+ let m=Math.floor((s%3600)/60);
+ let x=s%60;
+
+ if(h){
+  return`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(x).padStart(2,"0")}`;
+ }
+
+ return`${String(m).padStart(2,"0")}:${String(x).padStart(2,"0")}`;
+}
+
+function pace(d,s){
+ if(!d||!s)return"--:--";
+
+ let x=s/d;
+
+ return`${Math.floor(x/60)}:${String(Math.floor(x%60)).padStart(2,"0")}`;
+}
+
+function calories(d){
+ return Math.round(Math.max(0,Number(d)||0)*65);
+}
+
+function direction(h){
+ if(!Number.isFinite(Number(h))||h<0)return"--";
+
+ return[
+  "N","NE","E","SE",
+  "S","SW","W","NW"
+ ][Math.floor(h/45+.5)%8];
+}
+
+function gps(accuracy){
+ if(!Number.isFinite(Number(accuracy)))
+  return{t:"SEARCHING",c:"#F59E0B"};
+
+ if(accuracy<=10)
+  return{t:"EXCELLENT",c:"#B8FF2C"};
+
+ if(accuracy<=20)
+  return{t:"GOOD",c:"#84CC16"};
+
+ if(accuracy<=30)
+  return{t:"FAIR",c:"#F59E0B"};
+
+ return{t:"WEAK",c:"#EF4444"};
+}
+
+function compact(a){
+ return Array.isArray(a)
+  ?a.filter(valid).slice(-MAX_POINTS)
+  :[];
+}
+
+
 /* =========================================================
-   ROUTE
+   PREMIUM ROUTE
 ========================================================= */
 
-const MemoizedSpectrumRoute = React.memo(
-  ({ points, prefix = "route" }) => {
-    if (!Array.isArray(points) || points.length < 2) {
-      return null;
+const Route=React.memo(({points,prefix})=>{
+ if(!points||points.length<2)return null;
+
+ let all=[];
+ let cur=[points[0]];
+
+ for(let i=1;i<points.length;i++){
+
+  if(points[i].breakBefore){
+   if(cur.length>1)all.push(cur);
+   cur=[points[i]];
+  }else{
+   cur.push(points[i]);
+  }
+ }
+
+ if(cur.length>1)all.push(cur);
+
+ return(
+  <>
+   {all.map((s,j)=>{
+
+    let chunks=[];
+    let c=[s[0]];
+    let col=speedColor(s[0].speedKmh);
+
+    for(let i=0;i<s.length-1;i++){
+
+     let nc=speedColor(
+      ((s[i].speedKmh||0)+(s[i+1].speedKmh||0))/2
+     );
+
+     if(nc!==col){
+      chunks.push({c:col,p:c});
+      c=[s[i],s[i+1]];
+      col=nc;
+     }else{
+      c.push(s[i+1]);
+     }
     }
 
-    const segments = (function splitRouteSegments(pts) {
-      const valid = pts.filter(isValidCoordinate);
+    if(c.length>1)
+     chunks.push({c:col,p:c});
 
-      if (valid.length < 2) return [];
+    return(
+     <React.Fragment key={`${prefix}-${j}`}>
 
-      const segs = [];
-      let cur = [];
+      <Polyline
+       coordinates={s.map(coord)}
+       strokeColor="rgba(0,0,0,.6)"
+       strokeWidth={11}
+      />
 
-      valid.forEach((p, i) => {
-        if (i === 0) {
-          cur = [p];
-          return;
-        }
+      {chunks.map((x,k)=>(
+       <Polyline
+        key={k}
+        coordinates={x.p.map(coord)}
+        strokeColor={x.c}
+        strokeWidth={7}
+        lineCap="round"
+        lineJoin="round"
+       />
+      ))}
 
-        if (p.breakBefore) {
-          if (cur.length >= 2) {
-            segs.push(cur);
-          }
-
-          cur = [p];
-        } else {
-          cur.push(p);
-        }
-      });
-
-      if (cur.length >= 2) {
-        segs.push(cur);
-      }
-
-      return segs;
-    })(points);
-
-    return (
-      <>
-        {segments.map((segment, segmentIndex) => {
-          if (segment.length < 2) {
-            return null;
-          }
-
-          const colorChunks = [];
-
-          let currentChunk = [segment[0]];
-          let currentColor = null;
-
-          for (
-            let i = 0;
-            i < segment.length - 1;
-            i++
-          ) {
-            const point = segment[i];
-            const next = segment[i + 1];
-
-            const color = getSpectrumColor(
-              (Number(point.speedKmh || 0) +
-                Number(next.speedKmh || 0)) /
-                2
-            );
-
-            if (currentColor === null) {
-              currentColor = color;
-            }
-
-            if (color !== currentColor) {
-              colorChunks.push({
-                color: currentColor,
-                coordinates: [...currentChunk],
-              });
-
-              currentChunk = [point, next];
-              currentColor = color;
-            } else {
-              currentChunk.push(next);
-            }
-          }
-
-          if (currentChunk.length > 1) {
-            colorChunks.push({
-              color: currentColor,
-              coordinates: currentChunk,
-            });
-          }
-
-          return (
-            <React.Fragment
-              key={`${prefix}-segment-${segmentIndex}`}
-            >
-              <Polyline
-                coordinates={segment.map(mapCoordinate)}
-                strokeColor="rgba(0,0,0,0.80)"
-                strokeWidth={10}
-                lineCap="round"
-                lineJoin="round"
-                zIndex={1}
-              />
-
-              {colorChunks.map(
-                (chunk, chunkIndex) => (
-                  <Polyline
-                    key={`${prefix}-${segmentIndex}-${chunkIndex}`}
-                    coordinates={chunk.coordinates.map(
-                      mapCoordinate
-                    )}
-                    strokeColor={chunk.color}
-                    strokeWidth={6}
-                    lineCap="round"
-                    lineJoin="round"
-                    zIndex={2}
-                  />
-                )
-              )}
-            </React.Fragment>
-          );
-        })}
-      </>
+     </React.Fragment>
     );
-  },
-  (prevProps, nextProps) =>
-    prevProps.points?.length ===
-    nextProps.points?.length
-);
-
-/* =========================================================
-   MARKERS
-========================================================= */
-
-const StartMarker = React.memo(({ coordinate }) => {
-  if (
-    !coordinate ||
-    !isValidCoordinate(coordinate)
-  ) {
-    return null;
-  }
-
-  return (
-    <Marker
-      coordinate={mapCoordinate(coordinate)}
-      anchor={{ x: 0.5, y: 0.5 }}
-    >
-      <View style={styles.startMarker}>
-        <View style={styles.startMarkerDot} />
-      </View>
-    </Marker>
-  );
+   })}
+  </>
+ );
 });
 
-const FinishMarker = React.memo(({ coordinate }) => {
-  if (
-    !coordinate ||
-    !isValidCoordinate(coordinate)
-  ) {
-    return null;
-  }
+const Live=({p})=>
+ valid(p)?
+ <Marker coordinate={coord(p)}>
+  <View style={S.live}>
+   <View style={S.liveIn}/>
+  </View>
+ </Marker>:null;
 
-  return (
-    <Marker
-      coordinate={mapCoordinate(coordinate)}
-      anchor={{ x: 0.5, y: 0.5 }}
-    >
-      <View style={styles.finishMarker}>
-        <View style={styles.finishMarkerInner} />
-      </View>
-    </Marker>
-  );
-});
+const Start=({p})=>
+ valid(p)?
+ <Marker coordinate={coord(p)}>
+  <View style={S.start}>
+   <View style={S.startIn}/>
+  </View>
+ </Marker>:null;
 
-const LiveMarker = React.memo(({ coordinate }) => {
-  if (
-    !coordinate ||
-    !isValidCoordinate(coordinate)
-  ) {
-    return null;
-  }
+const Finish=({p})=>
+ valid(p)?
+ <Marker coordinate={coord(p)}>
+  <View style={S.finish}>
+   <View style={S.finishIn}/>
+  </View>
+ </Marker>:null;
 
-  return (
-    <Marker
-      coordinate={mapCoordinate(coordinate)}
-      anchor={{ x: 0.5, y: 0.5 }}
-      zIndex={999}
-    >
-      <View style={styles.liveMarker}>
-        <View style={styles.liveMarkerInner} />
-      </View>
-    </Marker>
-  );
-});
 
 /* =========================================================
    BACKGROUND LOCATION
 ========================================================= */
 
 TaskManager.defineTask(
-  LOCATION_TASK_NAME,
-  async ({ data, error }) => {
-    if (
-      error ||
-      !data?.locations?.length
-    ) {
-      return;
-    }
+ TASK,
+ async({data,error})=>{
+  if(error||!data?.locations?.length)return;
 
-    try {
-      const stored =
-        await AsyncStorage.getItem(
-          SESSION_KEY
-        );
+  try{
 
-      if (!stored) return;
+   let raw=await AsyncStorage.getItem(SESSION);
 
-      const session = JSON.parse(stored);
+   if(!raw)return;
 
-      if (
-        !session ||
-        !session.running ||
-        session.paused
-      ) {
-        return;
-      }
+   let s=JSON.parse(raw);
 
-      let updatedSession = {
-        ...session,
-      };
+   if(!s?.running||s.paused)return;
 
-      for (const locationData of data.locations) {
-        const coords =
-          locationData?.coords;
+   for(const item of data.locations){
 
-        if (!coords) continue;
+    let c=item?.coords;
 
-        const {
-          latitude,
-          longitude,
-          accuracy,
-          altitude,
-          heading,
-        } = coords;
+    if(
+     !c||
+     !Number.isFinite(c.latitude)||
+     !Number.isFinite(c.longitude)||
+     c.accuracy>MAX_ACCURACY
+    )continue;
 
-        if (
-          !Number.isFinite(latitude) ||
-          !Number.isFinite(longitude) ||
-          (Number.isFinite(accuracy) &&
-            accuracy > MAX_ACCURACY)
-        ) {
-          continue;
-        }
-
-        const timestamp =
-          Number(locationData.timestamp) ||
-          Date.now();
-
-        const currentPoint = {
-          latitude,
-          longitude,
-          accuracy,
-          timestamp,
-          altitude: altitude || 0,
-          heading:
-            heading === null ||
-            heading === undefined
-              ? -1
-              : heading,
-        };
-
-        const previous =
-          updatedSession.lastPoint ||
-          updatedSession.route?.[
-            updatedSession.route.length - 1
-          ];
-
-        if (!previous) {
-          updatedSession.lastPoint =
-            currentPoint;
-
-          updatedSession.route = [
-            ...(updatedSession.route || []),
-            {
-              ...currentPoint,
-              speedKmh: 0,
-            },
-          ];
-
-          continue;
-        }
-
-        const distance = distanceMeters(
-          previous.latitude,
-          previous.longitude,
-          latitude,
-          longitude
-        );
-
-        const deltaTime = Math.max(
-          0.5,
-          (timestamp -
-            (Number(previous.timestamp) ||
-              timestamp)) /
-            1000
-        );
-
-        const calculatedSpeed =
-          (distance / deltaTime) * 3.6;
-
-        if (
-          calculatedSpeed >
-            MAX_RUNNING_SPEED_KMH ||
-          distance < MIN_MOVEMENT_METERS
-        ) {
-          continue;
-        }
-
-        const smoothedSpeed =
-          smoothSpeed(
-            updatedSession.speedKmh || 0,
-            Math.max(0, calculatedSpeed)
-          );
-
-        const newPoint = {
-          ...currentPoint,
-          speedKmh: Number(
-            smoothedSpeed.toFixed(2)
-          ),
-        };
-
-        if (
-          updatedSession.routeBreakPending
-        ) {
-          newPoint.breakBefore = true;
-          updatedSession.routeBreakPending =
-            false;
-        }
-
-        updatedSession.route =
-          compactRoute(
-            [
-              ...(updatedSession.route || []),
-              newPoint,
-            ],
-            MAX_ROUTE_POINTS
-          );
-
-        updatedSession.lastPoint =
-          currentPoint;
-
-        updatedSession.speedKmh = Number(
-          smoothedSpeed.toFixed(2)
-        );
-
-        updatedSession.topSpeedKmh =
-          Math.max(
-            Number(
-              updatedSession.topSpeedKmh || 0
-            ),
-            Math.max(0, calculatedSpeed)
-          );
-
-        updatedSession.distanceMeters =
-          Number(
-            updatedSession.distanceMeters || 0
-          ) + distance;
-      }
-
-      await AsyncStorage.setItem(
-        SESSION_KEY,
-        JSON.stringify(updatedSession)
-      );
-    } catch (err) {}
-  }
-);
-
-/* =========================================================
-   MAIN APP
-========================================================= */
-
-export default function App() {
-  const mapRef = useRef(null);
-  const completionMapRef = useRef(null);
-
-  const [permissionGranted, setPermissionGranted] =
-    useState(false);
-
-  const [location, setLocation] =
-    useState(null);
-
-  const [accuracy, setAccuracy] =
-    useState(null);
-
-  const [isConnected, setIsConnected] =
-    useState(true);
-
-  /* RUN STATE */
-
-  const [running, setRunning] =
-    useState(false);
-
-  const [paused, setPaused] =
-    useState(false);
-
-  const [timeData, setTimeData] =
-    useState({
-      accumulatedMs: 0,
-      lastResumeTime: 0,
-    });
-
-  const [elapsedSeconds, setElapsedSeconds] =
-    useState(0);
-
-  const [distance, setDistance] =
-    useState(0);
-
-  const [speed, setSpeed] =
-    useState(0);
-
-  const [topSpeed, setTopSpeed] =
-    useState(0);
-
-  const [route, setRoute] =
-    useState([]);
-
-  /* MISSION */
-
-  const [targetDistance, setTargetDistance] =
-    useState(null);
-
-  const [challengeCompleted, setChallengeCompleted] =
-    useState(false);
-
-  const [missionModalVisible, setMissionModalVisible] =
-    useState(false);
-
-  /* UI */
-
-  const [mapType, setMapType] =
-    useState("standard");
-
-  const [followUser, setFollowUser] =
-    useState(true);
-
-  const [summaryVisible, setSummaryVisible] =
-    useState(false);
-
-  const [historyVisible, setHistoryVisible] =
-    useState(false);
-
-  const [summary, setSummary] =
-    useState(null);
-
-  const [history, setHistory] =
-    useState([]);
-
-  const [mapRendered, setMapRendered] =
-    useState(false);
-
-  const [mapLayoutSet, setMapLayoutSet] =
-    useState(false);
-
-  /* ANIMATION */
-
-  const runAnim =
-    useRef(new Animated.Value(0)).current;
-
-  const glowAnim =
-    useRef(new Animated.Value(0)).current;
-
-  /* =====================================================
-     INIT
-  ===================================================== */
-
-  useEffect(() => {
-    initializeApp();
-
-    const unsubscribe =
-      NetInfo.addEventListener((state) => {
-        setIsConnected(
-          Boolean(state.isConnected)
-        );
-      });
-
-    return () => unsubscribe();
-  }, []);
-
-  /* =====================================================
-     RUNNER ANIMATION
-  ===================================================== */
-
-  useEffect(() => {
-    if (running && !paused) {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(runAnim, {
-            toValue: 1,
-            duration: 350,
-            useNativeDriver: true,
-          }),
-          Animated.timing(runAnim, {
-            toValue: 0,
-            duration: 350,
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
-
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(glowAnim, {
-            toValue: 1,
-            duration: 1100,
-            useNativeDriver: false,
-          }),
-          Animated.timing(glowAnim, {
-            toValue: 0,
-            duration: 1100,
-            useNativeDriver: false,
-          }),
-        ])
-      ).start();
-    } else {
-      runAnim.stopAnimation();
-      runAnim.setValue(0);
-
-      glowAnim.stopAnimation();
-      glowAnim.setValue(0);
-    }
-  }, [running, paused]);
-
-  const translateY = runAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, -12],
-  });
-
-  const glowOpacity =
-    glowAnim.interpolate({
-      inputRange: [0, 1],
-      outputRange: [0.15, 0.45],
-    });
-
-  /* =====================================================
-     CHALLENGE
-  ===================================================== */
-
-  useEffect(() => {
-    if (
-      running &&
-      targetDistance &&
-      !challengeCompleted
-    ) {
-      if (distance >= targetDistance) {
-        setChallengeCompleted(true);
-
-        Speech.speak(
-          "Mission completed",
-          {
-            language: "en-IN",
-            rate: 0.95,
-          }
-        );
-
-        Alert.alert(
-          "MISSION COMPLETE",
-          `You completed your ${targetDistance} KM mission. Great work!`
-        );
-
-        AsyncStorage.getItem(
-          SESSION_KEY
-        ).then((stored) => {
-          if (stored) {
-            const s = JSON.parse(stored);
-
-            s.challengeCompleted = true;
-
-            AsyncStorage.setItem(
-              SESSION_KEY,
-              JSON.stringify(s)
-            );
-          }
-        });
-      }
-    }
-  }, [
-    distance,
-    running,
-    targetDistance,
-    challengeCompleted,
-  ]);
-
-  /* =====================================================
-     INITIALIZE
-  ===================================================== */
-
-  async function initializeApp() {
-    await loadHistory();
-    await setupLocation();
-  }
-
-  async function loadHistory() {
-    try {
-      const saved =
-        await AsyncStorage.getItem(
-          HISTORY_KEY
-        );
-
-      if (saved) {
-        setHistory(JSON.parse(saved));
-      }
-    } catch (error) {}
-  }
-
-  /* =====================================================
-     TIMER
-  ===================================================== */
-
-  useEffect(() => {
-    let interval;
-
-    if (running) {
-      interval = setInterval(() => {
-        if (
-          paused ||
-          !timeData.lastResumeTime
-        ) {
-          setElapsedSeconds(
-            Math.floor(
-              timeData.accumulatedMs / 1000
-            )
-          );
-        } else {
-          setElapsedSeconds(
-            Math.floor(
-              (
-                timeData.accumulatedMs +
-                (Date.now() -
-                  timeData.lastResumeTime)
-              ) / 1000
-            )
-          );
-        }
-      }, 1000);
-    }
-
-    return () =>
-      clearInterval(interval);
-  }, [
-    running,
-    paused,
-    timeData,
-  ]);
-
-  /* =====================================================
-     LOCATION SETUP
-  ===================================================== */
-
-  async function setupLocation() {
-    try {
-      const foreground =
-        await Location.requestForegroundPermissionsAsync();
-
-      if (
-        foreground.status !==
-        "granted"
-      ) {
-        Alert.alert(
-          "Location Required",
-          "Location permission is required to track your run."
-        );
-
-        return false;
-      }
-
-      setPermissionGranted(true);
-
-      const current =
-        await Location.getCurrentPositionAsync(
-          {
-            accuracy:
-              Location.Accuracy.High,
-          }
-        );
-
-      if (current?.coords) {
-        setLocation({
-          latitude:
-            current.coords.latitude,
-          longitude:
-            current.coords.longitude,
-          altitude:
-            current.coords.altitude,
-          heading:
-            current.coords.heading,
-        });
-
-        setAccuracy(
-          current.coords.accuracy
-        );
-      }
-
-      const stored =
-        await AsyncStorage.getItem(
-          SESSION_KEY
-        );
-
-      if (stored) {
-        const session =
-          JSON.parse(stored);
-
-        if (session?.running) {
-          setRunning(true);
-          setPaused(
-            Boolean(session.paused)
-          );
-
-          setTimeData(
-            session.timeData || {
-              accumulatedMs: 0,
-              lastResumeTime: 0,
-            }
-          );
-
-          setDistance(
-            Number(
-              session.distanceMeters || 0
-            ) / 1000
-          );
-
-          setSpeed(
-            Number(
-              session.speedKmh || 0
-            )
-          );
-
-          setTopSpeed(
-            Number(
-              session.topSpeedKmh || 0
-            )
-          );
-
-          setRoute(
-            Array.isArray(session.route)
-              ? session.route
-              : []
-          );
-
-          setTargetDistance(
-            session.targetDistance ||
-              null
-          );
-
-          setChallengeCompleted(
-            session.challengeCompleted ||
-              false
-          );
-        }
-      }
-
-      return true;
-    } catch (error) {
-      return false;
-    }
-  }
-
-  /* =====================================================
-     BACKGROUND LOCATION SERVICE
-  ===================================================== */
-
-  async function startLocationService() {
-    try {
-      const enabled =
-        await Location.hasServicesEnabledAsync();
-
-      if (!enabled) {
-        Alert.alert(
-          "Location Services Off",
-          "Please turn on Location Services."
-        );
-
-        return false;
-      }
-
-      const background =
-        await Location.requestBackgroundPermissionsAsync();
-
-      if (
-        background.status !==
-        "granted"
-      ) {
-        Alert.alert(
-          "Background Location Required",
-          "Allow background location permission so Raftaar can continue tracking your run."
-        );
-
-        return false;
-      }
-
-      const alreadyStarted =
-        await Location.hasStartedLocationUpdatesAsync(
-          LOCATION_TASK_NAME
-        );
-
-      if (!alreadyStarted) {
-        await Location.startLocationUpdatesAsync(
-          LOCATION_TASK_NAME,
-          {
-            accuracy:
-              Location.Accuracy
-                .BestForNavigation,
-
-            timeInterval: 1000,
-
-            distanceInterval: 2,
-
-            showsBackgroundLocationIndicator:
-              true,
-
-            foregroundService: {
-              notificationTitle:
-                "Raftaar",
-
-              notificationBody:
-                "Your run is being tracked.",
-            },
-          }
-        );
-      }
-
-      return true;
-    } catch (error) {
-      return false;
-    }
-  }
-
-  /* =====================================================
-     SYNC BACKGROUND SESSION
-  ===================================================== */
-
-  useEffect(() => {
-    if (!running) return;
-
-    const interval =
-      setInterval(async () => {
-        try {
-          const stored =
-            await AsyncStorage.getItem(
-              SESSION_KEY
-            );
-
-          if (!stored) return;
-
-          const session =
-            JSON.parse(stored);
-
-          setDistance(
-            Number(
-              session.distanceMeters || 0
-            ) / 1000
-          );
-
-          setSpeed(
-            Number(
-              session.speedKmh || 0
-            )
-          );
-
-          setTopSpeed(
-            Number(
-              session.topSpeedKmh || 0
-            )
-          );
-
-          if (
-            Array.isArray(
-              session.route
-            )
-          ) {
-            setRoute((prev) =>
-              prev.length !==
-              session.route.length
-                ? session.route
-                : prev
-            );
-          }
-
-          if (
-            session.lastPoint &&
-            isValidCoordinate(
-              session.lastPoint
-            )
-          ) {
-            const point =
-              mapCoordinate(
-                session.lastPoint
-              );
-
-            setLocation(point);
-
-            setAccuracy(
-              Number(
-                session.lastPoint.accuracy
-              )
-            );
-
-            if (
-              followUser &&
-              mapRef.current &&
-              isConnected
-            ) {
-              mapRef.current.animateToRegion(
-                {
-                  ...point,
-                  latitudeDelta:
-                    MAP_DELTA,
-                  longitudeDelta:
-                    MAP_DELTA,
-                },
-                500
-              );
-            }
-          }
-        } catch (error) {}
-      }, 1000);
-
-    return () =>
-      clearInterval(interval);
-  }, [
-    running,
-    followUser,
-    isConnected,
-  ]);
-
-  /* =====================================================
-     START MISSION
-  ===================================================== */
-
-  async function confirmMissionStart(
-    targetKm
-  ) {
-    setMissionModalVisible(false);
-
-    let ready =
-      permissionGranted;
-
-    if (!ready) {
-      ready =
-        await setupLocation();
-    }
-
-    if (!ready) return;
-
-    const started =
-      await startLocationService();
-
-    if (!started) return;
-
-    try {
-      const current =
-        await Location.getCurrentPositionAsync(
-          {
-            accuracy:
-              Location.Accuracy
-                .BestForNavigation,
-          }
-        );
-
-      const now = Date.now();
-
-      const firstPoint = {
-        latitude:
-          current.coords.latitude,
-
-        longitude:
-          current.coords.longitude,
-
-        accuracy:
-          current.coords.accuracy,
-
-        altitude:
-          current.coords.altitude || 0,
-
-        heading:
-          current.coords.heading ??
-          -1,
-
-        timestamp: now,
-
-        speedKmh: 0,
-      };
-
-      const newTimeData = {
-        accumulatedMs: 0,
-        lastResumeTime: now,
-      };
-
-      const newSession = {
-        running: true,
-        paused: false,
-
-        timeData:
-          newTimeData,
-
-        distanceMeters: 0,
-
-        speedKmh: 0,
-
-        topSpeedKmh: 0,
-
-        route: [firstPoint],
-
-        lastPoint: firstPoint,
-
-        routeBreakPending:
-          false,
-
-        targetDistance:
-          targetKm,
-
-        challengeCompleted:
-          false,
-      };
-
-      await AsyncStorage.setItem(
-        SESSION_KEY,
-        JSON.stringify(newSession)
-      );
-
-      setTargetDistance(targetKm);
-
-      setChallengeCompleted(false);
-
-      setLocation(
-        mapCoordinate(firstPoint)
-      );
-
-      setAccuracy(
-        firstPoint.accuracy
-      );
-
-      setTimeData(
-        newTimeData
-      );
-
-      setElapsedSeconds(0);
-
-      setRunning(true);
-
-      setPaused(false);
-
-      setDistance(0);
-
-      setSpeed(0);
-
-      setTopSpeed(0);
-
-      setRoute([firstPoint]);
-
-      Speech.speak(
-        targetKm
-          ? `Mission ${targetKm} kilometers started`
-          : "Free Run started",
-        {
-          language: "en-IN",
-          rate: 0.95,
-        }
-      );
-
-      Vibration.vibrate(100);
-    } catch (error) {
-      Alert.alert(
-        "Error",
-        "Could not start tracking."
-      );
-    }
-  }
-
-  /* =====================================================
-     PAUSE
-  ===================================================== */
-
-  async function pauseRun() {
-    const newTimeData = {
-      accumulatedMs:
-        timeData.accumulatedMs +
-        (Date.now() -
-          timeData.lastResumeTime),
-
-      lastResumeTime: null,
+    let p={
+     latitude:c.latitude,
+     longitude:c.longitude,
+     accuracy:c.accuracy,
+     altitude:c.altitude||0,
+     heading:c.heading??-1,
+     timestamp:Number(item.timestamp)||Date.now()
     };
 
-    setPaused(true);
-
-    setSpeed(0);
-
-    setTimeData(
-      newTimeData
-    );
-
-    await AsyncStorage.mergeItem(
-      SESSION_KEY,
-      JSON.stringify({
-        paused: true,
-        speedKmh: 0,
-        routeBreakPending: true,
-        timeData: newTimeData,
-      })
-    );
-
-    Vibration.vibrate(100);
-
-    Speech.speak(
-      "Run paused",
-      {
-        language: "en-IN",
-        rate: 0.95,
-      }
-    );
-  }
-
-  /* =====================================================
-     RESUME
-  ===================================================== */
-
-  async function resumeRun() {
-    try {
-      const current =
-        await Location.getCurrentPositionAsync(
-          {
-            accuracy:
-              Location.Accuracy
-                .BestForNavigation,
-          }
-        );
-
-      const newTimeData = {
-        accumulatedMs:
-          timeData.accumulatedMs,
-
-        lastResumeTime:
-          Date.now(),
-      };
-
-      const point = {
-        latitude:
-          current.coords.latitude,
-
-        longitude:
-          current.coords.longitude,
-
-        accuracy:
-          current.coords.accuracy,
-
-        altitude:
-          current.coords.altitude || 0,
-
-        heading:
-          current.coords.heading ??
-          -1,
-
-        timestamp: Date.now(),
-
-        speedKmh: 0,
-
-        breakBefore: true,
-      };
-
-      setPaused(false);
-
-      setSpeed(0);
-
-      setTimeData(
-        newTimeData
-      );
-
-      setRoute([
-        ...route,
-        point,
-      ]);
-
-      setLocation(
-        mapCoordinate(point)
-      );
-
-      setAccuracy(
-        point.accuracy
-      );
-
-      const stored =
-        await AsyncStorage.getItem(
-          SESSION_KEY
-        );
-
-      if (stored) {
-        const session =
-          JSON.parse(stored);
-
-        session.paused = false;
-
-        session.speedKmh = 0;
-
-        session.timeData =
-          newTimeData;
-
-        session.routeBreakPending =
-          false;
-
-        session.route = [
-          ...(session.route || []),
-          point,
-        ];
-
-        session.lastPoint =
-          point;
-
-        await AsyncStorage.setItem(
-          SESSION_KEY,
-          JSON.stringify(session)
-        );
-      }
-
-      Speech.speak(
-        "Run resumed",
-        {
-          language: "en-IN",
-          rate: 0.95,
-        }
-      );
-
-      Vibration.vibrate(100);
-    } catch (error) {}
-  }
-
-  /* =====================================================
-     FINISH
-  ===================================================== */
-
-  function finishRun() {
-    Alert.alert(
-      "Finish Run?",
-      "Are you sure you want to finish this run?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Finish",
-          style: "destructive",
-          onPress: completeRun,
-        },
-      ]
-    );
-  }
-
-  async function completeRun() {
-    try {
-      const finalRoute =
-        compactRoute(
-          route,
-          MAX_ROUTE_POINTS
-        );
-
-      const averageSpeed =
-        elapsedSeconds > 0
-          ? distance /
-            (elapsedSeconds / 3600)
-          : 0;
-
-      const workout = {
-        id: String(Date.now()),
-
-        date:
-          new Date().toISOString(),
-
-        distanceKm:
-          Number(
-            distance.toFixed(3)
-          ),
-
-        durationSeconds:
-          elapsedSeconds,
-
-        averageSpeedKmh:
-          Number(
-            averageSpeed.toFixed(2)
-          ),
-
-        topSpeedKmh:
-          Number(
-            topSpeed.toFixed(2)
-          ),
-
-        pace: getPace(
-          distance,
-          elapsedSeconds
-        ),
-
-        calories:
-          estimatedCalories(
-            distance
-          ),
-
-        route: finalRoute,
-
-        targetDistance:
-          targetDistance,
-      };
-
-      const updatedHistory = [
-        workout,
-        ...history,
-      ].slice(0, 50);
-
-      await AsyncStorage.setItem(
-        HISTORY_KEY,
-        JSON.stringify(
-          updatedHistory
-        )
-      );
-
-      await AsyncStorage.removeItem(
-        SESSION_KEY
-      );
-
-      const started =
-        await Location.hasStartedLocationUpdatesAsync(
-          LOCATION_TASK_NAME
-        );
-
-      if (started) {
-        await Location.stopLocationUpdatesAsync(
-          LOCATION_TASK_NAME
-        );
-      }
-
-      setHistory(
-        updatedHistory
-      );
-
-      setSummary(workout);
-
-      setMapRendered(false);
-
-      setMapLayoutSet(false);
-
-      setSummaryVisible(true);
-
-      setRunning(false);
-
-      setPaused(false);
-
-      setSpeed(0);
-
-      setTargetDistance(null);
-
-      setChallengeCompleted(false);
-
-      Speech.speak(
-        "Run completed",
-        {
-          language: "en-IN",
-          rate: 0.95,
-        }
-      );
-
-      Vibration.vibrate([
-        0,
-        150,
-        100,
-        150,
-      ]);
-    } catch (error) {}
-  }
-
-  /* =====================================================
-     SUMMARY MAP
-  ===================================================== */
-
-  useEffect(() => {
-    if (
-      summaryVisible &&
-      mapRendered &&
-      mapLayoutSet &&
-      summary &&
-      completionMapRef.current &&
-      isConnected
-    ) {
-      const coordinates =
-        Array.isArray(summary.route)
-          ? summary.route
-              .filter(
-                isValidCoordinate
-              )
-              .map(mapCoordinate)
-          : [];
-
-      if (coordinates.length >= 2) {
-        completionMapRef.current.fitToCoordinates(
-          coordinates,
-          {
-            edgePadding: {
-              top: 80,
-              right: 40,
-              bottom: 150,
-              left: 40,
-            },
-            animated: true,
-          }
-        );
-      }
+    let prev=s.lastPoint||s.route?.[s.route.length-1];
+
+    if(!prev){
+     s.lastPoint=p;
+     s.route=[
+      ...(s.route||[]),
+      {...p,speedKmh:0}
+     ];
+     continue;
     }
-  }, [
-    summaryVisible,
-    mapRendered,
-    mapLayoutSet,
-    summary,
-    isConnected,
-  ]);
 
-  const gpsStatus =
-    getGpsStatus(accuracy);
+    let d=meters(prev,p);
 
-  /* =====================================================
-     RENDER
-  ===================================================== */
+    let dt=Math.max(
+     .5,
+     (p.timestamp-(prev.timestamp||p.timestamp))/1000
+    );
 
-  return (
-    <SafeAreaView
-      style={styles.safe}
+    let v=d/dt*3.6;
+
+    if(d<MIN_MOVE||v>MAX_SPEED)continue;
+
+    let sm=
+     (Number(s.speedKmh)||0)*.85+
+     v*.15;
+
+    let np={
+     ...p,
+     speedKmh:Number(sm.toFixed(2))
+    };
+
+    if(s.breakPending){
+     np.breakBefore=true;
+     s.breakPending=false;
+    }
+
+    s.route=compact([
+     ...(s.route||[]),
+     np
+    ]);
+
+    s.lastPoint=p;
+
+    s.speedKmh=Number(sm.toFixed(2));
+
+    s.topSpeedKmh=Math.max(
+     Number(s.topSpeedKmh)||0,
+     v
+    );
+
+    s.distanceMeters=
+     (Number(s.distanceMeters)||0)+d;
+   }
+
+   await AsyncStorage.setItem(
+    SESSION,
+    JSON.stringify(s)
+   );
+
+  }catch(e){
+   console.warn("Background tracker error",e);
+  }
+ }
+);
+
+
+/* =========================================================
+   SMALL COMPONENTS
+========================================================= */
+
+function Stat({icon,label,value,unit}){
+ return(
+  <View style={S.stat}>
+
+   <Ionicons
+    name={icon}
+    size={17}
+    color="#B8FF2C"
+   />
+
+   <Text style={S.statLabel}>
+    {label}
+   </Text>
+
+   <View style={S.statRow}>
+
+    <Text
+     style={S.statValue}
+     numberOfLines={1}
+     adjustsFontSizeToFit
     >
-      <StatusBar
-        hidden={true}
-        barStyle="light-content"
-        backgroundColor={COLORS.bg}
-      />
-
-      <View
-        style={styles.container}
-      >
-
-        {/* =================================================
-            HEADER
-        ================================================= */}
-
-        <View style={styles.header}>
-
-          <View>
-
-            <Text
-              style={styles.appTitle}
-            >
-              Raftaar.
-            </Text>
-
-            <View
-              style={styles.gpsRow}
-            >
-              <View
-                style={[
-                  styles.gpsDot,
-                  {
-                    backgroundColor:
-                      gpsStatus.color,
-                  },
-                ]}
-              />
-
-              <Text
-                style={styles.gpsText}
-              >
-                GPS {gpsStatus.label}
-              </Text>
-
-              {Number.isFinite(
-                Number(accuracy)
-              ) && (
-                <Text
-                  style={
-                    styles.accuracyText
-                  }
-                >
-                  ±
-                  {Math.round(
-                    accuracy
-                  )}
-                  m
-                </Text>
-              )}
-            </View>
-
-          </View>
-
-          <TouchableOpacity
-            style={
-              styles.headerButton
-            }
-            onPress={() =>
-              setHistoryVisible(true)
-            }
-            activeOpacity={0.8}
-          >
-            <Ionicons
-              name="time-outline"
-              size={21}
-              color={COLORS.white}
-            />
-          </TouchableOpacity>
-
-        </View>
-
-
-        {/* =================================================
-            MAP
-        ================================================= */}
-
-        <View
-          style={styles.mapContainer}
-        >
-
-          {isConnected ? (
-            <>
-
-              <MapView
-                ref={mapRef}
-                style={styles.map}
-                mapType={mapType}
-                customMapStyle={
-                  mapType ===
-                  "standard"
-                    ? darkMapStyle
-                    : undefined
-                }
-                showsCompass={false}
-                showsBuildings={false}
-                showsTraffic={false}
-                showsIndoors={false}
-                showsUserLocation={false}
-                initialRegion={
-                  location
-                    ? {
-                        ...location,
-                        latitudeDelta:
-                          MAP_DELTA,
-                        longitudeDelta:
-                          MAP_DELTA,
-                      }
-                    : {
-                        latitude: 28.6139,
-                        longitude: 77.209,
-                        latitudeDelta: 0.08,
-                        longitudeDelta: 0.08,
-                      }
-                }
-              >
-
-                <MemoizedSpectrumRoute
-                  points={route}
-                  prefix="live"
-                />
-
-                {route.length > 0 && (
-                  <StartMarker
-                    coordinate={
-                      route[0]
-                    }
-                  />
-                )}
-
-                {running &&
-                  location && (
-                    <LiveMarker
-                      coordinate={
-                        location
-                      }
-                    />
-                  )}
-
-              </MapView>
-
-
-              {/* SPEED LEGEND */}
-
-              <View
-                style={styles.legend}
-              >
-
-                <Text
-                  style={
-                    styles.legendTitle
-                  }
-                >
-                  SPEED SPECTRUM
-                </Text>
-
-                <View
-                  style={
-                    styles.legendBar
-                  }
-                >
-                  {SPEED_STOPS.map(
-                    (stop) => (
-                      <View
-                        key={
-                          stop.speed
-                        }
-                        style={[
-                          styles.legendColor,
-                          {
-                            backgroundColor:
-                              stop.color,
-                          },
-                        ]}
-                      />
-                    )
-                  )}
-                </View>
-
-                <View
-                  style={
-                    styles.legendLabels
-                  }
-                >
-                  <Text
-                    style={
-                      styles.legendText
-                    }
-                  >
-                    SLOW
-                  </Text>
-
-                  <Text
-                    style={
-                      styles.legendText
-                    }
-                  >
-                    FAST
-                  </Text>
-                </View>
-
-              </View>
-
-
-              {/* MAP CONTROLS */}
-
-              <View
-                style={
-                  styles.mapControls
-                }
-              >
-
-                <TouchableOpacity
-                  style={
-                    styles.mapControl
-                  }
-                  onPress={() =>
-                    setFollowUser(
-                      (v) => !v
-                    )
-                  }
-                  activeOpacity={0.8}
-                >
-                  <Ionicons
-                    name={
-                      followUser
-                        ? "locate"
-                        : "locate-outline"
-                    }
-                    size={20}
-                    color={
-                      followUser
-                        ? COLORS.lime
-                        : COLORS.white
-                    }
-                  />
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={
-                    styles.mapControl
-                  }
-                  onPress={() =>
-                    setMapType(
-                      (c) =>
-                        c ===
-                        "standard"
-                          ? "satellite"
-                          : "standard"
-                    )
-                  }
-                  activeOpacity={0.8}
-                >
-                  <Ionicons
-                    name="layers-outline"
-                    size={20}
-                    color={
-                      COLORS.white
-                    }
-                  />
-                </TouchableOpacity>
-
-              </View>
-
-            </>
-          ) : (
-
-            /* =================================================
-               OFFLINE MODE
-            ================================================= */
-
-            <View
-              style={
-                styles.offlineFallback
-              }
-            >
-
-              {running &&
-              !paused ? (
-                <Animated.View
-                  style={{
-                    transform: [
-                      {
-                        translateY,
-                      },
-                    ],
-                    marginBottom: 15,
-                  }}
-                >
-                  <FontAwesome5
-                    name="running"
-                    size={43}
-                    color={
-                      COLORS.lime
-                    }
-                  />
-                </Animated.View>
-              ) : (
-                <Ionicons
-                  name="cloud-offline"
-                  size={40}
-                  color={
-                    COLORS.muted2
-                  }
-                  style={{
-                    marginBottom: 15,
-                  }}
-                />
-              )}
-
-              <Text
-                style={
-                  styles.offlineTitle
-                }
-              >
-                {running &&
-                !paused
-                  ? "TRACKING OFFLINE"
-                  : "OFFLINE MODE"}
-              </Text>
-
-              {targetDistance ? (
-                <>
-                  <Text
-                    style={
-                      styles.bigMetricLabel
-                    }
-                  >
-                    DISTANCE REMAINING
-                  </Text>
-
-                  <Text
-                    style={
-                      styles.bigMetricValue
-                    }
-                  >
-                    {Math.max(
-                      0,
-                      targetDistance -
-                        distance
-                    ).toFixed(2)}
-                  </Text>
-
-                  <Text
-                    style={
-                      styles.bigMetricUnit
-                    }
-                  >
-                    KM /{" "}
-                    {targetDistance}{" "}
-                    KM TARGET
-                  </Text>
-                </>
-              ) : (
-                <>
-                  <Text
-                    style={
-                      styles.bigMetricLabel
-                    }
-                  >
-                    ELAPSED TIME
-                  </Text>
-
-                  <Text
-                    style={
-                      styles.bigMetricValue
-                    }
-                  >
-                    {formatTime(
-                      elapsedSeconds
-                    )}
-                  </Text>
-
-                  <Text
-                    style={
-                      styles.bigMetricUnit
-                    }
-                  >
-                    HR : MIN : SEC
-                  </Text>
-                </>
-              )}
-
-              <View
-                style={
-                  styles.offlineExtraStatsRow
-                }
-              >
-
-                <View
-                  style={
-                    styles.offlineExtraStat
-                  }
-                >
-                  <Ionicons
-                    name="triangle-outline"
-                    size={18}
-                    color={
-                      COLORS.muted
-                    }
-                  />
-
-                  <Text
-                    style={
-                      styles.offlineExtraLabel
-                    }
-                  >
-                    ALTITUDE
-                  </Text>
-
-                  <Text
-                    style={
-                      styles.offlineExtraValue
-                    }
-                  >
-                    {location?.altitude
-                      ? Math.round(
-                          location.altitude
-                        )
-                      : "--"}
-
-                    <Text
-                      style={
-                        styles.offlineExtraUnit
-                      }
-                    >
-                      {" "}
-                      m
-                    </Text>
-                  </Text>
-                </View>
-
-
-                <View
-                  style={
-                    styles.offlineExtraStat
-                  }
-                >
-
-                  <Ionicons
-                    name="compass"
-                    size={22}
-                    color={
-                      COLORS.lime
-                    }
-                    style={{
-                      transform: [
-                        {
-                          rotate: `${
-                            location?.heading >=
-                            0
-                              ? location.heading
-                              : 0
-                          }deg`,
-                        },
-                      ],
-                    }}
-                  />
-
-                  <Text
-                    style={
-                      styles.offlineExtraLabel
-                    }
-                  >
-                    DIRECTION
-                  </Text>
-
-                  <Text
-                    style={
-                      styles.offlineExtraValue
-                    }
-                  >
-                    {getDirection(
-                      location?.heading
-                    )}
-
-                    <Text
-                      style={
-                        styles.offlineExtraUnit
-                      }
-                    >
-                      {" "}
-                      {location?.heading >=
-                      0
-                        ? Math.round(
-                            location.heading
-                          ) + "°"
-                        : ""}
-                    </Text>
-                  </Text>
-
-                </View>
-
-              </View>
-
-            </View>
-          )}
-
-        </View>
-
-
-        {/* =================================================
-            BOTTOM DASHBOARD
-        ================================================= */}
-
-        <View
-          style={
-            styles.bottomPanel
-          }
-        >
-
-          <View
-            style={
-              styles.primaryMetric
-            }
-          >
-
-            <Text
-              style={
-                styles.metricLabel
-              }
-            >
-              DISTANCE
-            </Text>
-
-            <Text
-              style={
-                styles.distanceText
-              }
-            >
-              {distance.toFixed(2)}
-
-              <Text
-                style={
-                  styles.distanceUnit
-                }
-              >
-                {" "}
-                KM
-              </Text>
-            </Text>
-
-            <View
-              style={
-                styles.timerPill
-              }
-            >
-              <Ionicons
-                name="time-outline"
-                size={15}
-                color={
-                  COLORS.muted
-                }
-              />
-
-              <Text
-                style={
-                  styles.timerText
-                }
-              >
-                {formatTime(
-                  elapsedSeconds
-                )}
-              </Text>
-            </View>
-
-          </View>
-
-
-          {/* STATS */}
-
-          <View
-            style={styles.statsGrid}
-          >
-
-            <Stat
-              icon="speedometer-outline"
-              label="SPEED"
-              value={speed.toFixed(1)}
-              unit="KM/H"
-            />
-
-            <Stat
-              icon="trending-up-outline"
-              label="TOP SPEED"
-              value={topSpeed.toFixed(1)}
-              unit="KM/H"
-            />
-
-            <Stat
-              icon="walk-outline"
-              label="PACE"
-              value={getPace(
-                distance,
-                elapsedSeconds
-              )}
-              unit="/KM"
-            />
-
-            <Stat
-              icon="flame-outline"
-              label="CALORIES"
-              value={estimatedCalories(
-                distance
-              )}
-              unit="KCAL"
-            />
-
-          </View>
-
-
-          {/* CTA */}
-
-          {!running ? (
-            <TouchableOpacity
-              style={[
-                styles.startButton,
-                {
-                  shadowOpacity:
-                    0.25,
-                },
-              ]}
-              onPress={() =>
-                setMissionModalVisible(
-                  true
-                )
-              }
-              activeOpacity={0.85}
-            >
-              <Ionicons
-                name="play"
-                size={21}
-                color="#050505"
-              />
-
-              <Text
-                style={
-                  styles.startButtonText
-                }
-              >
-                START MISSION
-              </Text>
-            </TouchableOpacity>
-          ) : (
-
-            <View
-              style={
-                styles.runningButtons
-              }
-            >
-
-              <TouchableOpacity
-                style={
-                  styles.pauseButton
-                }
-                onPress={
-                  paused
-                    ? resumeRun
-                    : pauseRun
-                }
-                activeOpacity={0.85}
-              >
-                <Ionicons
-                  name={
-                    paused
-                      ? "play"
-                      : "pause"
-                  }
-                  size={21}
-                  color={
-                    COLORS.white
-                  }
-                />
-
-                <Text
-                  style={
-                    styles.actionButtonText
-                  }
-                >
-                  {paused
-                    ? "RESUME"
-                    : "PAUSE"}
-                </Text>
-              </TouchableOpacity>
-
-
-              <TouchableOpacity
-                style={
-                  styles.finishButton
-                }
-                onPress={finishRun}
-                activeOpacity={0.85}
-              >
-                <Ionicons
-                  name="stop"
-                  size={21}
-                  color={
-                    COLORS.white
-                  }
-                />
-
-                <Text
-                  style={
-                    styles.actionButtonText
-                  }
-                >
-                  FINISH
-                </Text>
-              </TouchableOpacity>
-
-            </View>
-          )}
-
-        </View>
+     {value}
+    </Text>
+
+    <Text style={S.statUnit}>
+     {unit}
+    </Text>
+
+   </View>
+
+  </View>
+ );
+}
+
+function HistoryStat({label,value}){
+ return(
+  <View style={S.hStat}>
+   <Text style={S.hLabel}>
+    {label}
+   </Text>
+
+   <Text style={S.hValue}>
+    {value}
+   </Text>
+  </View>
+ );
+}
+
+function SummaryBox({icon,label,value}){
+ return(
+  <View style={S.sumBox}>
+
+   <Ionicons
+    name={icon}
+    size={18}
+    color="#B8FF2C"
+   />
+
+   <Text style={S.sumLabel}>
+    {label}
+   </Text>
+
+   <Text style={S.sumValue}>
+    {value}
+   </Text>
+
+  </View>
+ );
+}
+
+
+/* =========================================================
+   APP
+========================================================= */
+
+export default function App(){
+
+ const mapRef=useRef(null);
+ const doneMap=useRef(null);
+ const anim=useRef(new Animated.Value(0)).current;
+
+ const[location,setLocation]=useState(null);
+ const[accuracy,setAccuracy]=useState(null);
+ const[connected,setConnected]=useState(true);
+ const[permission,setPermission]=useState(false);
+
+ const[running,setRunning]=useState(false);
+ const[paused,setPaused]=useState(false);
+
+ const[elapsed,setElapsed]=useState(0);
+
+ const[timeData,setTimeData]=useState({
+  accumulatedMs:0,
+  lastResumeTime:0
+ });
+
+ const[distance,setDistance]=useState(0);
+ const[speed,setSpeed]=useState(0);
+ const[topSpeed,setTopSpeed]=useState(0);
+ const[route,setRoute]=useState([]);
+
+ const[target,setTarget]=useState(null);
+ const[completed,setCompleted]=useState(false);
+
+ const[mission,setMission]=useState(false);
+ const[history,setHistory]=useState([]);
+ const[summary,setSummary]=useState(null);
+ const[summaryOpen,setSummaryOpen]=useState(false);
+ const[historyOpen,setHistoryOpen]=useState(false);
+
+ const[mapType,setMapType]=useState("standard");
+ const[follow,setFollow]=useState(true);
+
+ const[mapReady,setMapReady]=useState(false);
+ const[mapLayout,setMapLayout]=useState(false);
+
+
+ /* INIT */
+
+ useEffect(()=>{
+
+  (async()=>{
+
+   try{
+
+    let h=await AsyncStorage.getItem(HISTORY);
+
+    if(h)
+     setHistory(JSON.parse(h));
+
+    await setup();
+
+   }catch(e){
+    console.warn("Init error",e);
+   }
+
+  })();
+
+  let u=NetInfo.addEventListener(
+   x=>setConnected(Boolean(x.isConnected))
+  );
+
+  return()=>u();
+
+ },[]);
+
+
+ /* RUNNER ANIMATION */
+
+ useEffect(()=>{
+
+  if(running&&!paused){
+
+   let l=Animated.loop(
+    Animated.sequence([
+     Animated.timing(anim,{
+      toValue:1,
+      duration:350,
+      useNativeDriver:true
+     }),
+     Animated.timing(anim,{
+      toValue:0,
+      duration:350,
+      useNativeDriver:true
+     })
+    ])
+   );
+
+   l.start();
+
+   return()=>l.stop();
+  }
+
+  anim.stopAnimation();
+  anim.setValue(0);
+
+ },[running,paused]);
+
+
+ /* TIMER */
+
+ useEffect(()=>{
+
+  if(!running)return;
+
+  let id=setInterval(()=>{
+
+   if(
+    paused||
+    !timeData.lastResumeTime
+   ){
+
+    setElapsed(
+     Math.floor(
+      timeData.accumulatedMs/1000
+     )
+    );
+
+   }else{
+
+    setElapsed(
+     Math.floor(
+      (
+       timeData.accumulatedMs+
+       Date.now()-
+       timeData.lastResumeTime
+      )/1000
+     )
+    );
+   }
+
+  },1000);
+
+  return()=>clearInterval(id);
+
+ },[running,paused,timeData]);
+
+
+ /* READ BACKGROUND SESSION */
+
+ useEffect(()=>{
+
+  if(!running)return;
+
+  let id=setInterval(async()=>{
+
+   try{
+
+    let raw=
+     await AsyncStorage.getItem(SESSION);
+
+    if(!raw)return;
+
+    let s=JSON.parse(raw);
+
+    setDistance(
+     (s.distanceMeters||0)/1000
+    );
+
+    setSpeed(
+     s.speedKmh||0
+    );
+
+    setTopSpeed(
+     s.topSpeedKmh||0
+    );
+
+    if(Array.isArray(s.route))
+     setRoute(s.route);
+
+    if(
+     valid(s.lastPoint)
+    ){
+
+     setLocation(s.lastPoint);
+
+     setAccuracy(
+      s.lastPoint.accuracy
+     );
+
+     if(
+      follow&&
+      mapRef.current&&
+      connected
+     ){
+
+      mapRef.current.animateToRegion(
+       {
+        ...coord(s.lastPoint),
+        latitudeDelta:DELTA,
+        longitudeDelta:DELTA
+       },
+       450
+      );
+     }
+    }
+
+   }catch(e){
+    console.warn("Session read error",e);
+   }
+
+  },1000);
+
+  return()=>clearInterval(id);
+
+ },[running,follow,connected]);
+
+
+ /* MISSION COMPLETE */
+
+ useEffect(()=>{
+
+  if(
+   running&&
+   target&&
+   !completed&&
+   distance>=target
+  ){
+
+   setCompleted(true);
+
+   Speech.speak(
+    "Mission completed",
+    {language:"en-IN"}
+   );
+
+   Alert.alert(
+    "🎉 Mission Completed!",
+    `You completed your ${target} KM mission.`
+   );
+
+   AsyncStorage
+    .getItem(SESSION)
+    .then(r=>{
+
+     if(r){
+
+      let s=JSON.parse(r);
+
+      s.challengeCompleted=true;
+
+      AsyncStorage.setItem(
+       SESSION,
+       JSON.stringify(s)
+      );
+     }
+
+    });
+  }
+
+ },[
+  distance,
+  running,
+  target,
+  completed
+ ]);
+
+
+ /* SUMMARY MAP */
+
+ useEffect(()=>{
+
+  if(
+   summaryOpen&&
+   mapReady&&
+   mapLayout&&
+   summary?.route?.length>1&&
+   doneMap.current&&
+   connected
+  ){
+
+   doneMap.current.fitToCoordinates(
+    summary.route.map(coord),
+    {
+     edgePadding:{
+      top:70,
+      right:30,
+      bottom:150,
+      left:30
+     },
+     animated:true
+    }
+   );
+  }
+
+ },[
+  summaryOpen,
+  mapReady,
+  mapLayout,
+  summary,
+  connected
+ ]);
+
+
+ /* LOCATION SETUP */
+
+ async function setup(){
+
+  try{
+
+   let p=
+    await Location.requestForegroundPermissionsAsync();
+
+   if(p.status!=="granted"){
+
+    Alert.alert(
+     "Location Required",
+     "Location permission is required for Raftaar."
+    );
+
+    return;
+   }
+
+   setPermission(true);
+
+   let cur=
+    await Location.getCurrentPositionAsync({
+     accuracy:Location.Accuracy.High
+    });
+
+   if(cur?.coords){
+
+    setLocation({
+     ...cur.coords
+    });
+
+    setAccuracy(
+     cur.coords.accuracy
+    );
+   }
+
+   let raw=
+    await AsyncStorage.getItem(SESSION);
+
+   if(raw){
+
+    let s=JSON.parse(raw);
+
+    if(s?.running){
+
+     setRunning(true);
+     setPaused(Boolean(s.paused));
+
+     setElapsed(
+      Math.floor(
+       (s.timeData?.accumulatedMs||0)/1000
+      )
+     );
+
+     setTimeData(
+      s.timeData||{
+       accumulatedMs:0,
+       lastResumeTime:0
+      }
+     );
+
+     setDistance(
+      (s.distanceMeters||0)/1000
+     );
+
+     setSpeed(
+      s.speedKmh||0
+     );
+
+     setTopSpeed(
+      s.topSpeedKmh||0
+     );
+
+     setRoute(
+      s.route||[]
+     );
+
+     setTarget(
+      s.targetDistance||null
+     );
+
+     setCompleted(
+      Boolean(s.challengeCompleted)
+     );
+    }
+   }
+
+  }catch(e){
+   console.warn("Location setup error",e);
+  }
+ }
+
+
+ /* BACKGROUND SERVICE */
+
+ async function startService(){
+
+  try{
+
+   if(
+    !(await Location.hasServicesEnabledAsync())
+   ){
+
+    Alert.alert(
+     "Location Services Off",
+     "Please turn on Location Services."
+    );
+
+    return false;
+   }
+
+   let p=
+    await Location.requestBackgroundPermissionsAsync();
+
+   if(p.status!=="granted"){
+
+    Alert.alert(
+     "Background Location Required",
+     "Allow background location so Raftaar can continue tracking when the screen is locked."
+    );
+
+    return false;
+   }
+
+   if(
+    !(await Location.hasStartedLocationUpdatesAsync(TASK))
+   ){
+
+    await Location.startLocationUpdatesAsync(
+     TASK,
+     {
+      accuracy:
+       Location.Accuracy.BestForNavigation,
+
+      timeInterval:1000,
+      distanceInterval:2,
+
+      showsBackgroundLocationIndicator:true,
+
+      foregroundService:{
+       notificationTitle:"Raftaar",
+       notificationBody:
+        "Your run is being tracked."
+      }
+     }
+    );
+   }
+
+   return true;
+
+  }catch(e){
+
+   console.warn(
+    "Start service error",
+    e
+   );
+
+   return false;
+  }
+ }
+
+
+ /* START RUN */
+
+ async function startRun(km){
+
+  setMission(false);
+
+  if(!permission)
+   await setup();
+
+  if(!(await startService()))
+   return;
+
+  try{
+
+   let c=
+    await Location.getCurrentPositionAsync({
+     accuracy:
+      Location.Accuracy.BestForNavigation
+    });
+
+   let now=Date.now();
+
+   let p={
+    latitude:c.coords.latitude,
+    longitude:c.coords.longitude,
+    accuracy:c.coords.accuracy,
+    altitude:c.coords.altitude||0,
+    heading:c.coords.heading??-1,
+    timestamp:now,
+    speedKmh:0
+   };
+
+   let td={
+    accumulatedMs:0,
+    lastResumeTime:now
+   };
+
+   let s={
+    running:true,
+    paused:false,
+    timeData:td,
+    distanceMeters:0,
+    speedKmh:0,
+    topSpeedKmh:0,
+    route:[p],
+    lastPoint:p,
+    breakPending:false,
+    targetDistance:km,
+    challengeCompleted:false
+   };
+
+   await AsyncStorage.setItem(
+    SESSION,
+    JSON.stringify(s)
+   );
+
+   setLocation(p);
+   setAccuracy(p.accuracy);
+   setTimeData(td);
+   setElapsed(0);
+   setDistance(0);
+   setSpeed(0);
+   setTopSpeed(0);
+   setRoute([p]);
+   setTarget(km);
+   setCompleted(false);
+   setRunning(true);
+   setPaused(false);
+
+   Speech.speak(
+    km
+     ?`Mission ${km} kilometers started`
+     :"Free run started",
+    {language:"en-IN"}
+   );
+
+   Vibration.vibrate(80);
+
+  }catch(e){
+
+   Alert.alert(
+    "Error",
+    "Could not start tracking."
+   );
+  }
+ }
+
+
+ /* PAUSE */
+
+ async function pauseRun(){
+
+  let td={
+   accumulatedMs:
+    timeData.accumulatedMs+
+    Math.max(
+     0,
+     Date.now()-
+     (timeData.lastResumeTime||Date.now())
+    ),
+
+   lastResumeTime:null
+  };
+
+  setPaused(true);
+  setSpeed(0);
+  setTimeData(td);
+
+  await AsyncStorage.mergeItem(
+   SESSION,
+   JSON.stringify({
+    paused:true,
+    speedKmh:0,
+    breakPending:true,
+    timeData:td
+   })
+  );
+
+  Speech.speak(
+   "Run paused",
+   {language:"en-IN"}
+  );
+
+  Vibration.vibrate(70);
+ }
+
+
+ /* RESUME */
+
+ async function resumeRun(){
+
+  try{
+
+   let c=
+    await Location.getCurrentPositionAsync({
+     accuracy:
+      Location.Accuracy.BestForNavigation
+    });
+
+   let now=Date.now();
+
+   let td={
+    accumulatedMs:
+     timeData.accumulatedMs,
+    lastResumeTime:now
+   };
+
+   let p={
+    latitude:c.coords.latitude,
+    longitude:c.coords.longitude,
+    accuracy:c.coords.accuracy,
+    altitude:c.coords.altitude||0,
+    heading:c.coords.heading??-1,
+    timestamp:now,
+    speedKmh:0,
+    breakBefore:true
+   };
+
+   let raw=
+    await AsyncStorage.getItem(SESSION);
+
+   if(raw){
+
+    let s=JSON.parse(raw);
+
+    s.paused=false;
+    s.speedKmh=0;
+    s.timeData=td;
+    s.breakPending=false;
+    s.route=[
+     ...(s.route||[]),
+     p
+    ];
+    s.lastPoint=p;
+
+    await AsyncStorage.setItem(
+     SESSION,
+     JSON.stringify(s)
+    );
+   }
+
+   setRoute(x=>[...x,p]);
+   setLocation(p);
+   setAccuracy(p.accuracy);
+   setTimeData(td);
+   setPaused(false);
+   setSpeed(0);
+
+   Speech.speak(
+    "Run resumed",
+    {language:"en-IN"}
+   );
+
+   Vibration.vibrate(70);
+
+  }catch(e){
+   console.warn("Resume error",e);
+  }
+ }
+
+
+ /* FINISH CONFIRM */
+
+ function finishRun(){
+
+  Alert.alert(
+   "Finish Run?",
+   "Are you sure you want to finish this run?",
+   [
+    {
+     text:"Cancel",
+     style:"cancel"
+    },
+    {
+     text:"Finish",
+     style:"destructive",
+     onPress:completeRun
+    }
+   ]
+  );
+ }
+
+
+ /* SAVE RUN */
+
+ async function completeRun(){
+
+  try{
+
+   let avg=
+    elapsed
+     ?distance/(elapsed/3600)
+     :0;
+
+   let work={
+    id:String(Date.now()),
+    date:new Date().toISOString(),
+    distanceKm:
+     Number(distance.toFixed(3)),
+    durationSeconds:elapsed,
+    averageSpeedKmh:
+     Number(avg.toFixed(2)),
+    topSpeedKmh:
+     Number(topSpeed.toFixed(2)),
+    pace:
+     pace(distance,elapsed),
+    calories:
+     calories(distance),
+    route:
+     compact(route),
+    targetDistance:target
+   };
+
+   let h=[
+    work,
+    ...history
+   ].slice(0,50);
+
+   await AsyncStorage.setItem(
+    HISTORY,
+    JSON.stringify(h)
+   );
+
+   await AsyncStorage.removeItem(
+    SESSION
+   );
+
+   if(
+    await Location.hasStartedLocationUpdatesAsync(TASK)
+   ){
+
+    await Location.stopLocationUpdatesAsync(
+     TASK
+    );
+   }
+
+   setHistory(h);
+   setSummary(work);
+   setSummaryOpen(true);
+   setMapReady(false);
+   setMapLayout(false);
+
+   setRunning(false);
+   setPaused(false);
+   setSpeed(0);
+   setTarget(null);
+   setCompleted(false);
+
+   Speech.speak(
+    "Run completed",
+    {language:"en-IN"}
+   );
+
+   Vibration.vibrate([
+    0,120,80,120
+   ]);
+
+  }catch(e){
+
+   console.warn(
+    "Complete error",
+    e
+   );
+  }
+ }
+
+
+ const g=gps(accuracy);
+
+ const translateY=
+  anim.interpolate({
+   inputRange:[0,1],
+   outputRange:[0,-10]
+  });
+
+
+ return(
+  <SafeAreaView style={S.safe}>
+
+   <StatusBar
+    barStyle="light-content"
+    backgroundColor="#050505"
+   />
+
+   <View style={S.container}>
+
+    {/* HEADER */}
+
+    <View style={S.header}>
+
+     <View>
+
+      <Text style={S.logo}>
+       Raftaar
+       <Text style={S.dot}>.</Text>
+      </Text>
+
+      <View style={S.gpsRow}>
+
+       <View
+        style={[
+         S.gpsDot,
+         {backgroundColor:g.c}
+        ]}
+       />
+
+       <Text style={S.gpsText}>
+        GPS {g.t}
+       </Text>
+
+       {Number.isFinite(Number(accuracy))&&(
+        <Text style={S.accuracy}>
+         ±{Math.round(accuracy)}m
+        </Text>
+       )}
 
       </View>
 
+     </View>
 
-      {/* =====================================================
-          MISSION MODAL
-      ===================================================== */}
+     <TouchableOpacity
+      style={S.headerBtn}
+      onPress={()=>setHistoryOpen(true)}
+     >
+      <Ionicons
+       name="time-outline"
+       size={22}
+       color="#fff"
+      />
+     </TouchableOpacity>
 
-      <Modal
-        visible={
-          missionModalVisible
+    </View>
+
+
+    {/* HERO */}
+
+    <View style={S.hero}>
+
+     {connected?
+
+      <>
+
+       <MapView
+        ref={mapRef}
+        style={S.map}
+        mapType={mapType}
+        customMapStyle={
+         mapType==="standard"
+          ?mapStyle
+          :undefined
         }
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() =>
-          setMissionModalVisible(
-            false
+        showsCompass={false}
+        showsBuildings={false}
+        showsTraffic={false}
+        showsUserLocation={false}
+        initialRegion={
+         location
+          ?{
+            ...coord(location),
+            latitudeDelta:DELTA,
+            longitudeDelta:DELTA
+           }
+          :{
+            latitude:28.6139,
+            longitude:77.209,
+            latitudeDelta:.08,
+            longitudeDelta:.08
+           }
+        }
+       >
+
+        <Route
+         points={route}
+         prefix="live"
+        />
+
+        {route.length>0&&
+         <Start p={route[0]}/>
+        }
+
+        {running&&location&&
+         <Live p={location}/>
+        }
+
+       </MapView>
+
+
+       {/* LIVE STATUS */}
+
+       <View style={S.livePill}>
+
+        <View style={S.pulse}/>
+
+        <Text style={S.pillText}>
+         {running
+          ?paused
+           ?"PAUSED"
+           :"LIVE TRACKING"
+          :"READY"}
+        </Text>
+
+       </View>
+
+
+       {/* MAP CONTROLS */}
+
+       <View style={S.mapBtns}>
+
+        <TouchableOpacity
+         style={S.mapBtn}
+         onPress={()=>setFollow(x=>!x)}
+        >
+
+         <Ionicons
+          name={
+           follow
+            ?"locate"
+            :"locate-outline"
+          }
+          size={19}
+          color={
+           follow
+            ?"#B8FF2C"
+            :"#fff"
+          }
+         />
+
+        </TouchableOpacity>
+
+        <TouchableOpacity
+         style={S.mapBtn}
+         onPress={()=>
+          setMapType(x=>
+           x==="standard"
+            ?"satellite"
+            :"standard"
           )
-        }
-      >
-
-        <View
-          style={
-            styles.missionModalOverlay
-          }
+         }
         >
 
+         <Ionicons
+          name="layers-outline"
+          size={19}
+          color="#fff"
+         />
+
+        </TouchableOpacity>
+
+       </View>
+
+
+       {/* SPEED SPECTRUM */}
+
+       <View style={S.legend}>
+
+        <Text style={S.legendTitle}>
+         SPEED SPECTRUM
+        </Text>
+
+        <View style={S.legendBar}>
+
+         {STOPS.map(x=>
           <View
-            style={
-              styles.missionModalContent
-            }
-          >
+           key={x.s}
+           style={[
+            S.legendColor,
+            {backgroundColor:x.c}
+           ]}
+          />
+         )}
 
-            <View
-              style={
-                styles.missionModalHeader
-              }
-            >
-
-              <View>
-                <Text
-                  style={
-                    styles.missionModalTitle
-                  }
-                >
-                  START A RUN
-                </Text>
-
-                <Text
-                  style={
-                    styles.missionModalSub
-                  }
-                >
-                  Choose how far you want
-                  to push yourself.
-                </Text>
-              </View>
-
-              <TouchableOpacity
-                onPress={() =>
-                  setMissionModalVisible(
-                    false
-                  )
-                }
-              >
-                <Ionicons
-                  name="close-circle"
-                  size={28}
-                  color={
-                    COLORS.muted2
-                  }
-                />
-              </TouchableOpacity>
-
-            </View>
-
-
-            <TouchableOpacity
-              style={
-                styles.missionOption
-              }
-              onPress={() =>
-                confirmMissionStart(
-                  null
-                )
-              }
-            >
-              <View
-                style={
-                  styles.missionIcon
-                }
-              >
-                <Ionicons
-                  name="infinite-outline"
-                  size={22}
-                  color={
-                    COLORS.lime
-                  }
-                />
-              </View>
-
-              <View
-                style={
-                  styles.missionOptionContent
-                }
-              >
-                <Text
-                  style={
-                    styles.missionOptionText
-                  }
-                >
-                  Free Run
-                </Text>
-
-                <Text
-                  style={
-                    styles.missionOptionSub
-                  }
-                >
-                  Run without a target
-                </Text>
-              </View>
-
-              <Ionicons
-                name="chevron-forward"
-                size={18}
-                color={
-                  COLORS.muted2
-                }
-              />
-            </TouchableOpacity>
-
-
-            <TouchableOpacity
-              style={
-                styles.missionOption
-              }
-              onPress={() =>
-                confirmMissionStart(1)
-              }
-            >
-              <View
-                style={
-                  styles.missionIcon
-                }
-              >
-                <Text
-                  style={
-                    styles.missionIconNumber
-                  }
-                >
-                  1
-                </Text>
-              </View>
-
-              <View
-                style={
-                  styles.missionOptionContent
-                }
-              >
-                <Text
-                  style={
-                    styles.missionOptionText
-                  }
-                >
-                  1 KM Sprint
-                </Text>
-
-                <Text
-                  style={
-                    styles.missionOptionSub
-                  }
-                >
-                  Quick speed session
-                </Text>
-              </View>
-
-              <Ionicons
-                name="chevron-forward"
-                size={18}
-                color={
-                  COLORS.muted2
-                }
-              />
-            </TouchableOpacity>
-
-
-            <TouchableOpacity
-              style={
-                styles.missionOption
-              }
-              onPress={() =>
-                confirmMissionStart(3)
-              }
-            >
-              <View
-                style={
-                  styles.missionIcon
-                }
-              >
-                <Text
-                  style={
-                    styles.missionIconNumber
-                  }
-                >
-                  3
-                </Text>
-              </View>
-
-              <View
-                style={
-                  styles.missionOptionContent
-                }
-              >
-                <Text
-                  style={
-                    styles.missionOptionText
-                  }
-                >
-                  3 KM Challenge
-                </Text>
-
-                <Text
-                  style={
-                    styles.missionOptionSub
-                  }
-                >
-                  Build your momentum
-                </Text>
-              </View>
-
-              <Ionicons
-                name="chevron-forward"
-                size={18}
-                color={
-                  COLORS.muted2
-                }
-              />
-            </TouchableOpacity>
-
-
-            <TouchableOpacity
-              style={
-                styles.missionOption
-              }
-              onPress={() =>
-                confirmMissionStart(5)
-              }
-            >
-              <View
-                style={
-                  styles.missionIcon
-                }
-              >
-                <Text
-                  style={
-                    styles.missionIconNumber
-                  }
-                >
-                  5
-                </Text>
-              </View>
-
-              <View
-                style={
-                  styles.missionOptionContent
-                }
-              >
-                <Text
-                  style={
-                    styles.missionOptionText
-                  }
-                >
-                  5 KM Pro Mission
-                </Text>
-
-                <Text
-                  style={
-                    styles.missionOptionSub
-                  }
-                >
-                  Serious distance
-                </Text>
-              </View>
-
-              <Ionicons
-                name="chevron-forward"
-                size={18}
-                color={
-                  COLORS.muted2
-                }
-              />
-            </TouchableOpacity>
-
-
-            <TouchableOpacity
-              style={
-                styles.missionOption
-              }
-              onPress={() =>
-                confirmMissionStart(10)
-              }
-            >
-              <View
-                style={[
-                  styles.missionIcon,
-                  {
-                    backgroundColor:
-                      "rgba(168,255,0,0.14)",
-                  },
-                ]}
-              >
-                <Text
-                  style={
-                    styles.missionIconNumber
-                  }
-                >
-                  10
-                </Text>
-              </View>
-
-              <View
-                style={
-                  styles.missionOptionContent
-                }
-              >
-                <Text
-                  style={
-                    styles.missionOptionText
-                  }
-                >
-                  10 KM Endurance
-                </Text>
-
-                <Text
-                  style={
-                    styles.missionOptionSub
-                  }
-                >
-                  Go beyond the usual
-                </Text>
-              </View>
-
-              <Ionicons
-                name="chevron-forward"
-                size={18}
-                color={
-                  COLORS.muted2
-                }
-              />
-            </TouchableOpacity>
-
-          </View>
         </View>
 
-      </Modal>
+        <View style={S.legendLabels}>
+         <Text style={S.legendText}>
+          SLOW
+         </Text>
 
+         <Text style={S.legendText}>
+          FAST
+         </Text>
+        </View>
 
-      {/* =====================================================
-          COMPLETION MODAL
-      ===================================================== */}
+       </View>
 
-      <Modal
-        visible={summaryVisible}
-        animationType="slide"
-        transparent={false}
-        onRequestClose={() =>
-          setSummaryVisible(false)
+      </>
+
+      :
+
+      /* OFFLINE */
+
+      <View style={S.offline}>
+
+       <View style={S.runnerOrb}>
+
+        {running&&!paused?
+
+         <Animated.View
+          style={{
+           transform:[
+            {translateY}
+           ]
+          }}
+         >
+          <FontAwesome5
+           name="running"
+           size={38}
+           color="#B8FF2C"
+          />
+         </Animated.View>
+
+         :
+
+         <Ionicons
+          name="cloud-offline-outline"
+          size={36}
+          color="#B8FF2C"
+         />
+
         }
-      >
 
-        <SafeAreaView
-          style={
-            styles.modalSafe
-          }
+       </View>
+
+
+       <Text style={S.offlineTitle}>
+        {running&&!paused
+         ?"TRACKING OFFLINE"
+         :"OFFLINE MODE"}
+       </Text>
+
+
+       <Text style={S.metricLabel}>
+        {target
+         ?"DISTANCE REMAINING"
+         :"ELAPSED TIME"}
+       </Text>
+
+
+       {/* IMPORTANT: NO CLIPPING */}
+
+       <View style={S.metricRow}>
+
+        <Text
+         style={S.metricBig}
+         numberOfLines={1}
+         adjustsFontSizeToFit
+         minimumFontScale={.7}
         >
+         {target
+          ?Math.max(
+            0,
+            target-distance
+           ).toFixed(2)
+          :timeFmt(elapsed)}
+        </Text>
 
-          <View
-            style={
-              styles.summaryHeader
-            }
-          >
-
-            <View>
-              <Text
-                style={
-                  styles.summaryTitle
-                }
-              >
-                RUN COMPLETE
-              </Text>
-
-              <Text
-                style={
-                  styles.summarySubtitle
-                }
-              >
-                Another run in the books.
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              style={
-                styles.closeButton
-              }
-              onPress={() =>
-                setSummaryVisible(
-                  false
-                )
-              }
-            >
-              <Ionicons
-                name="close"
-                size={23}
-                color={
-                  COLORS.white
-                }
-              />
-            </TouchableOpacity>
-
-          </View>
-
-
-          {summary && (
-            <ScrollView
-              showsVerticalScrollIndicator={
-                false
-              }
-              contentContainerStyle={
-                styles.summaryScroll
-              }
-            >
-
-              {/* ACHIEVEMENT */}
-
-              {summary.targetDistance &&
-                summary.distanceKm >=
-                  summary.targetDistance && (
-                  <View
-                    style={
-                      styles.achievementBanner
-                    }
-                  >
-                    <Ionicons
-                      name="trophy"
-                      size={23}
-                      color={
-                        COLORS.lime
-                      }
-                    />
-
-                    <Text
-                      style={
-                        styles.achievementText
-                      }
-                    >
-                      MISSION ACCOMPLISHED
-                    </Text>
-                  </View>
-                )}
-
-
-              {/* MAP */}
-
-              <View
-                style={
-                  styles.summaryMapCard
-                }
-                onLayout={() =>
-                  setMapLayoutSet(
-                    true
-                  )
-                }
-              >
-
-                {isConnected ? (
-                  <>
-                    <MapView
-                      ref={
-                        completionMapRef
-                      }
-                      style={
-                        styles.summaryMap
-                      }
-                      customMapStyle={
-                        darkMapStyle
-                      }
-                      showsCompass={
-                        false
-                      }
-                      showsBuildings={
-                        false
-                      }
-                      showsTraffic={
-                        false
-                      }
-                      showsUserLocation={
-                        false
-                      }
-                      onMapReady={() =>
-                        setMapRendered(
-                          true
-                        )
-                      }
-                    >
-
-                      <MemoizedSpectrumRoute
-                        points={
-                          summary.route
-                        }
-                        prefix="summary"
-                      />
-
-                      {summary.route
-                        ?.length >
-                        0 && (
-                        <>
-                          <StartMarker
-                            coordinate={
-                              summary.route[0]
-                            }
-                          />
-
-                          <FinishMarker
-                            coordinate={
-                              summary.route[
-                                summary.route
-                                  .length -
-                                  1
-                              ]
-                            }
-                          />
-                        </>
-                      )}
-
-                    </MapView>
-
-                    <View
-                      style={
-                        styles.summaryMapLabel
-                      }
-                    >
-                      <Text
-                        style={
-                          styles.summaryMapLabelText
-                        }
-                      >
-                        YOUR ROUTE
-                      </Text>
-                    </View>
-                  </>
-                ) : (
-                  <View
-                    style={[
-                      styles.offlineFallback,
-                      {
-                        backgroundColor:
-                          COLORS.surface,
-                      },
-                    ]}
-                  >
-                    <Ionicons
-                      name="map-outline"
-                      size={30}
-                      color={
-                        COLORS.muted2
-                      }
-                    />
-
-                    <Text
-                      style={[
-                        styles.offlineTitle,
-                        {
-                          marginTop: 10,
-                          marginBottom: 0,
-                        },
-                      ]}
-                    >
-                      MAP UNAVAILABLE
-                    </Text>
-                  </View>
-                )}
-
-              </View>
-
-
-              {/* BIG DISTANCE */}
-
-              <View
-                style={
-                  styles.bigSummaryCard
-                }
-              >
-
-                <Text
-                  style={
-                    styles.bigSummaryLabel
-                  }
-                >
-                  DISTANCE
-                </Text>
-
-                <Text
-                  style={
-                    styles.bigSummaryValue
-                  }
-                >
-                  {Number(
-                    summary.distanceKm ||
-                      0
-                  ).toFixed(2)}
-
-                  <Text
-                    style={
-                      styles.bigSummaryUnit
-                    }
-                  >
-                    {" "}
-                    KM
-                  </Text>
-                </Text>
-
-                <Text
-                  style={
-                    styles.bigSummaryTime
-                  }
-                >
-                  {formatTime(
-                    summary.durationSeconds
-                  )}
-                </Text>
-
-              </View>
-
-
-              {/* SUMMARY GRID */}
-
-              <View
-                style={
-                  styles.summaryGrid
-                }
-              >
-
-                <SummaryBox
-                  icon="speedometer-outline"
-                  label="AVG SPEED"
-                  value={`${Number(
-                    summary.averageSpeedKmh ||
-                      0
-                  ).toFixed(1)} km/h`}
-                />
-
-                <SummaryBox
-                  icon="trending-up-outline"
-                  label="TOP SPEED"
-                  value={`${Number(
-                    summary.topSpeedKmh ||
-                      0
-                  ).toFixed(1)} km/h`}
-                />
-
-                <SummaryBox
-                  icon="walk-outline"
-                  label="PACE"
-                  value={`${summary.pace} /km`}
-                />
-
-                <SummaryBox
-                  icon="flame-outline"
-                  label="CALORIES"
-                  value={`${summary.calories} kcal`}
-                />
-
-              </View>
-
-
-              {/* SPECTRUM */}
-
-              <View
-                style={
-                  styles.spectrumCard
-                }
-              >
-
-                <Text
-                  style={
-                    styles.spectrumTitle
-                  }
-                >
-                  SPEED SPECTRUM
-                </Text>
-
-                <View
-                  style={
-                    styles.spectrumGradient
-                  }
-                >
-                  {SPEED_STOPS.map(
-                    (stop, index) => (
-                      <View
-                        key={index}
-                        style={{
-                          flex: 1,
-                          backgroundColor:
-                            stop.color,
-                        }}
-                      />
-                    )
-                  )}
-                </View>
-
-                <View
-                  style={
-                    styles.spectrumBottomLabels
-                  }
-                >
-                  <Text
-                    style={
-                      styles.spectrumBottomText
-                    }
-                  >
-                    SLOW
-                  </Text>
-
-                  <Text
-                    style={
-                      styles.spectrumBottomText
-                    }
-                  >
-                    FAST
-                  </Text>
-                </View>
-
-              </View>
-
-
-              <TouchableOpacity
-                style={
-                  styles.doneButton
-                }
-                onPress={() =>
-                  setSummaryVisible(
-                    false
-                  )
-                }
-                activeOpacity={0.85}
-              >
-                <Text
-                  style={
-                    styles.doneButtonText
-                  }
-                >
-                  DONE
-                </Text>
-              </TouchableOpacity>
-
-            </ScrollView>
-          )}
-
-        </SafeAreaView>
-
-      </Modal>
-
-
-      {/* =====================================================
-          HISTORY MODAL
-      ===================================================== */}
-
-      <Modal
-        visible={historyVisible}
-        animationType="slide"
-        transparent={false}
-        onRequestClose={() =>
-          setHistoryVisible(false)
+        {target&&
+         <Text style={S.metricKm}>
+          KM
+         </Text>
         }
-      >
 
-        <SafeAreaView
-          style={
-            styles.modalSafe
-          }
-        >
-
-          <View
-            style={
-              styles.historyHeader
-            }
-          >
-
-            <View>
-              <Text
-                style={
-                  styles.summaryTitle
-                }
-              >
-                RUN HISTORY
-              </Text>
-
-              <Text
-                style={
-                  styles.summarySubtitle
-                }
-              >
-                Your previous runs.
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              style={
-                styles.closeButton
-              }
-              onPress={() =>
-                setHistoryVisible(
-                  false
-                )
-              }
-            >
-              <Ionicons
-                name="close"
-                size={23}
-                color={
-                  COLORS.white
-                }
-              />
-            </TouchableOpacity>
-
-          </View>
+       </View>
 
 
-          <ScrollView
-            showsVerticalScrollIndicator={
-              false
-            }
-            contentContainerStyle={
-              styles.historyScroll
-            }
-          >
-
-            {history.length === 0 ? (
-              <View
-                style={
-                  styles.emptyHistory
-                }
-              >
-
-                <View
-                  style={
-                    styles.emptyHistoryIcon
-                  }
-                >
-                  <Ionicons
-                    name="footsteps-outline"
-                    size={35}
-                    color={
-                      COLORS.lime
-                    }
-                  />
-                </View>
-
-                <Text
-                  style={
-                    styles.emptyHistoryTitle
-                  }
-                >
-                  No runs yet
-                </Text>
-
-                <Text
-                  style={
-                    styles.emptyHistoryText
-                  }
-                >
-                  Complete your first
-                  run and your progress
-                  will appear here.
-                </Text>
-
-              </View>
-            ) : (
-
-              history.map(
-                (item, index) => (
-                  <View
-                    key={
-                      item.id ||
-                      `history-${index}`
-                    }
-                    style={
-                      styles.historyCard
-                    }
-                  >
-
-                    <View
-                      style={
-                        styles.historyCardHeader
-                      }
-                    >
-
-                      <View>
-                        <Text
-                          style={
-                            styles.historyDate
-                          }
-                        >
-                          {new Date(
-                            item.date
-                          ).toLocaleDateString(
-                            "en-IN",
-                            {
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric",
-                            }
-                          )}
-                        </Text>
-
-                        <Text
-                          style={
-                            styles.historyDistance
-                          }
-                        >
-                          {Number(
-                            item.distanceKm ||
-                              0
-                          ).toFixed(2)}{" "}
-                          KM
-                        </Text>
-                      </View>
-
-                      {item.targetDistance &&
-                        item.distanceKm >=
-                          item.targetDistance && (
-                          <Ionicons
-                            name="trophy"
-                            size={20}
-                            color={
-                              COLORS.lime
-                            }
-                          />
-                        )}
-
-                    </View>
+       <Text style={S.metricSub}>
+        {target
+         ?`OF ${Number(target).toFixed(2)} KM TARGET`
+         :"HR : MIN : SEC"}
+       </Text>
 
 
-                    <View
-                      style={
-                        styles.historyStats
-                      }
-                    >
+       {/* ALTITUDE + DIRECTION */}
 
-                      <HistoryStat
-                        label="TIME"
-                        value={formatTime(
-                          item.durationSeconds
-                        )}
-                      />
+       <View style={S.offlineStats}>
 
-                      <HistoryStat
-                        label="PACE"
-                        value={`${item.pace}/km`}
-                      />
+        <View style={S.offlineStat}>
 
-                      <HistoryStat
-                        label="TOP"
-                        value={`${Number(
-                          item.topSpeedKmh ||
-                            0
-                        ).toFixed(
-                          1
-                        )} km/h`}
-                      />
+         <View style={S.iconOrb}>
+          <Ionicons
+           name="triangle-outline"
+           size={16}
+           color="#B8FF2C"
+          />
+         </View>
 
-                      <HistoryStat
-                        label="CAL"
-                        value={`${item.calories}`}
-                      />
+         <Text style={S.oLabel}>
+          ALTITUDE
+         </Text>
 
-                    </View>
+         <Text style={S.oValue}>
+          {location?.altitude
+           ?Math.round(location.altitude)
+           :"--"}
 
-                  </View>
-                )
-              )
-            )}
+          <Text style={S.oUnit}>
+           {" "}m
+          </Text>
+         </Text>
 
-          </ScrollView>
+        </View>
 
-        </SafeAreaView>
 
-      </Modal>
+        <View style={S.offlineStat}>
 
-    </SafeAreaView>
-  );
-}
+         <View style={S.iconOrb}>
+          <Ionicons
+           name="compass-outline"
+           size={18}
+           color="#B8FF2C"
+          />
+         </View>
 
-/* =========================================================
-   STAT COMPONENT
-========================================================= */
+         <Text style={S.oLabel}>
+          DIRECTION
+         </Text>
 
-function Stat({
-  icon,
-  label,
-  value,
-  unit,
-}) {
-  return (
-    <View style={styles.stat}>
+         <Text style={S.oValue}>
+          {direction(location?.heading)}
 
-      <Ionicons
-        name={icon}
-        size={17}
-        color={COLORS.lime}
-      />
+          <Text style={S.oUnit}>
+           {location?.heading>=0
+            ?`  ${Math.round(location.heading)}°`
+            :""}
+          </Text>
+         </Text>
 
-      <Text
-        style={styles.statLabel}
-      >
-        {label}
+        </View>
+
+       </View>
+
+      </View>
+     }
+
+    </View>
+
+
+    {/* DASHBOARD */}
+
+    <View style={S.panel}>
+
+     <View style={S.distanceBlock}>
+
+      <Text style={S.distanceLabel}>
+       DISTANCE
       </Text>
 
-      <View
-        style={
-          styles.statValueRow
-        }
-      >
+      <View style={S.distanceRow}>
 
-        <Text
-          style={styles.statValue}
-        >
-          {value}
-        </Text>
+       <Text style={S.distance}>
+        {distance.toFixed(2)}
+       </Text>
 
-        <Text
-          style={styles.statUnit}
-        >
-          {unit}
-        </Text>
+       <Text style={S.distanceUnit}>
+        KM
+       </Text>
 
       </View>
 
-    </View>
-  );
-}
 
-/* =========================================================
-   SUMMARY BOX
-========================================================= */
+      <View style={S.timer}>
 
-function SummaryBox({
-  icon,
-  label,
-  value,
-}) {
-  return (
-    <View
-      style={styles.summaryBox}
-    >
+       <Ionicons
+        name="time-outline"
+        size={14}
+        color="#777"
+       />
 
-      <Ionicons
-        name={icon}
-        size={19}
-        color={COLORS.lime}
+       <Text style={S.timerText}>
+        {timeFmt(elapsed)}
+       </Text>
+
+      </View>
+
+     </View>
+
+
+     {/* FOUR METRICS */}
+
+     <View style={S.stats}>
+
+      <Stat
+       icon="speedometer-outline"
+       label="SPEED"
+       value={speed.toFixed(1)}
+       unit="KM/H"
       />
 
-      <Text
-        style={
-          styles.summaryBoxLabel
-        }
-      >
-        {label}
-      </Text>
+      <Stat
+       icon="trending-up-outline"
+       label="TOP SPEED"
+       value={topSpeed.toFixed(1)}
+       unit="KM/H"
+      />
 
-      <Text
-        style={
-          styles.summaryBoxValue
-        }
+      <Stat
+       icon="walk-outline"
+       label="PACE"
+       value={pace(distance,elapsed)}
+       unit="/KM"
+      />
+
+      <Stat
+       icon="flame-outline"
+       label="CALORIES"
+       value={calories(distance)}
+       unit="KCAL"
+      />
+
+     </View>
+
+
+     {/* ACTION */}
+
+     {!running?
+
+      <TouchableOpacity
+       style={S.startBtn}
+       onPress={()=>setMission(true)}
+       activeOpacity={.85}
       >
-        {value}
-      </Text>
+
+       <View style={S.playOrb}>
+        <Ionicons
+         name="play"
+         size={15}
+         color="#050505"
+        />
+       </View>
+
+       <Text style={S.startText}>
+        START MISSION
+       </Text>
+
+       <Ionicons
+        name="arrow-forward"
+        size={18}
+        color="#050505"
+       />
+
+      </TouchableOpacity>
+
+      :
+
+      <View style={S.actions}>
+
+       <TouchableOpacity
+        style={S.pauseBtn}
+        onPress={
+         paused
+          ?resumeRun
+          :pauseRun
+        }
+       >
+
+        <Ionicons
+         name={
+          paused
+           ?"play"
+           :"pause"
+         }
+         size={18}
+         color="#fff"
+        />
+
+        <Text style={S.actionText}>
+         {paused
+          ?"RESUME"
+          :"PAUSE"}
+        </Text>
+
+       </TouchableOpacity>
+
+
+       <TouchableOpacity
+        style={S.finishBtn}
+        onPress={finishRun}
+       >
+
+        <Ionicons
+         name="stop"
+         size={18}
+         color="#fff"
+        />
+
+        <Text style={S.actionText}>
+         FINISH
+        </Text>
+
+       </TouchableOpacity>
+
+      </View>
+
+     }
 
     </View>
-  );
-}
 
-/* =========================================================
-   HISTORY STAT
-========================================================= */
 
-function HistoryStat({
-  label,
-  value,
-}) {
-  return (
-    <View
-      style={styles.historyStat}
+    {/* =====================================================
+        MISSION MODAL
+    ===================================================== */}
+
+    <Modal
+     visible={mission}
+     transparent
+     animationType="slide"
+     onRequestClose={()=>setMission(false)}
     >
 
-      <Text
-        style={
-          styles.historyStatLabel
-        }
-      >
-        {label}
-      </Text>
+     <View style={S.overlay}>
 
-      <Text
-        style={
-          styles.historyStatValue
-        }
-      >
-        {value}
-      </Text>
+      <View style={S.sheet}>
 
-    </View>
-  );
+       <View style={S.sheetHead}>
+
+        <View>
+
+         <Text style={S.sheetTitle}>
+          SELECT MISSION
+         </Text>
+
+         <Text style={S.sheetSub}>
+          Choose your target for this run.
+         </Text>
+
+        </View>
+
+        <TouchableOpacity
+         onPress={()=>setMission(false)}
+        >
+         <Ionicons
+          name="close-circle"
+          size={28}
+          color="#666"
+         />
+        </TouchableOpacity>
+
+       </View>
+
+
+       {[
+        [
+         null,
+         "Free Run",
+         "infinite-outline",
+         "#B8FF2C"
+        ],
+        [
+         1,
+         "1 KM Sprint",
+         "medal-outline",
+         "#FACC15"
+        ],
+        [
+         3,
+         "3 KM Challenge",
+         "flame-outline",
+         "#FB923C"
+        ],
+        [
+         5,
+         "5 KM Pro Mission",
+         "trophy-outline",
+         "#A78BFA"
+        ],
+        [
+         10,
+         "10 KM Endurance",
+         "star-outline",
+         "#22C55E"
+        ]
+       ].map(([k,t,ic,c])=>
+
+        <TouchableOpacity
+         key={String(k)}
+         style={S.option}
+         onPress={()=>startRun(k)}
+        >
+
+         <View
+          style={[
+           S.optionIcon,
+           {
+            backgroundColor:
+             c+"15"
+           }
+          ]}
+         >
+
+          <Ionicons
+           name={ic}
+           size={20}
+           color={c}
+          />
+
+         </View>
+
+         <Text style={S.optionText}>
+          {t}
+         </Text>
+
+         <Ionicons
+          name="chevron-forward"
+          size={18}
+          color="#555"
+         />
+
+        </TouchableOpacity>
+
+       )}
+
+      </View>
+
+     </View>
+
+    </Modal>
+
+
+    {/* =====================================================
+        SUMMARY
+    ===================================================== */}
+
+    <Modal
+     visible={summaryOpen}
+     animationType="slide"
+     onRequestClose={()=>
+      setSummaryOpen(false)
+     }
+    >
+
+     <SafeAreaView style={S.modal}>
+
+      <View style={S.modalHead}>
+
+       <View>
+
+        <Text style={S.modalTitle}>
+         RUN COMPLETE
+        </Text>
+
+        <Text style={S.modalSub}>
+         Your performance, beautifully summarized.
+        </Text>
+
+       </View>
+
+       <TouchableOpacity
+        style={S.close}
+        onPress={()=>
+         setSummaryOpen(false)
+        }
+       >
+
+        <Ionicons
+         name="close"
+         size={20}
+         color="#fff"
+        />
+
+       </TouchableOpacity>
+
+      </View>
+
+
+      {summary&&
+
+       <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={S.scroll}
+       >
+
+        {summary.targetDistance&&
+         summary.distanceKm>=summary.targetDistance&&
+
+         <View style={S.achievement}>
+
+          <Ionicons
+           name="trophy"
+           size={20}
+           color="#B8FF2C"
+          />
+
+          <Text style={S.achievementText}>
+           MISSION ACCOMPLISHED
+          </Text>
+
+         </View>
+        }
+
+
+        <View
+         style={S.sumMap}
+         onLayout={()=>
+          setMapLayout(true)
+         }
+        >
+
+         {connected?
+
+          <MapView
+           ref={doneMap}
+           style={S.map}
+           customMapStyle={mapStyle}
+           showsCompass={false}
+           showsBuildings={false}
+           showsTraffic={false}
+           onMapReady={()=>
+            setMapReady(true)
+           }
+          >
+
+           <Route
+            points={summary.route||[]}
+            prefix="sum"
+           />
+
+           {summary.route?.length>0&&
+            <>
+             <Start
+              p={summary.route[0]}
+             />
+
+             <Finish
+              p={summary.route[
+               summary.route.length-1
+              ]}
+             />
+            </>
+           }
+
+          </MapView>
+
+          :
+
+          <View style={S.offline}>
+
+           <Ionicons
+            name="map-outline"
+            size={34}
+            color="#555"
+           />
+
+           <Text style={S.offlineTitle}>
+            MAP UNAVAILABLE
+           </Text>
+
+          </View>
+         }
+
+
+         <View style={S.sumMapTag}>
+          <Text style={S.sumMapTagText}>
+           SPEED SPECTRUM
+          </Text>
+         </View>
+
+        </View>
+
+
+        <View style={S.bigSum}>
+
+         <Text style={S.distanceLabel}>
+          DISTANCE
+         </Text>
+
+         <Text style={S.bigSumValue}>
+          {Number(
+           summary.distanceKm||0
+          ).toFixed(2)}
+
+          <Text style={S.bigSumUnit}>
+           {" "}KM
+          </Text>
+
+         </Text>
+
+         <Text style={S.bigSumTime}>
+          {timeFmt(
+           summary.durationSeconds
+          )}
+         </Text>
+
+        </View>
+
+
+        <View style={S.sumGrid}>
+
+         <SummaryBox
+          icon="speedometer-outline"
+          label="AVG SPEED"
+          value={`${Number(
+           summary.averageSpeedKmh||0
+          ).toFixed(1)} km/h`}
+         />
+
+         <SummaryBox
+          icon="trending-up-outline"
+          label="TOP SPEED"
+          value={`${Number(
+           summary.topSpeedKmh||0
+          ).toFixed(1)} km/h`}
+         />
+
+         <SummaryBox
+          icon="walk-outline"
+          label="PACE"
+          value={`${summary.pace}/km`}
+         />
+
+         <SummaryBox
+          icon="flame-outline"
+          label="CALORIES"
+          value={`${summary.calories} kcal`}
+         />
+
+        </View>
+
+
+        <View style={S.spectrum}>
+
+         <Text style={S.sumLabel}>
+          SPEED SPECTRUM
+         </Text>
+
+         <View style={S.legendBar}>
+
+          {STOPS.map(x=>
+           <View
+            key={x.s}
+            style={[
+             S.legendColor,
+             {
+              backgroundColor:x.c
+             }
+            ]}
+           />
+          )}
+
+         </View>
+
+        </View>
+
+
+        <TouchableOpacity
+         style={S.done}
+         onPress={()=>
+          setSummaryOpen(false)
+         }
+        >
+
+         <Text style={S.doneText}>
+          DONE
+         </Text>
+
+        </TouchableOpacity>
+
+       </ScrollView>
+      }
+
+     </SafeAreaView>
+
+    </Modal>
+
+
+    {/* =====================================================
+        HISTORY
+    ===================================================== */}
+
+    <Modal
+     visible={historyOpen}
+     animationType="slide"
+     onRequestClose={()=>
+      setHistoryOpen(false)
+     }
+    >
+
+     <SafeAreaView style={S.modal}>
+
+      <View style={S.modalHead}>
+
+       <View>
+
+        <Text style={S.modalTitle}>
+         RUN HISTORY
+        </Text>
+
+        <Text style={S.modalSub}>
+         Your previous workouts.
+        </Text>
+
+       </View>
+
+       <TouchableOpacity
+        style={S.close}
+        onPress={()=>
+         setHistoryOpen(false)
+        }
+       >
+
+        <Ionicons
+         name="close"
+         size={20}
+         color="#fff"
+        />
+
+       </TouchableOpacity>
+
+      </View>
+
+
+      <ScrollView
+       contentContainerStyle={S.scroll}
+      >
+
+       {history.length===0?
+
+        <View style={S.empty}>
+
+         <Ionicons
+          name="footsteps-outline"
+          size={48}
+          color="#555"
+         />
+
+         <Text style={S.emptyTitle}>
+          No runs yet
+         </Text>
+
+         <Text style={S.emptyText}>
+          Complete your first run and it will appear here.
+         </Text>
+
+        </View>
+
+        :
+
+        history.map((x,i)=>
+
+         <View
+          key={x.id||i}
+          style={S.hCard}
+         >
+
+          <View style={S.hHead}>
+
+           <View>
+
+            <Text style={S.hDate}>
+             {new Date(
+              x.date
+             ).toLocaleDateString(
+              "en-IN",
+              {
+               day:"2-digit",
+               month:"short",
+               year:"numeric"
+              }
+             )}
+            </Text>
+
+            <Text style={S.hDistance}>
+             {Number(
+              x.distanceKm||0
+             ).toFixed(2)} KM
+            </Text>
+
+           </View>
+
+           {x.targetDistance&&
+            x.distanceKm>=x.targetDistance&&
+
+            <Ionicons
+             name="trophy"
+             size={20}
+             color="#B8FF2C"
+            />
+           }
+
+          </View>
+
+
+          <View style={S.hStats}>
+
+           <HistoryStat
+            label="TIME"
+            value={timeFmt(
+             x.durationSeconds
+            )}
+           />
+
+           <HistoryStat
+            label="PACE"
+            value={`${x.pace}/km`}
+           />
+
+           <HistoryStat
+            label="TOP"
+            value={`${Number(
+             x.topSpeedKmh||0
+            ).toFixed(1)} km/h`}
+           />
+
+           <HistoryStat
+            label="CAL"
+            value={String(
+             x.calories
+            )}
+           />
+
+          </View>
+
+         </View>
+
+        )
+
+       }
+
+      </ScrollView>
+
+     </SafeAreaView>
+
+    </Modal>
+
+   </View>
+
+  </SafeAreaView>
+ );
 }
 
+
 /* =========================================================
-   STYLES
+   PREMIUM RAFTAAR STYLE SYSTEM
 ========================================================= */
 
-const styles = StyleSheet.create({
-
-  /* =====================================================
-     ROOT
-  ===================================================== */
-
-  safe: {
-    flex: 1,
-    backgroundColor: COLORS.bg,
-  },
-
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.bg,
-  },
-
-
-  /* =====================================================
-     HEADER
-  ===================================================== */
-
-  header: {
-    height: 78,
-    paddingHorizontal: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: COLORS.bg,
-  },
-
-  appTitle: {
-    color: COLORS.white,
-    fontSize: 21,
-    fontWeight: "900",
-    letterSpacing: -0.5,
-  },
-
-  gpsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 6,
-  },
-
-  gpsDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginRight: 7,
-  },
-
-  gpsText: {
-    color: COLORS.muted,
-    fontSize: 9,
-    fontWeight: "800",
-    letterSpacing: 1.2,
-  },
-
-  accuracyText: {
-    color: COLORS.muted2,
-    fontSize: 9,
-    marginLeft: 7,
-  },
-
-  headerButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 15,
-    backgroundColor: COLORS.surface2,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-
-  /* =====================================================
-     MAP
-  ===================================================== */
-
-  mapContainer: {
-    flex: 1,
-    marginHorizontal: 14,
-    borderRadius: 28,
-    overflow: "hidden",
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-
-  map: {
-    flex: 1,
-  },
-
-  legend: {
-    position: "absolute",
-    top: 14,
-    left: 14,
-    right: 14,
-    padding: 13,
-    borderRadius: 17,
-    backgroundColor:
-      "rgba(5,5,5,0.92)",
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-
-  legendTitle: {
-    color: COLORS.muted,
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 1.7,
-    marginBottom: 8,
-  },
-
-  legendBar: {
-    height: 6,
-    borderRadius: 4,
-    overflow: "hidden",
-    flexDirection: "row",
-  },
-
-  legendColor: {
-    flex: 1,
-  },
-
-  legendLabels: {
-    marginTop: 6,
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-
-  legendText: {
-    color: COLORS.muted2,
-    fontSize: 8,
-    fontWeight: "800",
-    letterSpacing: 0.8,
-  },
-
-  mapControls: {
-    position: "absolute",
-    right: 14,
-    bottom: 14,
-    gap: 8,
-  },
-
-  mapControl: {
-    width: 44,
-    height: 44,
-    borderRadius: 15,
-    backgroundColor:
-      "rgba(5,5,5,0.94)",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-
-
-  /* =====================================================
-     LIVE MARKERS
-  ===================================================== */
-
-  liveMarker: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor:
-      "rgba(168,255,0,0.15)",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor:
-      "rgba(168,255,0,0.35)",
-  },
-
-  liveMarkerInner: {
-    width: 11,
-    height: 11,
-    borderRadius: 6,
-    backgroundColor:
-      COLORS.lime,
-    borderWidth: 2,
-    borderColor:
-      COLORS.white,
-  },
-
-  startMarker: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor:
-      COLORS.lime,
-    borderWidth: 3,
-    borderColor:
-      COLORS.bg,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  startMarkerDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor:
-      COLORS.bg,
-  },
-
-  finishMarker: {
-    width: 25,
-    height: 25,
-    borderRadius: 13,
-    backgroundColor:
-      COLORS.white,
-    borderWidth: 3,
-    borderColor:
-      COLORS.bg,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  finishMarkerInner: {
-    width: 7,
-    height: 7,
-    backgroundColor:
-      COLORS.bg,
-    borderRadius: 2,
-  },
-
-
-  /* =====================================================
-     OFFLINE
-  ===================================================== */
-
-  offlineFallback: {
-    flex: 1,
-    backgroundColor:
-      COLORS.surface,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
-  },
-
-  offlineTitle: {
-    color: COLORS.muted,
-    fontSize: 9,
-    fontWeight: "900",
-    letterSpacing: 2,
-    marginBottom: 38,
-  },
-
-  bigMetricLabel: {
-    color: COLORS.muted,
-    fontSize: 9,
-    fontWeight: "900",
-    letterSpacing: 1.7,
-    marginBottom: 5,
-  },
-
-  bigMetricValue: {
-    color: COLORS.white,
-    fontSize: 72,
-    fontWeight: "900",
-    marginVertical: -10,
-    fontVariant: ["tabular-nums"],
-    letterSpacing: -3,
-  },
-
-  bigMetricUnit: {
-    color: COLORS.lime,
-    fontSize: 12,
-    fontWeight: "800",
-    marginTop: 10,
-    letterSpacing: 1,
-  },
-
-  offlineExtraStatsRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 38,
-    width: "100%",
-  },
-
-  offlineExtraStat: {
-    flex: 1,
-    backgroundColor:
-      COLORS.surface2,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor:
-      COLORS.border,
-    padding: 15,
-    alignItems: "center",
-  },
-
-  offlineExtraLabel: {
-    color: COLORS.muted,
-    fontSize: 7,
-    fontWeight: "900",
-    letterSpacing: 1.2,
-    marginTop: 5,
-    marginBottom: 4,
-  },
-
-  offlineExtraValue: {
-    color: COLORS.white,
-    fontSize: 18,
-    fontWeight: "900",
-  },
-
-  offlineExtraUnit: {
-    color: COLORS.muted,
-    fontSize: 9,
-    fontWeight: "800",
-  },
-
-
-  /* =====================================================
-     BOTTOM DASHBOARD
-  ===================================================== */
-
-  bottomPanel: {
-    backgroundColor:
-      COLORS.bg,
-    paddingHorizontal: 18,
-    paddingTop: 16,
-    paddingBottom:
-      Platform.OS === "ios"
-        ? 20
-        : 28,
-  },
-
-  primaryMetric: {
-    alignItems: "center",
-  },
-
-  metricLabel: {
-    color: COLORS.muted,
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 1.8,
-  },
-
-  distanceText: {
-    color: COLORS.white,
-    fontSize: 48,
-    fontWeight: "900",
-    marginTop: -3,
-    letterSpacing: -2,
-    fontVariant: [
-      "tabular-nums",
-    ],
-  },
-
-  distanceUnit: {
-    color: COLORS.muted,
-    fontSize: 13,
-    fontWeight: "800",
-  },
-
-  timerPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 11,
-    paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor:
-      COLORS.surface2,
-    borderWidth: 1,
-    borderColor:
-      COLORS.border,
-    marginTop: 4,
-  },
-
-  timerText: {
-    color: COLORS.muted,
-    fontSize: 11,
-    fontWeight: "700",
-    marginLeft: 5,
-    fontVariant: [
-      "tabular-nums",
-    ],
-  },
-
-
-  /* =====================================================
-     STATS
-  ===================================================== */
-
-  statsGrid: {
-    flexDirection: "row",
-    marginTop: 14,
-    gap: 7,
-  },
-
-  stat: {
-    flex: 1,
-    minHeight: 72,
-    padding: 10,
-    borderRadius: 17,
-    backgroundColor:
-      COLORS.surface2,
-    borderWidth: 1,
-    borderColor:
-      COLORS.border,
-  },
-
-  statLabel: {
-    color: COLORS.muted,
-    fontSize: 7,
-    fontWeight: "900",
-    letterSpacing: 0.9,
-    marginTop: 6,
-  },
-
-  statValueRow: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    marginTop: 3,
-  },
-
-  statValue: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: "900",
-    fontVariant: [
-      "tabular-nums",
-    ],
-  },
-
-  statUnit: {
-    color: COLORS.muted,
-    fontSize: 6,
-    fontWeight: "800",
-    marginLeft: 2,
-  },
-
-
-  /* =====================================================
-     MAIN CTA
-  ===================================================== */
-
-  startButton: {
-    height: 58,
-    borderRadius: 18,
-    backgroundColor:
-      COLORS.lime,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 13,
-    gap: 9,
-    elevation: 8,
-  },
-
-  startButtonText: {
-    color: "#050505",
-    fontSize: 13,
-    fontWeight: "900",
-    letterSpacing: 1.2,
-  },
-
-  runningButtons: {
-    flexDirection: "row",
-    gap: 9,
-    marginTop: 13,
-  },
-
-  pauseButton: {
-    flex: 1,
-    height: 58,
-    borderRadius: 18,
-    backgroundColor:
-      COLORS.surface3,
-    borderWidth: 1,
-    borderColor:
-      COLORS.borderLight,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-
-  finishButton: {
-    flex: 1,
-    height: 58,
-    borderRadius: 18,
-    backgroundColor:
-      COLORS.surface3,
-    borderWidth: 1,
-    borderColor:
-      "#343434",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-
-  actionButtonText: {
-    color: COLORS.white,
-    fontSize: 12,
-    fontWeight: "900",
-    letterSpacing: 1,
-  },
-
-
-  /* =====================================================
-     MISSION MODAL
-  ===================================================== */
-
-  missionModalOverlay: {
-    flex: 1,
-    backgroundColor:
-      "rgba(0,0,0,0.80)",
-    justifyContent: "flex-end",
-  },
-
-  missionModalContent: {
-    backgroundColor:
-      "#090909",
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    padding: 24,
-    paddingBottom:
-      Platform.OS === "ios"
-        ? 40
-        : 25,
-    borderWidth: 1,
-    borderColor:
-      COLORS.border,
-  },
-
-  missionModalHeader: {
-    flexDirection: "row",
-    justifyContent:
-      "space-between",
-    alignItems: "flex-start",
-    marginBottom: 15,
-  },
-
-  missionModalTitle: {
-    color: COLORS.white,
-    fontSize: 18,
-    fontWeight: "900",
-    letterSpacing: 1,
-  },
-
-  missionModalSub: {
-    color: COLORS.muted,
-    fontSize: 11,
-    marginTop: 5,
-    maxWidth: 260,
-    lineHeight: 17,
-  },
-
-  missionOption: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor:
-      COLORS.surface2,
-    padding: 14,
-    borderRadius: 17,
-    marginBottom: 9,
-    borderWidth: 1,
-    borderColor:
-      COLORS.border,
-  },
-
-  missionIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 13,
-    backgroundColor:
-      "rgba(168,255,0,0.08)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  missionIconNumber: {
-    color: COLORS.lime,
-    fontSize: 14,
-    fontWeight: "900",
-  },
-
-  missionOptionContent: {
-    flex: 1,
-    marginLeft: 13,
-  },
-
-  missionOptionText: {
-    color: COLORS.white,
-    fontSize: 14,
-    fontWeight: "800",
-  },
-
-  missionOptionSub: {
-    color: COLORS.muted,
-    fontSize: 10,
-    marginTop: 3,
-  },
-
-
-  /* =====================================================
-     SUMMARY
-  ===================================================== */
-
-  modalSafe: {
-    flex: 1,
-    backgroundColor:
-      COLORS.bg,
-  },
-
-  summaryHeader: {
-    height: 78,
-    paddingHorizontal: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent:
-      "space-between",
-  },
-
-  historyHeader: {
-    height: 78,
-    paddingHorizontal: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent:
-      "space-between",
-  },
-
-  summaryTitle: {
-    color: COLORS.white,
-    fontSize: 19,
-    fontWeight: "900",
-    letterSpacing: 1.2,
-  },
-
-  summarySubtitle: {
-    color: COLORS.muted,
-    fontSize: 10,
-    marginTop: 4,
-  },
-
-  closeButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 15,
-    backgroundColor:
-      COLORS.surface2,
-    borderWidth: 1,
-    borderColor:
-      COLORS.border,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  summaryScroll: {
-    paddingHorizontal: 16,
-    paddingBottom: 35,
-  },
-
-  summaryMapCard: {
-    height: height * 0.39,
-    borderRadius: 25,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor:
-      COLORS.border,
-    backgroundColor:
-      COLORS.surface,
-  },
-
-  summaryMap: {
-    flex: 1,
-  },
-
-  summaryMapLabel: {
-    position: "absolute",
-    top: 13,
-    left: 13,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 10,
-    backgroundColor:
-      "rgba(5,5,5,0.92)",
-    borderWidth: 1,
-    borderColor:
-      COLORS.border,
-  },
-
-  summaryMapLabelText: {
-    color: COLORS.muted,
-    fontSize: 7,
-    fontWeight: "900",
-    letterSpacing: 1.3,
-  },
-
-  bigSummaryCard: {
-    marginTop: 13,
-    padding: 20,
-    borderRadius: 21,
-    backgroundColor:
-      COLORS.surface2,
-    borderWidth: 1,
-    borderColor:
-      COLORS.border,
-    alignItems: "center",
-  },
-
-  bigSummaryLabel: {
-    color: COLORS.muted,
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 1.6,
-  },
-
-  bigSummaryValue: {
-    color: COLORS.white,
-    fontSize: 42,
-    fontWeight: "900",
-    marginTop: 2,
-    letterSpacing: -2,
-  },
-
-  bigSummaryUnit: {
-    color: COLORS.muted,
-    fontSize: 13,
-  },
+const S=StyleSheet.create({
+
+ safe:{
+  flex:1,
+  backgroundColor:"#050505"
+ },
+
+ container:{
+  flex:1,
+  backgroundColor:"#050505"
+ },
+
+
+ /* HEADER */
+
+ header:{
+  minHeight:76,
+  paddingHorizontal:20,
+  paddingTop:7,
+  paddingBottom:9,
+  flexDirection:"row",
+  alignItems:"center",
+  justifyContent:"space-between"
+ },
+
+ logo:{
+  color:"#F6F6F6",
+  fontSize:25,
+  fontWeight:"900",
+  letterSpacing:-.9
+ },
+
+ dot:{
+  color:"#B8FF2C"
+ },
+
+ gpsRow:{
+  flexDirection:"row",
+  alignItems:"center",
+  marginTop:7
+ },
+
+ gpsDot:{
+  width:7,
+  height:7,
+  borderRadius:4,
+  marginRight:7
+ },
+
+ gpsText:{
+  color:"#9A9A9A",
+  fontSize:9,
+  fontWeight:"900",
+  letterSpacing:1.3
+ },
+
+ accuracy:{
+  color:"#5E625E",
+  fontSize:9,
+  fontWeight:"700",
+  marginLeft:7
+ },
+
+ headerBtn:{
+  width:48,
+  height:48,
+  borderRadius:17,
+  backgroundColor:"#0C0D0C",
+  alignItems:"center",
+  justifyContent:"center",
+  borderWidth:1,
+  borderColor:"#252925"
+ },
+
+
+ /* HERO MAP */
+
+ hero:{
+  flex:1,
+  minHeight:300,
+  marginHorizontal:18,
+  marginBottom:8,
+  borderRadius:30,
+  overflow:"hidden",
+  backgroundColor:"#090A09",
+  borderWidth:1,
+  borderColor:"#202420"
+ },
+
+ map:{
+  flex:1
+ },
+
+ livePill:{
+  position:"absolute",
+  left:14,
+  top:14,
+  flexDirection:"row",
+  alignItems:"center",
+  paddingHorizontal:11,
+  paddingVertical:8,
+  borderRadius:20,
+  backgroundColor:"rgba(5,5,5,.88)",
+  borderWidth:1,
+  borderColor:"rgba(255,255,255,.08)"
+ },
+
+ pulse:{
+  width:6,
+  height:6,
+  borderRadius:3,
+  backgroundColor:"#B8FF2C",
+  marginRight:7
+ },
+
+ pillText:{
+  color:"#EEE",
+  fontSize:8,
+  fontWeight:"900",
+  letterSpacing:1.2
+ },
+
+ mapBtns:{
+  position:"absolute",
+  right:13,
+  top:13,
+  gap:8
+ },
+
+ mapBtn:{
+  width:43,
+  height:43,
+  borderRadius:15,
+  backgroundColor:"rgba(5,5,5,.9)",
+  alignItems:"center",
+  justifyContent:"center",
+  borderWidth:1,
+  borderColor:"rgba(255,255,255,.08)"
+ },
+
+ legend:{
+  position:"absolute",
+  left:14,
+  right:14,
+  bottom:14,
+  padding:11,
+  borderRadius:17,
+  backgroundColor:"rgba(5,5,5,.9)",
+  borderWidth:1,
+  borderColor:"rgba(255,255,255,.07)"
+ },
+
+ legendTitle:{
+  color:"#BFC3BF",
+  fontSize:8,
+  fontWeight:"900",
+  letterSpacing:1.5,
+  marginBottom:7
+ },
+
+ legendBar:{
+  height:7,
+  borderRadius:5,
+  overflow:"hidden",
+  flexDirection:"row"
+ },
+
+ legendColor:{
+  flex:1
+ },
+
+ legendLabels:{
+  marginTop:5,
+  flexDirection:"row",
+  justifyContent:"space-between"
+ },
+
+ legendText:{
+  color:"#666",
+  fontSize:7,
+  fontWeight:"900",
+  letterSpacing:.7
+ },
+
+
+ /* MARKERS */
+
+ live:{
+  width:29,
+  height:29,
+  borderRadius:15,
+  backgroundColor:"rgba(184,255,44,.18)",
+  alignItems:"center",
+  justifyContent:"center",
+  borderWidth:1,
+  borderColor:"rgba(184,255,44,.55)"
+ },
+
+ liveIn:{
+  width:12,
+  height:12,
+  borderRadius:6,
+  backgroundColor:"#B8FF2C",
+  borderWidth:2,
+  borderColor:"#050505"
+ },
+
+ start:{
+  width:24,
+  height:24,
+  borderRadius:12,
+  backgroundColor:"#B8FF2C",
+  borderWidth:3,
+  borderColor:"#050505",
+  alignItems:"center",
+  justifyContent:"center"
+ },
+
+ startIn:{
+  width:5,
+  height:5,
+  borderRadius:3,
+  backgroundColor:"#050505"
+ },
+
+ finish:{
+  width:26,
+  height:26,
+  borderRadius:13,
+  backgroundColor:"#FFF",
+  borderWidth:3,
+  borderColor:"#050505",
+  alignItems:"center",
+  justifyContent:"center"
+ },
+
+ finishIn:{
+  width:8,
+  height:8,
+  borderRadius:2,
+  backgroundColor:"#050505"
+ },
+
+
+ /* OFFLINE */
+
+ offline:{
+  flex:1,
+  backgroundColor:"#090A09",
+  alignItems:"center",
+  justifyContent:"center",
+  paddingHorizontal:20,
+  paddingVertical:18
+ },
+
+ runnerOrb:{
+  width:68,
+  height:68,
+  borderRadius:34,
+  backgroundColor:"rgba(184,255,44,.07)",
+  alignItems:"center",
+  justifyContent:"center",
+  borderWidth:1,
+  borderColor:"rgba(184,255,44,.18)",
+  marginBottom:11
+ },
+
+ offlineTitle:{
+  color:"#777",
+  fontSize:9,
+  fontWeight:"900",
+  letterSpacing:2.1,
+  marginBottom:18
+ },
+
+ metricLabel:{
+  color:"#666",
+  fontSize:8,
+  fontWeight:"900",
+  letterSpacing:1.7,
+  marginBottom:3
+ },
+
+ metricRow:{
+  width:"100%",
+  minHeight:76,
+  flexDirection:"row",
+  alignItems:"center",
+  justifyContent:"center",
+  paddingHorizontal:3
+ },
+
+ metricBig:{
+  color:"#F7F7F7",
+  fontSize:68,
+  lineHeight:76,
+  fontWeight:"900",
+  letterSpacing:-2,
+  fontVariant:["tabular-nums"],
+  includeFontPadding:false,
+  textAlign:"center",
+  flexShrink:1
+ },
+
+ metricKm:{
+  color:"#B8FF2C",
+  fontSize:13,
+  fontWeight:"900",
+  marginLeft:6,
+  marginTop:28
+ },
+
+ metricSub:{
+  color:"#B8FF2C",
+  fontSize:9,
+  fontWeight:"900",
+  letterSpacing:1,
+  marginTop:2,
+  textAlign:"center"
+ },
+
+ offlineStats:{
+  flexDirection:"row",
+  gap:9,
+  marginTop:17,
+  width:"100%"
+ },
+
+ offlineStat:{
+  flex:1,
+  minHeight:78,
+  backgroundColor:"#0E100E",
+  borderRadius:18,
+  borderWidth:1,
+  borderColor:"#222622",
+  paddingVertical:9,
+  alignItems:"center",
+  justifyContent:"center"
+ },
+
+ iconOrb:{
+  width:29,
+  height:29,
+  borderRadius:15,
+  backgroundColor:"rgba(184,255,44,.07)",
+  alignItems:"center",
+  justifyContent:"center",
+  marginBottom:3
+ },
+
+ oLabel:{
+  color:"#626862",
+  fontSize:7,
+  fontWeight:"900",
+  letterSpacing:1,
+  marginBottom:2
+ },
+
+ oValue:{
+  color:"#F5F5F5",
+  fontSize:16,
+  fontWeight:"900"
+ },
+
+ oUnit:{
+  color:"#686868",
+  fontSize:9,
+  fontWeight:"800"
+ },
+
+
+ /* DASHBOARD */
+
+ panel:{
+  backgroundColor:"#050505",
+  paddingHorizontal:18,
+  paddingTop:5,
+
+  /*
+   IMPORTANT:
+   Android navigation bar / gesture area
+   ke upar extra space.
+  */
+  paddingBottom:
+   Platform.OS==="ios"
+    ?20
+    :52
+ },
+
+ distanceBlock:{
+  alignItems:"center"
+ },
+
+ distanceLabel:{
+  color:"#6D716D",
+  fontSize:8,
+  fontWeight:"900",
+  letterSpacing:2.1
+ },
+
+ distanceRow:{
+  flexDirection:"row",
+  alignItems:"baseline",
+  justifyContent:"center"
+ },
+
+ distance:{
+  color:"#F7F7F7",
+  fontSize:46,
+  lineHeight:54,
+  fontWeight:"900",
+  letterSpacing:-1.8,
+  fontVariant:["tabular-nums"],
+  includeFontPadding:false
+ },
+
+ distanceUnit:{
+  color:"#777",
+  fontSize:12,
+  fontWeight:"900",
+  marginLeft:4
+ },
+
+ timer:{
+  flexDirection:"row",
+  alignItems:"center",
+  paddingHorizontal:11,
+  paddingVertical:6,
+  borderRadius:20,
+  backgroundColor:"#0D0F0D",
+  marginTop:3,
+  borderWidth:1,
+  borderColor:"#222622"
+ },
+
+ timerText:{
+  color:"#858985",
+  fontSize:10,
+  fontWeight:"800",
+  marginLeft:5,
+  fontVariant:["tabular-nums"]
+ },
+
+ stats:{
+  flexDirection:"row",
+  gap:7,
+  marginTop:11
+ },
+
+ stat:{
+  flex:1,
+  minHeight:68,
+  padding:9,
+  borderRadius:17,
+  backgroundColor:"#0C0E0C",
+  borderWidth:1,
+  borderColor:"#222622"
+ },
+
+ statLabel:{
+  color:"#646864",
+  fontSize:7,
+  fontWeight:"900",
+  letterSpacing:.8,
+  marginTop:5
+ },
+
+ statRow:{
+  flexDirection:"row",
+  alignItems:"baseline",
+  marginTop:2
+ },
+
+ statValue:{
+  color:"#F5F5F5",
+  fontSize:15,
+  fontWeight:"900",
+  fontVariant:["tabular-nums"],
+  flexShrink:1
+ },
+
+ statUnit:{
+  color:"#626662",
+  fontSize:6.5,
+  fontWeight:"800",
+  marginLeft:2
+ },
+
+
+ /* CTA */
+
+ startBtn:{
+  height:56,
+  borderRadius:19,
+  backgroundColor:"#B8FF2C",
+  flexDirection:"row",
+  alignItems:"center",
+  justifyContent:"center",
+  marginTop:11,
+  gap:9,
+  shadowColor:"#B8FF2C",
+  shadowOpacity:.16,
+  shadowRadius:15,
+  shadowOffset:{
+   width:0,
+   height:6
+  },
+  elevation:4
+ },
+
+ playOrb:{
+  width:28,
+  height:28,
+  borderRadius:14,
+  backgroundColor:"rgba(0,0,0,.1)",
+  alignItems:"center",
+  justifyContent:"center"
+ },
+
+ startText:{
+  color:"#050505",
+  fontSize:12,
+  fontWeight:"900",
+  letterSpacing:1.2
+ },
+
+ actions:{
+  flexDirection:"row",
+  gap:9,
+  marginTop:11
+ },
+
+ pauseBtn:{
+  flex:1,
+  height:55,
+  borderRadius:18,
+  backgroundColor:"#111311",
+  borderWidth:1,
+  borderColor:"#303530",
+  flexDirection:"row",
+  alignItems:"center",
+  justifyContent:"center",
+  gap:8
+ },
+
+ finishBtn:{
+  flex:1,
+  height:55,
+  borderRadius:18,
+  backgroundColor:"#1A1110",
+  borderWidth:1,
+  borderColor:"#6B2924",
+  flexDirection:"row",
+  alignItems:"center",
+  justifyContent:"center",
+  gap:8
+ },
+
+ actionText:{
+  color:"#FFF",
+  fontSize:12,
+  fontWeight:"900",
+  letterSpacing:.8
+ },
+
+
+ /* MISSION */
+
+ overlay:{
+  flex:1,
+  backgroundColor:"rgba(0,0,0,.78)",
+  justifyContent:"flex-end"
+ },
+
+ sheet:{
+  backgroundColor:"#0D0F0D",
+  borderTopLeftRadius:30,
+  borderTopRightRadius:30,
+  padding:22,
+  paddingBottom:
+   Platform.OS==="ios"
+    ?38
+    :30,
+  borderWidth:1,
+  borderColor:"#252925"
+ },
+
+ sheetHead:{
+  flexDirection:"row",
+  justifyContent:"space-between",
+  alignItems:"center",
+  marginBottom:17
+ },
+
+ sheetTitle:{
+  color:"#F5F5F5",
+  fontSize:18,
+  fontWeight:"900",
+  letterSpacing:.4
+ },
+
+ sheetSub:{
+  color:"#777",
+  fontSize:10,
+  marginTop:4
+ },
+
+ option:{
+  height:62,
+  flexDirection:"row",
+  alignItems:"center",
+  backgroundColor:"#111411",
+  paddingHorizontal:12,
+  borderRadius:17,
+  marginBottom:9,
+  borderWidth:1,
+  borderColor:"#242824"
+ },
+
+ optionIcon:{
+  width:38,
+  height:38,
+  borderRadius:13,
+  alignItems:"center",
+  justifyContent:"center"
+ },
+
+ optionText:{
+  flex:1,
+  color:"#F5F5F5",
+  fontSize:13,
+  fontWeight:"800",
+  marginLeft:12
+ },
+
+
+ /* MODALS */
+
+ modal:{
+  flex:1,
+  backgroundColor:"#050505"
+ },
+
+ modalHead:{
+  height:78,
+  paddingHorizontal:20,
+  flexDirection:"row",
+  alignItems:"center",
+  justifyContent:"space-between"
+ },
+
+ modalTitle:{
+  color:"#F5F5F5",
+  fontSize:20,
+  fontWeight:"900",
+  letterSpacing:1.1
+ },
+
+ modalSub:{
+  color:"#666",
+  fontSize:10,
+  marginTop:3
+ },
+
+ close:{
+  width:43,
+  height:43,
+  borderRadius:15,
+  backgroundColor:"#0D0F0D",
+  alignItems:"center",
+  justifyContent:"center",
+  borderWidth:1,
+  borderColor:"#242824"
+ },
+
+ scroll:{
+  paddingHorizontal:16,
+  paddingBottom:40
+ },
+
+ achievement:{
+  flexDirection:"row",
+  alignItems:"center",
+  justifyContent:"center",
+  backgroundColor:"rgba(184,255,44,.09)",
+  padding:12,
+  borderRadius:16,
+  marginBottom:12,
+  borderWidth:1,
+  borderColor:"rgba(184,255,44,.25)"
+ },
+
+ achievementText:{
+  color:"#B8FF2C",
+  fontSize:11,
+  fontWeight:"900",
+  letterSpacing:1,
+  marginLeft:8
+ },
+
+ sumMap:{
+  height:height*.39,
+  borderRadius:26,
+  overflow:"hidden",
+  borderWidth:1,
+  borderColor:"#242824",
+  backgroundColor:"#0D0F0D"
+ },
+
+ sumMapTag:{
+  position:"absolute",
+  top:13,
+  left:13,
+  paddingHorizontal:10,
+  paddingVertical:7,
+  borderRadius:10,
+  backgroundColor:"rgba(5,5,5,.9)"
+ },
+
+ sumMapTagText:{
+  color:"#B8FF2C",
+  fontSize:8,
+  fontWeight:"900",
+  letterSpacing:1.1
+ },
+
+ bigSum:{
+  marginTop:12,
+  padding:20,
+  borderRadius:22,
+  backgroundColor:"#0D0F0D",
+  borderWidth:1,
+  borderColor:"#242824",
+  alignItems:"center"
+ },
+
+ bigSumValue:{
+  color:"#F5F5F5",
+  fontSize:42,
+  fontWeight:"900",
+  marginTop:2,
+  fontVariant:["tabular-nums"]
+ },
+
+ bigSumUnit:{
+  color:"#777",
+  fontSize:13
+ },
+
+ bigSumTime:{
+  color:"#999",
+  fontSize:12,
+  fontWeight:"800",
+  marginTop:3
+ },
+
+ sumGrid:{
+  flexDirection:"row",
+  flexWrap:"wrap",
+  gap:9,
+  marginTop:10
+ },
+
+ sumBox:{
+  width:(width-41)/2,
+  minHeight:100,
+  borderRadius:19,
+  backgroundColor:"#0D0F0D",
+  borderWidth:1,
+  borderColor:"#242824",
+  padding:13
+ },
+
+ sumLabel:{
+  color:"#6C706C",
+  fontSize:8,
+  fontWeight:"900",
+  letterSpacing:1,
+  marginTop:7
+ },
+
+ sumValue:{
+  color:"#F5F5F5",
+  fontSize:16,
+  fontWeight:"900",
+  marginTop:4
+ },
+
+ spectrum:{
+  marginTop:10,
+  padding:15,
+  borderRadius:19,
+  backgroundColor:"#0D0F0D",
+  borderWidth:1,
+  borderColor:"#242824"
+ },
+
+ done:{
+  height:56,
+  borderRadius:18,
+  backgroundColor:"#B8FF2C",
+  alignItems:"center",
+  justifyContent:"center",
+  marginTop:12
+ },
+
+ doneText:{
+  color:"#050505",
+  fontSize:13,
+  fontWeight:"900",
+  letterSpacing:1.2
+ },
+
+
+ /* HISTORY */
+
+ hCard:{
+  backgroundColor:"#0D0F0D",
+  borderRadius:19,
+  borderWidth:1,
+  borderColor:"#242824",
+  padding:15,
+  marginBottom:10
+ },
+
+ hHead:{
+  flexDirection:"row",
+  justifyContent:"space-between",
+  alignItems:"center"
+ },
+
+ hDate:{
+  color:"#6C6C6C",
+  fontSize:10,
+  fontWeight:"800"
+ },
+
+ hDistance:{
+  color:"#F5F5F5",
+  fontSize:22,
+  fontWeight:"900",
+  marginTop:2
+ },
+
+ hStats:{
+  flexDirection:"row",
+  marginTop:13,
+  paddingTop:12,
+  borderTopWidth:1,
+  borderTopColor:"#242824"
+ },
+
+ hStat:{
+  flex:1
+ },
+
+ hLabel:{
+  color:"#626262",
+  fontSize:7,
+  fontWeight:"900",
+  letterSpacing:.8
+ },
+
+ hValue:{
+  color:"#EAEAEA",
+  fontSize:11,
+  fontWeight:"800",
+  marginTop:3
+ },
+
+ empty:{
+  minHeight:height*.65,
+  alignItems:"center",
+  justifyContent:"center",
+  paddingHorizontal:40
+ },
+
+ emptyTitle:{
+  color:"#F5F5F5",
+  fontSize:18,
+  fontWeight:"900",
+  marginTop:14
+ },
+
+ emptyText:{
+  color:"#666",
+  fontSize:12,
+  textAlign:"center",
+  lineHeight:18,
+  marginTop:6
+ }
 
-  bigSummaryTime: {
-    color: COLORS.muted,
-    fontSize: 12,
-    fontWeight: "700",
-    marginTop: 3,
-  },
-
-  summaryGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 9,
-    marginTop: 10,
-  },
-
-  summaryBox: {
-    width:
-      (width - 41) / 2,
-    minHeight: 100,
-    borderRadius: 18,
-    backgroundColor:
-      COLORS.surface2,
-    borderWidth: 1,
-    borderColor:
-      COLORS.border,
-    padding: 13,
-  },
-
-  summaryBoxLabel: {
-    color: COLORS.muted,
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 1,
-    marginTop: 8,
-  },
-
-  summaryBoxValue: {
-    color: COLORS.white,
-    fontSize: 17,
-    fontWeight: "900",
-    marginTop: 4,
-  },
-
-
-  /* =====================================================
-     SPECTRUM
-  ===================================================== */
-
-  spectrumCard: {
-    marginTop: 10,
-    padding: 15,
-    borderRadius: 18,
-    backgroundColor:
-      COLORS.surface2,
-    borderWidth: 1,
-    borderColor:
-      COLORS.border,
-  },
-
-  spectrumTitle: {
-    color: COLORS.muted,
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 1.4,
-    marginBottom: 9,
-  },
-
-  spectrumGradient: {
-    height: 8,
-    borderRadius: 5,
-    overflow: "hidden",
-    flexDirection: "row",
-  },
-
-  spectrumBottomLabels: {
-    flexDirection: "row",
-    justifyContent:
-      "space-between",
-    marginTop: 6,
-  },
-
-  spectrumBottomText: {
-    color: COLORS.muted2,
-    fontSize: 8,
-    fontWeight: "800",
-  },
-
-  doneButton: {
-    height: 56,
-    borderRadius: 18,
-    backgroundColor:
-      COLORS.lime,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 13,
-  },
-
-  doneButtonText: {
-    color: "#050505",
-    fontSize: 13,
-    fontWeight: "900",
-    letterSpacing: 1.2,
-  },
-
-
-  /* =====================================================
-     ACHIEVEMENT
-  ===================================================== */
-
-  achievementBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent:
-      "center",
-    backgroundColor:
-      "rgba(168,255,0,0.08)",
-    padding: 12,
-    borderRadius: 16,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor:
-      "rgba(168,255,0,0.22)",
-  },
-
-  achievementText: {
-    color: COLORS.lime,
-    fontSize: 12,
-    fontWeight: "900",
-    letterSpacing: 1,
-    marginLeft: 8,
-  },
-
-
-  /* =====================================================
-     HISTORY
-  ===================================================== */
-
-  historyScroll: {
-    paddingHorizontal: 16,
-    paddingBottom: 30,
-  },
-
-  historyCard: {
-    backgroundColor:
-      COLORS.surface2,
-    borderRadius: 19,
-    borderWidth: 1,
-    borderColor:
-      COLORS.border,
-    padding: 15,
-    marginBottom: 10,
-  },
-
-  historyCardHeader: {
-    flexDirection: "row",
-    justifyContent:
-      "space-between",
-    alignItems: "center",
-  },
-
-  historyDate: {
-    color: COLORS.muted,
-    fontSize: 9,
-    fontWeight: "800",
-  },
-
-  historyDistance: {
-    color: COLORS.white,
-    fontSize: 22,
-    fontWeight: "900",
-    marginTop: 2,
-  },
-
-  historyStats: {
-    flexDirection: "row",
-    marginTop: 13,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor:
-      COLORS.border,
-  },
-
-  historyStat: {
-    flex: 1,
-  },
-
-  historyStatLabel: {
-    color: COLORS.muted,
-    fontSize: 7,
-    fontWeight: "900",
-    letterSpacing: 0.8,
-  },
-
-  historyStatValue: {
-    color: COLORS.white,
-    fontSize: 11,
-    fontWeight: "800",
-    marginTop: 3,
-  },
-
-  emptyHistory: {
-    minHeight: height * 0.65,
-    alignItems: "center",
-    justifyContent:
-      "center",
-    paddingHorizontal: 40,
-  },
-
-  emptyHistoryIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: 24,
-    backgroundColor:
-      "rgba(168,255,0,0.07)",
-    borderWidth: 1,
-    borderColor:
-      "rgba(168,255,0,0.15)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  emptyHistoryTitle: {
-    color: COLORS.white,
-    fontSize: 18,
-    fontWeight: "900",
-    marginTop: 14,
-  },
-
-  emptyHistoryText: {
-    color: COLORS.muted,
-    fontSize: 12,
-    textAlign: "center",
-    lineHeight: 18,
-    marginTop: 6,
-  },
 });
