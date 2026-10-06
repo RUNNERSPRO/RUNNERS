@@ -858,10 +858,11 @@ export default function App() {
   useEffect(() => {
     initializeApp();
 
-    // Keep Android system navigation controls out of the app UI.
+    // Keep the Android system navigation bar visible and inset the app
+    // so the bottom app navigation never overlaps the system buttons.
     if (Platform.OS === "android") {
-      NavigationBar.setVisibilityAsync("hidden").catch(() => {});
-      NavigationBar.setBehaviorAsync("overlay-swipe").catch(() => {});
+      NavigationBar.setVisibilityAsync("visible").catch(() => {});
+      NavigationBar.setBehaviorAsync("inset-swipe").catch(() => {});
       NavigationBar.setBackgroundColorAsync(C.bg).catch(() => {});
     }
 
@@ -5351,10 +5352,12 @@ const styles = StyleSheet.create({
   navWrap: {
     paddingHorizontal: 12,
     paddingTop: 7,
+    // Extra bottom breathing room keeps the app navigation clear of
+    // Android's system navigation buttons / gesture area.
     paddingBottom:
-      Platform.OS === "ios"
-        ? 6
-        : 10,
+      Platform.OS === "android"
+        ? 16
+        : 6,
     backgroundColor: C.bg,
   },
 
