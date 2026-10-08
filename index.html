@@ -119,11 +119,11 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
    ========================================================= */
 .app-showcase{display:flex;justify-content:center;position:relative;padding:15px 0 20px}
 .app-showcase:before{content:"";position:absolute;width:650px;height:650px;left:50%;top:50%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(111,183,232,.14),rgba(200,255,69,.035) 38%,transparent 70%);filter:blur(25px);pointer-events:none}
-.app-phone{position:relative;width:min(520px,92vw);padding:11px;border:1px solid rgba(255,255,255,.22);border-radius:62px;background:linear-gradient(145deg,#657381,#101923 18%,#02070b 80%,#4a5865);box-shadow:0 55px 120px rgba(0,0,0,.52),0 0 0 2px rgba(255,255,255,.05),inset 0 1px 2px rgba(255,255,255,.35);z-index:2}
+.app-phone{position:relative;width:min(520px,92vw);padding:11px;border:1px solid rgba(255,255,255,.22);border-radius:62px;background:linear-gradient(145deg,#657381,#101923 18%,#02070b 80%,#4a5865);box-shadow:0 55px 120px rgba(0,0,0,.52),0 0 0 2px rgba(255,255,255,.05),inset 0 1px 2px rgba(255,255,255,.35);z-index:2;display:flex;}
 .app-phone:before{content:"";position:absolute;left:-5px;top:155px;width:4px;height:62px;border-radius:4px 0 0 4px;background:#3f4b56;box-shadow:0 80px 0 #3f4b56}
 .app-phone:after{content:"";position:absolute;right:-5px;top:205px;width:4px;height:92px;border-radius:0 4px 4px 0;background:#3f4b56}
 .app-island{position:absolute;z-index:12;left:50%;top:17px;transform:translateX(-50%);width:126px;height:31px;border-radius:22px;background:#000;box-shadow:inset 0 0 0 1px rgba(255,255,255,.025)}
-.app-screen{position:relative;overflow:hidden;border-radius:51px;background:#07131f;min-height:930px;color:#eef4f7;display:flex;flex-direction:column;}
+.app-screen{position:relative;overflow:hidden;border-radius:51px;background:#07131f;flex:1;min-height:930px;color:#eef4f7;display:flex;flex-direction:column;}
 
 /* STATUSBAR */
 .app-statusbar{height:52px;padding:17px 24px 0;display:flex;justify-content:space-between;align-items:flex-start;font:600 15px/1 "DM Sans";letter-spacing:.01em;position:relative;z-index:8}
@@ -148,11 +148,11 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
 
 /* VIEWS CONTAINER */
 .app-views-container { position: relative; flex:1; display:flex; flex-direction:column; margin-top: 15px; }
-.app-view { display: none; height:100%; flex-direction:column; }
+.app-view { display: none; height:100%; flex-direction:column; flex:1;}
 .app-view.active-view { display: flex; animation: viewFadeIn 0.3s ease; }
 @keyframes viewFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-/* RUN VIEW TOP BAR & COMPASS FIX */
+/* RUN VIEW TOP BAR & COMPASS */
 .run-top-bar { display:flex; gap:12px; padding: 0 18px 15px; z-index:8; position:relative; align-items:flex-start;}
 .btn-show-map { flex: 1; background: linear-gradient(145deg,rgba(25,50,69,.84),rgba(8,22,34,.84)); border: 1px solid rgba(130,178,211,.19); border-radius: 20px; color: #fff; font: 600 16px "Space Grotesk"; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; box-shadow:0 10px 20px rgba(0,0,0,.15); transition:0.2s; height: 50px;}
 .btn-show-map:hover { background: rgba(25,50,69,1); transform:translateY(-2px); }
@@ -195,15 +195,19 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
 .app-metric strong{display:block;margin:12px 0 6px;font:600 24px/1 "Space Grotesk";letter-spacing:-.055em;font-variant-numeric:tabular-nums}.app-metric strong em{font:500 12px "DM Sans";color:#91a5b4;font-style:normal;}
 .metric-note{display:block;color:#9aa9b6;font-size:10px}.metric-note i{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:5px;background:#7e9fff;}.metric-green .metric-note i{background:#aaff35}.accuracy{height:3px;width:100%;margin-top:8px;border-radius:99px;background:#182a35;overflow:hidden}.accuracy i{display:block;height:100%;width:0;border-radius:99px;background:#c8ff45;transition:width .4s ease}
 
-/* MAP VIEW (REAL LEAFLET MAP) */
+/* MAP VIEW (REAL LEAFLET MAP - FULL SCREEN STYLE) */
 .map-top-bar { padding: 0 18px 15px; z-index:8; position:relative; }
 .map-select { width: 100%; padding: 14px 18px; border-radius: 18px; background: rgba(8,22,34,.9); border: 1px solid rgba(130,178,211,.25); color: #fff; font: 600 16px "Space Grotesk"; outline:none; cursor:pointer; -webkit-appearance:none; appearance:none; }
-.map-view-container { flex: 1; border-radius: 24px; overflow: hidden; margin: 0 16px 15px; border: 1px solid rgba(130,178,211,.2); position:relative; background:#101d29; min-height: 450px; display: flex; flex-direction: column;}
+.map-view-container { flex: 1; border-radius: 24px 24px 0 0; overflow: hidden; margin: 0; border: 1px solid rgba(130,178,211,.2); border-bottom:none; position:relative; background:#101d29; display: flex; flex-direction: column;}
 #realMap { flex: 1; width: 100%; z-index: 1;}
 
-/* LEAFLET CSS OVERRIDES */
+/* LEAFLET CSS OVERRIDES (SMART DARK MODE) */
 .leaflet-container { background: #07131f !important; font-family: "DM Sans", sans-serif; outline: none;}
 .leaflet-control-attribution { display: none !important;}
+/* Dark filter on tiles only, not on lines or markers */
+.dark-map-mode .leaflet-tile-pane {
+    filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(85%);
+}
 
 /* HISTORY VIEW */
 .history-list { flex:1; padding: 0 18px 20px; overflow-y: auto; }
@@ -224,7 +228,9 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
 .app-phone.locked .lock-control{color:#c8ff45;border-color:rgba(200,255,69,.45)}
 
 @media(max-width:700px){
- .app-showcase{padding:0}.app-phone{width:min(430px,96vw);padding:7px;border-radius:48px}.app-screen{border-radius:41px;min-height:775px}.app-island{top:12px;width:102px;height:25px}
+ .app-showcase{padding:0}.app-phone{width:min(430px,96vw);padding:7px;border-radius:48px;height:auto;max-height:none;} 
+ .app-screen{border-radius:41px;min-height:auto;height:auto;}
+ .app-island{top:12px;width:102px;height:25px}
  
  /* MOBILE HEADER ALIGNED */
  .app-header{padding:15px 16px 0;gap:6px;}
@@ -238,18 +244,18 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
  .run-top-bar, .map-top-bar { padding: 0 12px 10px;}
  .btn-show-map { height: 44px; font-size:14px; }
  .compass-circle { width: 44px; height: 44px; }
- .app-run-stage{ margin: 0 12px; min-height: 300px;}
+ .app-run-stage{ margin: 0 12px;}
  .app-run-center{top:38%}#timer{font-size:60px;margin-top:12px}
  .app-controls{bottom:15px;gap:24px}.circle-control{width:56px;height:56px}.main-control{width:75px;height:75px;}
  .app-metrics{gap:8px;padding:10px}.app-metric{min-height:115px;padding:12px;border-radius:18px}.app-metric strong{font-size:20px;margin:8px 0 4px}
  .app-bottom-nav{height:67px;padding:6px 10px 10px}.app-bottom-nav .nav-item{font-size:16px;gap:4px}.app-bottom-nav .nav-item small{font-size:9px}
- .map-view-container { min-height: 350px; }
+ 
+ .map-view-container { border-radius: 20px 20px 0 0; min-height:450px;}
 }
 @media(max-width:380px){
- .app-phone{width:98vw;padding:5px;border-radius:40px}.app-screen{border-radius:35px}
+ .app-phone{width:98vw;padding:5px;border-radius:40px;height:auto;}.app-screen{border-radius:35px}
  .gps-chip{max-width:70px;overflow:hidden;} 
  .app-controls{gap:16px}.circle-control{width:52px;height:52px}.main-control{width:72px;height:72px}.app-metric{min-height:118px;padding:11px}.app-metric strong{font-size:20px}
- .map-view-container { min-height: 300px; }
 }
 </style>
 </head>
@@ -454,7 +460,7 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
               </div>
             </div>
 
-            <!-- 3. MAP VIEW (Real Leaflet Map) -->
+            <!-- 3. FULL SCREEN MAP VIEW -->
             <div id="view-map" class="app-view">
               <div class="map-top-bar">
                 <select id="mapTypeSelect" class="map-select">
@@ -464,6 +470,7 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
                 </select>
               </div>
               <div class="map-view-container">
+                <!-- Using realMap inside full width/height container -->
                 <div id="realMap"></div>
               </div>
             </div>
@@ -551,20 +558,21 @@ let mapPolyline = null;
 let currentTileLayer = null;
 
 const tileLayers = {
-  dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19, attribution: '' }),
   street: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '' }),
   satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: '' })
 };
 
 function initRealMap(lat, lon) {
-  // Use user's real location or default location
-  leafletMap = L.map('realMap', {zoomControl: false}).setView([lat || 28.6139, lon || 77.2090], 16);
+  // Use user's real location or default location (Delhi fallback)
+  leafletMap = L.map('realMap', {zoomControl: false}).setView([lat || 28.6139, lon || 77.2090], 18); // Zoom level 18 for close view
   L.control.zoom({ position: 'bottomright' }).addTo(leafletMap);
   
-  currentTileLayer = tileLayers.dark;
+  // Default to Street Map with Dark Mode CSS Filter
+  currentTileLayer = tileLayers.street;
   currentTileLayer.addTo(leafletMap);
+  document.getElementById('realMap').classList.add('dark-map-mode');
 
-  // Thick, visible glowing route line
+  // Thick, visible glowing route line (Like the reference image)
   mapPolyline = L.polyline([], {color: '#c8ff45', weight: 6, opacity: 0.9, lineCap: 'round', lineJoin: 'round'}).addTo(leafletMap);
   
   // Clean location marker
@@ -573,11 +581,23 @@ function initRealMap(lat, lon) {
   }).addTo(leafletMap);
 }
 
-// Change Map Base Theme
+// Change Map Base Theme (Smart Filters)
 document.getElementById('mapTypeSelect').addEventListener('change', function(e) {
   if(!leafletMap) return;
+  
+  let val = e.target.value;
   leafletMap.removeLayer(currentTileLayer);
-  currentTileLayer = tileLayers[e.target.value];
+  
+  if (val === 'dark') {
+      currentTileLayer = tileLayers.street;
+      document.getElementById('realMap').classList.add('dark-map-mode');
+  } else if (val === 'street') {
+      currentTileLayer = tileLayers.street;
+      document.getElementById('realMap').classList.remove('dark-map-mode');
+  } else if (val === 'satellite') {
+      currentTileLayer = tileLayers.satellite;
+      document.getElementById('realMap').classList.remove('dark-map-mode');
+  }
   currentTileLayer.addTo(leafletMap);
 });
 
@@ -675,7 +695,7 @@ function handleLivePosition(pos) {
     document.getElementById('accuracyText').textContent = Math.round(accuracy);
     if(accuracy > 100) return; // Ignore very bad signals
 
-    // Check map existence again (failsafe)
+    // Check map existence and initialize if needed
     if(document.getElementById('realMap') && !leafletMap) {
         initRealMap(lat, lon);
     }
@@ -823,11 +843,13 @@ navItems.forEach(item => {
     // IMPORTANT: Map inside a hidden container needs resize invalidation and immediate init
     if(tabName === 'map') {
        if(!leafletMap) {
-           initRealMap(28.6139, 77.2090); // Initialize default first to fill space
+           // Provide fallback coordinates (Delhi) to initialize immediately if GPS takes time
+           initRealMap(28.6139, 77.2090); 
            if(navigator.geolocation && !lastPosition) {
                navigator.geolocation.getCurrentPosition(handleLivePosition, ()=>{});
            }
        }
+       // Force redraw after CSS transition completes
        setTimeout(() => { if(leafletMap) leafletMap.invalidateSize(); }, 150);
     }
   });
