@@ -198,11 +198,11 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
 /* MAP VIEW (REAL LEAFLET MAP) */
 .map-top-bar { padding: 0 18px 15px; z-index:8; position:relative; }
 .map-select { width: 100%; padding: 14px 18px; border-radius: 18px; background: rgba(8,22,34,.9); border: 1px solid rgba(130,178,211,.25); color: #fff; font: 600 16px "Space Grotesk"; outline:none; cursor:pointer; -webkit-appearance:none; appearance:none; }
-.map-view-container { flex: 1; border-radius: 24px; overflow: hidden; margin: 0 16px 15px; border: 1px solid rgba(130,178,211,.2); position:relative; background:#101d29;}
-#realMap { width: 100%; height: 100%; z-index: 1;}
+.map-view-container { flex: 1; border-radius: 24px; overflow: hidden; margin: 0 16px 15px; border: 1px solid rgba(130,178,211,.2); position:relative; background:#101d29; min-height: 450px; display: flex; flex-direction: column;}
+#realMap { flex: 1; width: 100%; z-index: 1;}
 
 /* LEAFLET CSS OVERRIDES */
-.leaflet-container { background: #07131f !important; font-family: "DM Sans", sans-serif;}
+.leaflet-container { background: #07131f !important; font-family: "DM Sans", sans-serif; outline: none;}
 .leaflet-control-attribution { display: none !important;}
 
 /* HISTORY VIEW */
@@ -238,16 +238,18 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
  .run-top-bar, .map-top-bar { padding: 0 12px 10px;}
  .btn-show-map { height: 44px; font-size:14px; }
  .compass-circle { width: 44px; height: 44px; }
- .app-run-stage{ margin: 0 12px;}
+ .app-run-stage{ margin: 0 12px; min-height: 300px;}
  .app-run-center{top:38%}#timer{font-size:60px;margin-top:12px}
  .app-controls{bottom:15px;gap:24px}.circle-control{width:56px;height:56px}.main-control{width:75px;height:75px;}
  .app-metrics{gap:8px;padding:10px}.app-metric{min-height:115px;padding:12px;border-radius:18px}.app-metric strong{font-size:20px;margin:8px 0 4px}
  .app-bottom-nav{height:67px;padding:6px 10px 10px}.app-bottom-nav .nav-item{font-size:16px;gap:4px}.app-bottom-nav .nav-item small{font-size:9px}
+ .map-view-container { min-height: 350px; }
 }
 @media(max-width:380px){
  .app-phone{width:98vw;padding:5px;border-radius:40px}.app-screen{border-radius:35px}
  .gps-chip{max-width:70px;overflow:hidden;} 
  .app-controls{gap:16px}.circle-control{width:52px;height:52px}.main-control{width:72px;height:72px}.app-metric{min-height:118px;padding:11px}.app-metric strong{font-size:20px}
+ .map-view-container { min-height: 300px; }
 }
 </style>
 </head>
@@ -549,13 +551,13 @@ let mapPolyline = null;
 let currentTileLayer = null;
 
 const tileLayers = {
-  dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }),
-  street: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }),
-  satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 })
+  dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19, attribution: '' }),
+  street: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '' }),
+  satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: '' })
 };
 
 function initRealMap(lat, lon) {
-  // Use user's real location or a default location
+  // Use user's real location or default location
   leafletMap = L.map('realMap', {zoomControl: false}).setView([lat || 28.6139, lon || 77.2090], 16);
   L.control.zoom({ position: 'bottomright' }).addTo(leafletMap);
   
@@ -567,7 +569,7 @@ function initRealMap(lat, lon) {
   
   // Clean location marker
   mapMarker = L.circleMarker([lat || 28.6139, lon || 77.2090], {
-    radius: 7, fillColor: '#c8ff45', color: '#fff', weight: 2, fillOpacity: 1
+    radius: 7, fillColor: '#c8ff45', color: '#07101a', weight: 2, fillOpacity: 1
   }).addTo(leafletMap);
 }
 
@@ -673,7 +675,10 @@ function handleLivePosition(pos) {
     document.getElementById('accuracyText').textContent = Math.round(accuracy);
     if(accuracy > 100) return; // Ignore very bad signals
 
-    if(!leafletMap) initRealMap(lat, lon);
+    // Check map existence again (failsafe)
+    if(document.getElementById('realMap') && !leafletMap) {
+        initRealMap(lat, lon);
+    }
 
     const latlng = [lat, lon];
     if(mapMarker) mapMarker.setLatLng(latlng);
@@ -682,7 +687,7 @@ function handleLivePosition(pos) {
        // Draw route line if running
        if(mapPolyline) mapPolyline.addLatLng(latlng);
        
-       // Calculate basic distance
+       // Calculate distance
        if(lastPosition) {
            const lat1 = lastPosition.lat * Math.PI / 180;
            const lon1 = lastPosition.lon * Math.PI / 180;
@@ -815,21 +820,15 @@ navItems.forEach(item => {
     appViews.forEach(view => view.classList.remove('active-view'));
     document.getElementById('view-' + tabName).classList.add('active-view');
     
-    // IMPORTANT: Maps inside hidden containers need resize invalidation when shown!
+    // IMPORTANT: Map inside a hidden container needs resize invalidation and immediate init
     if(tabName === 'map') {
        if(!leafletMap) {
-           // Try to find user location even if not running
+           initRealMap(28.6139, 77.2090); // Initialize default first to fill space
            if(navigator.geolocation && !lastPosition) {
-               navigator.geolocation.getCurrentPosition(handleLivePosition, ()=>{
-                   // fallback if GPS blocked
-                   initRealMap(28.6139, 77.2090);
-               });
-           } else if (!lastPosition){
-               initRealMap(28.6139, 77.2090);
+               navigator.geolocation.getCurrentPosition(handleLivePosition, ()=>{});
            }
-       } else {
-           setTimeout(() => { leafletMap.invalidateSize(); }, 50);
        }
+       setTimeout(() => { if(leafletMap) leafletMap.invalidateSize(); }, 150);
     }
   });
 });
