@@ -11,379 +11,214 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
 
 :root{
-  --bg:#07101a;
-  --bg2:#0b1722;
-  --card:#101d29;
-  --text:#f8faf8;
-  --muted:#8796a3;
-  --soft:#b8c4cd;
-  --lime:#c8ff45;
-  --lime2:#e0ff9b;
-  --blue:#8ec5ff;
-  --line:rgba(255,255,255,.11);
-  --ease:cubic-bezier(.22,1,.36,1);
+  --bg:#07101a;--bg2:#0b1722;--card:#101d29;--text:#f8faf8;
+  --muted:#8796a3;--soft:#b8c4cd;--lime:#c8ff45;--lime2:#e0ff9b;
+  --blue:#8ec5ff;--line:rgba(255,255,255,.11);
+  --ease:cubic-bezier(.22,1,.36,1)
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth;background:#07101a}
 body{
-  background:
-    radial-gradient(ellipse 80% 45% at 50% -5%,rgba(105,158,205,.18),transparent 65%),
-    radial-gradient(ellipse 55% 35% at 85% 25%,rgba(200,255,69,.055),transparent 70%),
-    linear-gradient(180deg,#07101a 0%,#09131d 32%,#08111a 68%,#06101a 100%);
-  color:var(--text);
-  font-family:"DM Sans",sans-serif;
-  overflow-x:hidden;
+ background:radial-gradient(ellipse 80% 45% at 50% -5%,rgba(105,158,205,.18),transparent 65%),
+ radial-gradient(ellipse 55% 35% at 85% 25%,rgba(200,255,69,.055),transparent 70%),
+ linear-gradient(180deg,#07101a 0%,#09131d 32%,#08111a 68%,#06101a 100%);
+ color:var(--text);font-family:"DM Sans",sans-serif;overflow-x:hidden
 }
 body:before{
  content:"";position:fixed;inset:0;z-index:100;pointer-events:none;opacity:.018;
  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")
 }
-a{text-decoration:none;color:inherit}
-.wrap{width:min(1160px,92%);margin:auto}
+a{text-decoration:none;color:inherit}.wrap{width:min(1160px,92%);margin:auto}
 
-/* NAV */
-.nav{
- position:fixed;z-index:50;top:14px;left:50%;transform:translateX(-50%);
- width:min(1120px,92%);height:66px;padding:8px 10px 8px 21px;
- display:flex;align-items:center;justify-content:space-between;
- border:1px solid rgba(255,255,255,.13);border-radius:22px;
+.nav{position:fixed;z-index:50;top:14px;left:50%;transform:translateX(-50%);
+ width:min(1120px,92%);height:66px;padding:8px 10px 8px 21px;display:flex;align-items:center;
+ justify-content:space-between;border:1px solid rgba(255,255,255,.13);border-radius:22px;
  background:rgba(10,22,33,.72);backdrop-filter:blur(30px) saturate(150%);
- -webkit-backdrop-filter:blur(30px) saturate(150%);
- box-shadow:0 18px 60px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.06)
-}
-.logo{font:700 22px "Space Grotesk";letter-spacing:-.065em}
-.logo span{color:var(--lime)}
-.navlinks{display:flex;gap:30px;color:#8796a3;font-size:13px}
-.navlinks a{transition:.3s}.navlinks a:hover{color:#fff}
-.nav-btn{
- background:#f4f7f4;color:#09131d;padding:13px 18px;border-radius:16px;
- font-size:13px;font-weight:700;transition:.3s;
- box-shadow:0 8px 25px rgba(255,255,255,.08),inset 0 1px 0 rgba(255,255,255,.7)
-}
+ -webkit-backdrop-filter:blur(30px) saturate(150%);box-shadow:0 18px 60px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.06)}
+.logo{font:700 22px "Space Grotesk";letter-spacing:-.065em}.logo span{color:var(--lime)}
+.navlinks{display:flex;gap:30px;color:#8796a3;font-size:13px}.navlinks a{transition:.3s}.navlinks a:hover{color:#fff}
+.nav-btn{background:#f4f7f4;color:#09131d;padding:13px 18px;border-radius:16px;font-size:13px;font-weight:700;transition:.3s;box-shadow:0 8px 25px rgba(255,255,255,.08),inset 0 1px 0 rgba(255,255,255,.7)}
 .nav-btn:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(255,255,255,.12)}
 
-/* HERO */
-.hero{
- position:relative;min-height:920px;padding:180px 0 80px;overflow:hidden;
- background:
-   radial-gradient(ellipse 65% 55% at 50% 30%,rgba(104,157,203,.18),transparent 68%),
-   radial-gradient(ellipse 35% 40% at 78% 45%,rgba(200,255,69,.07),transparent 72%);
-}
-.hero-cinematic-bg{
- position:absolute;z-index:0;inset:0;pointer-events:none;
- background:
-   linear-gradient(90deg,rgba(7,16,26,.96) 0%,rgba(7,16,26,.82) 35%,rgba(7,16,26,.38) 68%,rgba(7,16,26,.62) 100%),
-   linear-gradient(180deg,rgba(7,16,26,.08),rgba(7,16,26,.82) 92%),
-   url("https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=2200&q=85") center/cover no-repeat;
- opacity:.58;filter:saturate(.72) contrast(1.06)
-}
-.hero:after{
- content:"";position:absolute;z-index:0;left:50%;bottom:5%;width:75%;height:220px;
- transform:translateX(-50%);
- background:radial-gradient(ellipse,rgba(145,194,230,.13),transparent 68%);
- filter:blur(30px);pointer-events:none
-}
-.hero-glow{
- position:absolute;width:820px;height:820px;left:50%;top:260px;transform:translateX(-50%);
- background:radial-gradient(circle,rgba(151,199,232,.13),rgba(151,199,232,.035) 35%,transparent 68%);
- filter:blur(15px);animation:glow 7s ease-in-out infinite
-}
-.hero-grid{
- position:absolute;inset:0;opacity:.09;
- background-image:linear-gradient(rgba(180,210,230,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(180,210,230,.07) 1px,transparent 1px);
- background-size:80px 80px;mask-image:linear-gradient(to bottom,#000 0%,#000 45%,transparent 88%)
-}
+.hero{position:relative;min-height:920px;padding:180px 0 80px;overflow:hidden;
+ background:radial-gradient(ellipse 65% 55% at 50% 30%,rgba(104,157,203,.18),transparent 68%),
+ radial-gradient(ellipse 35% 40% at 78% 45%,rgba(200,255,69,.07),transparent 72%)}
+.hero-cinematic-bg{position:absolute;z-index:0;inset:0;pointer-events:none;
+ background:linear-gradient(90deg,rgba(7,16,26,.96) 0%,rgba(7,16,26,.82) 35%,rgba(7,16,26,.38) 68%,rgba(7,16,26,.62) 100%),
+ linear-gradient(180deg,rgba(7,16,26,.08),rgba(7,16,26,.82) 92%),
+ url("https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=2200&q=85") center/cover no-repeat;
+ opacity:.58;filter:saturate(.72) contrast(1.06)}
+.hero:after{content:"";position:absolute;z-index:0;left:50%;bottom:5%;width:75%;height:220px;transform:translateX(-50%);background:radial-gradient(ellipse,rgba(145,194,230,.13),transparent 68%);filter:blur(30px);pointer-events:none}
+.hero-glow{position:absolute;width:820px;height:820px;left:50%;top:260px;transform:translateX(-50%);background:radial-gradient(circle,rgba(151,199,232,.13),rgba(151,199,232,.035) 35%,transparent 68%);filter:blur(15px);animation:glow 7s ease-in-out infinite}
+.hero-grid{position:absolute;inset:0;opacity:.09;background-image:linear-gradient(rgba(180,210,230,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(180,210,230,.07) 1px,transparent 1px);background-size:80px 80px;mask-image:linear-gradient(to bottom,#000 0%,#000 45%,transparent 88%)}
 .hero-inner{position:relative;z-index:2;text-align:center}
-.pill{
- display:inline-flex;align-items:center;gap:9px;padding:8px 12px;border-radius:999px;
- border:1px solid rgba(200,255,69,.22);
- background:linear-gradient(135deg,rgba(200,255,69,.10),rgba(120,170,210,.05));
- color:#d0dbd0;font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
- box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 10px 35px rgba(0,0,0,.12)
-}
+.pill{display:inline-flex;align-items:center;gap:9px;padding:8px 12px;border-radius:999px;border:1px solid rgba(200,255,69,.22);background:linear-gradient(135deg,rgba(200,255,69,.10),rgba(120,170,210,.05));color:#d0dbd0;font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 10px 35px rgba(0,0,0,.12)}
 .pill b{width:6px;height:6px;border-radius:50%;background:var(--lime);box-shadow:0 0 14px var(--lime);animation:pulse 1.8s infinite}
-.hero h1{
- font:600 clamp(68px,10vw,132px)/.87 "Space Grotesk";letter-spacing:-.09em;margin:25px auto;
- max-width:1050px;text-shadow:0 12px 45px rgba(0,0,0,.28)
-}
+.hero h1{font:600 clamp(68px,10vw,132px)/.87 "Space Grotesk";letter-spacing:-.09em;margin:25px auto;max-width:1050px;text-shadow:0 12px 45px rgba(0,0,0,.28)}
 .hero h1 .green{color:var(--lime);text-shadow:0 0 40px rgba(200,255,69,.14)}
 .hero-copy{max-width:610px;margin:auto;color:#9aa9b5;font-size:17px;line-height:1.7}
 .hero-actions{display:flex;justify-content:center;gap:10px;margin-top:30px;flex-wrap:wrap}
-.btn{
- padding:15px 21px;border-radius:16px;font-size:13px;font-weight:700;transition:.35s var(--ease);
- display:inline-flex;align-items:center;gap:10px;position:relative;z-index:10;pointer-events:auto
-}
-.btn-main{
- background:linear-gradient(135deg,#d8ff72,#baff35);color:#09120a;
- box-shadow:0 18px 50px rgba(171,235,58,.14),inset 0 1px 0 rgba(255,255,255,.55)
-}
+.btn{padding:15px 21px;border-radius:16px;font-size:13px;font-weight:700;transition:.35s var(--ease);display:inline-flex;align-items:center;gap:10px;position:relative;z-index:10;pointer-events:auto;cursor:pointer;border:none;}
+.btn-main{background:linear-gradient(135deg,#d8ff72,#baff35);color:#09120a;box-shadow:0 18px 50px rgba(171,235,58,.14),inset 0 1px 0 rgba(255,255,255,.55)}
 .btn-main:hover{transform:translateY(-4px) scale(1.01);box-shadow:0 24px 70px rgba(171,235,58,.24)}
-.btn-dark{
- border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.045);color:#e7e9e7;
- box-shadow:inset 0 1px 0 rgba(255,255,255,.04)
-}
+.btn-dark{border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.045);color:#e7e9e7;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
 .btn-dark:hover{transform:translateY(-4px);background:rgba(255,255,255,.075)}
-.hero-note{display:flex;justify-content:center;gap:24px;margin-top:25px;color:#71808c;font-size:11px}
-.hero-note strong{color:#d1d9dc;font-weight:600}
+.hero-note{display:flex;justify-content:center;gap:24px;margin-top:25px;color:#71808c;font-size:11px}.hero-note strong{color:#d1d9dc;font-weight:600}
 
-/* PHONE */
 .phone-wrap{height:575px;margin:55px auto 0;position:relative;max-width:480px;perspective:1200px}
-.phone-shadow{
- position:absolute;left:50%;bottom:25px;width:330px;height:70px;transform:translateX(-50%);
- background:radial-gradient(ellipse,rgba(119,170,210,.22),rgba(200,255,69,.07),transparent 70%);
- filter:blur(55px);border-radius:50%
-}
-.phone{
- position:absolute;left:50%;top:0;width:300px;height:575px;
- transform:translateX(-50%) rotateX(3deg) rotateY(-8deg);
- border:8px solid #1c2a36;border-radius:48px;background:#09131d;
- box-shadow:0 55px 100px rgba(0,0,0,.48),0 0 0 1px rgba(255,255,255,.08),0 0 70px rgba(89,145,185,.08),inset 0 0 0 1px rgba(255,255,255,.04);
- overflow:hidden;transition:transform 1s var(--ease)
-}
+.phone-shadow{position:absolute;left:50%;bottom:25px;width:330px;height:70px;transform:translateX(-50%);background:radial-gradient(ellipse,rgba(119,170,210,.22),rgba(200,255,69,.07),transparent 70%);filter:blur(55px);border-radius:50%}
+.phone{position:absolute;left:50%;top:0;width:300px;height:575px;transform:translateX(-50%) rotateX(3deg) rotateY(-8deg);border:8px solid #1c2a36;border-radius:48px;background:#09131d;box-shadow:0 55px 100px rgba(0,0,0,.48),0 0 0 1px rgba(255,255,255,.08),0 0 70px rgba(89,145,185,.08),inset 0 0 0 1px rgba(255,255,255,.04);overflow:hidden;transition:transform 1s var(--ease)}
 .phone-wrap:hover .phone{transform:translateX(-50%) rotateX(0) rotateY(0) translateY(-8px)}
 .dynamic{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:92px;height:25px;background:#000;border-radius:20px;z-index:4}
-.screen{
- position:absolute;inset:0;padding:42px 17px 18px;
- background:radial-gradient(circle at 50% 34%,rgba(132,183,220,.16),transparent 34%),radial-gradient(circle at 80% 80%,rgba(200,255,69,.055),transparent 30%),linear-gradient(180deg,#0d1b27,#07111a 75%)
-}
+.screen{position:absolute;inset:0;padding:42px 17px 18px;background:radial-gradient(circle at 50% 34%,rgba(132,183,220,.16),transparent 34%),radial-gradient(circle at 80% 80%,rgba(200,255,69,.055),transparent 30%),linear-gradient(180deg,#0d1b27,#07111a 75%)}
 .screen-top{display:flex;justify-content:space-between;align-items:center;color:#7b8993;font-size:8px;letter-spacing:.08em}
-.screen-title{margin-top:32px;text-align:left;font-size:10px;color:#7b8993;letter-spacing:.15em}
-.big-time{font:600 55px/1 "Space Grotesk";letter-spacing:-.08em;margin-top:6px}
-.live-route{
- height:180px;margin-top:24px;position:relative;border-radius:25px;border:1px solid rgba(255,255,255,.09);
- overflow:hidden;background:linear-gradient(145deg,rgba(123,176,216,.07),rgba(255,255,255,.018))
-}
-.live-route:before{
- content:"";position:absolute;inset:0;
- background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
- background-size:35px 35px
-}
-.route-svg{position:absolute;inset:20px 10px;width:calc(100% - 20px);height:calc(100% - 40px)}
-.route-base{fill:none;stroke:rgba(200,255,69,.10);stroke-width:12}
-.route-line{fill:none;stroke:var(--lime);stroke-width:3;stroke-linecap:round;stroke-dasharray:450;stroke-dashoffset:450;animation:routeDraw 4.2s ease-in-out infinite}
-.route-dot{fill:#fff;filter:drop-shadow(0 0 7px rgba(200,255,69,.75))}
-.phone-metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:11px}
-.pmetric{
- padding:12px;border-radius:17px;border:1px solid rgba(255,255,255,.07);
- background:linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.018));text-align:left
-}
-.pmetric small{display:block;color:#6d7b85;font-size:7px;letter-spacing:.12em}
-.pmetric strong{display:block;font:500 19px "Space Grotesk";margin-top:5px}
-.pmetric span{font-size:7px;color:var(--lime)}
-.gps-line{
- margin-top:9px;padding:10px 12px;border-radius:15px;background:rgba(200,255,69,.045);
- border:1px solid rgba(200,255,69,.11);display:flex;align-items:center;justify-content:space-between;font-size:8px;color:#9ca69f
-}
-.gps-live{color:var(--lime);display:flex;align-items:center;gap:6px}
-.gps-live i{width:5px;height:5px;border-radius:50%;background:var(--lime);box-shadow:0 0 10px var(--lime)}
+.screen-title{margin-top:32px;text-align:left;font-size:10px;color:#7b8993;letter-spacing:.15em}.big-time{font:600 55px/1 "Space Grotesk";letter-spacing:-.08em;margin-top:6px}
+.live-route{height:180px;margin-top:24px;position:relative;border-radius:25px;border:1px solid rgba(255,255,255,.09);overflow:hidden;background:linear-gradient(145deg,rgba(123,176,216,.07),rgba(255,255,255,.018))}
+.live-route:before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:35px 35px}
+.route-svg{position:absolute;inset:20px 10px;width:calc(100% - 20px);height:calc(100% - 40px)}.route-base{fill:none;stroke:rgba(200,255,69,.10);stroke-width:12}.route-line{fill:none;stroke:var(--lime);stroke-width:3;stroke-linecap:round;stroke-dasharray:450;stroke-dashoffset:450;animation:routeDraw 4.2s ease-in-out infinite}.route-dot{fill:#fff;filter:drop-shadow(0 0 7px rgba(200,255,69,.75))}
+.phone-metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:11px}.pmetric{padding:12px;border-radius:17px;border:1px solid rgba(255,255,255,.07);background:linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.018));text-align:left}.pmetric small{display:block;color:#6d7b85;font-size:7px;letter-spacing:.12em}.pmetric strong{display:block;font:500 19px "Space Grotesk";margin-top:5px}.pmetric span{font-size:7px;color:var(--lime)}
+.gps-line{margin-top:9px;padding:10px 12px;border-radius:15px;background:rgba(200,255,69,.045);border:1px solid rgba(200,255,69,.11);display:flex;align-items:center;justify-content:space-between;font-size:8px;color:#9ca69f}.gps-live{color:var(--lime);display:flex;align-items:center;gap:6px}.gps-live i{width:5px;height:5px;border-radius:50%;background:var(--lime);box-shadow:0 0 10px var(--lime)}
 
-/* SECTIONS */
-section{padding:125px 0;position:relative;z-index:2}
-.section-top{display:flex;justify-content:space-between;gap:35px;align-items:end;margin-bottom:50px}
-.kicker{color:var(--lime);font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase}
-.section-title{font:600 clamp(42px,6vw,72px)/.92 "Space Grotesk";letter-spacing:-.075em;margin-top:12px;text-shadow:0 12px 35px rgba(0,0,0,.2)}
-.section-title span{color:#70818f}
-.section-copy{max-width:380px;color:#84929d;line-height:1.7;font-size:14px}
+section{padding:125px 0;position:relative;z-index:2}.section-top{display:flex;justify-content:space-between;gap:35px;align-items:end;margin-bottom:50px}.kicker{color:var(--lime);font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase}.section-title{font:600 clamp(42px,6vw,72px)/.92 "Space Grotesk";letter-spacing:-.075em;margin-top:12px;text-shadow:0 12px 35px rgba(0,0,0,.2)}.section-title span{color:#70818f}.section-copy{max-width:380px;color:#84929d;line-height:1.7;font-size:14px}
 
-/* STATS */
-.stats{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid rgba(255,255,255,.10);border-bottom:1px solid rgba(255,255,255,.10)}
-.stat{padding:32px 20px;border-right:1px solid rgba(255,255,255,.10);text-align:center}.stat:last-child{border-right:0}
-.stat strong{font:500 clamp(34px,4vw,52px) "Space Grotesk";letter-spacing:-.06em}.stat span{display:block;color:#71808c;font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-top:7px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid rgba(255,255,255,.10);border-bottom:1px solid rgba(255,255,255,.10)}.stat{padding:32px 20px;border-right:1px solid rgba(255,255,255,.10);text-align:center}.stat:last-child{border-right:0}.stat strong{font:500 clamp(34px,4vw,52px) "Space Grotesk";letter-spacing:-.06em}.stat span{display:block;color:#71808c;font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-top:7px}
 
-/* CARDS */
-.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
-.card{
- position:relative;min-height:320px;padding:27px;border:1px solid rgba(255,255,255,.105);border-radius:28px;
- background:linear-gradient(145deg,rgba(255,255,255,.065),rgba(255,255,255,.025));
- overflow:hidden;transition:.55s var(--ease);
- box-shadow:0 25px 70px rgba(0,0,0,.13),inset 0 1px 0 rgba(255,255,255,.035);
- backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)
-}
-.card:hover{transform:translateY(-10px);border-color:rgba(200,255,69,.23);box-shadow:0 35px 80px rgba(0,0,0,.24),0 0 45px rgba(120,175,210,.05)}
-.card:after{content:"";position:absolute;width:230px;height:230px;right:-130px;top:-130px;background:radial-gradient(circle,rgba(112,170,215,.13),transparent 68%)}
-.icon{
- width:46px;height:46px;border:1px solid rgba(200,255,69,.17);border-radius:15px;
- background:linear-gradient(145deg,rgba(200,255,69,.09),rgba(100,155,200,.05));
- display:grid;place-items:center;color:var(--lime);font:600 17px "Space Grotesk"
-}
-.card h3{font:600 24px "Space Grotesk";letter-spacing:-.04em;margin:35px 0 9px}
-.card p{color:#7f8d98;font-size:13px;line-height:1.7}
-.card-line{position:absolute;left:27px;right:27px;bottom:26px;height:1px;background:rgba(255,255,255,.08)}
-.card-line i{display:block;width:35%;height:1px;background:var(--lime);box-shadow:0 0 10px rgba(200,255,69,.55)}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.card{position:relative;min-height:320px;padding:27px;border:1px solid rgba(255,255,255,.105);border-radius:28px;background:linear-gradient(145deg,rgba(255,255,255,.065),rgba(255,255,255,.025));overflow:hidden;transition:.55s var(--ease);box-shadow:0 25px 70px rgba(0,0,0,.13),inset 0 1px 0 rgba(255,255,255,.035);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.card:hover{transform:translateY(-10px);border-color:rgba(200,255,69,.23);box-shadow:0 35px 80px rgba(0,0,0,.24),0 0 45px rgba(120,175,210,.05)}.card:after{content:"";position:absolute;width:230px;height:230px;right:-130px;top:-130px;background:radial-gradient(circle,rgba(112,170,215,.13),transparent 68%)}
+.icon{width:46px;height:46px;border:1px solid rgba(200,255,69,.17);border-radius:15px;background:linear-gradient(145deg,rgba(200,255,69,.09),rgba(100,155,200,.05));display:grid;place-items:center;color:var(--lime);font:600 17px "Space Grotesk"}
+.card h3{font:600 24px "Space Grotesk";letter-spacing:-.04em;margin:35px 0 9px}.card p{color:#7f8d98;font-size:13px;line-height:1.7}.card-line{position:absolute;left:27px;right:27px;bottom:26px;height:1px;background:rgba(255,255,255,.08)}.card-line i{display:block;width:35%;height:1px;background:var(--lime);box-shadow:0 0 10px rgba(200,255,69,.55)}
 
-/* TRACKING */
-.run-card{
- position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.11);border-radius:32px;
- background:linear-gradient(145deg,#0c1823,#08121b);
- box-shadow:0 40px 100px rgba(0,0,0,.28),0 0 70px rgba(88,143,184,.055);
- backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)
-}
-.run-card-head{
- height:62px;padding:0 22px;border-bottom:1px solid rgba(255,255,255,.09);
- display:flex;align-items:center;color:#667682;font-size:9px;letter-spacing:.17em
-}
-.run-card-head>span{position:absolute;left:50%;transform:translateX(-50%)}
-.run-card-head>b{margin-left:auto;font-weight:500;color:#9baab3;letter-spacing:.08em}
-.run-card-head b i{display:inline-block;width:6px;height:6px;margin-right:7px;border-radius:50%;background:var(--lime);box-shadow:0 0 12px var(--lime);animation:pulse 1.8s infinite}
-.head-dots{display:flex;gap:7px}.head-dots i{width:7px;height:7px;border-radius:50%;background:#2d3b45}
-.run-visual{
- position:relative;height:430px;overflow:hidden;
- background:radial-gradient(circle at 50% 50%,rgba(111,169,211,.15),transparent 28%),radial-gradient(circle at 75% 30%,rgba(200,255,69,.055),transparent 35%),#09141e
-}
-.map-grid{
- position:absolute;inset:-20%;
- background-image:linear-gradient(rgba(180,210,230,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(180,210,230,.045) 1px,transparent 1px);
- background-size:54px 54px;transform:rotate(-5deg);opacity:.65
-}
-.map-grid:after{content:"";position:absolute;inset:0;background:radial-gradient(circle at center,transparent 18%,#09141e 80%)}
-.center-progress{
- position:absolute;z-index:3;left:50%;top:50%;width:292px;height:292px;transform:translate(-50%,-50%) rotate(-90deg);
- border-radius:50%;background:conic-gradient(from 0deg,var(--lime) 0deg,var(--lime) 274deg,rgba(255,255,255,.07) 274deg,rgba(255,255,255,.07) 360deg);
- box-shadow:0 0 30px rgba(200,255,69,.13),0 0 70px rgba(104,166,211,.05);animation:ringBreath 4s ease-in-out infinite
-}
-.center-progress:after{content:"";position:absolute;inset:12px;border-radius:50%;background:radial-gradient(circle,#0b1822,#07111a);box-shadow:inset 0 0 40px rgba(100,165,210,.06)}
-.center-run{position:absolute;z-index:5;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none}
-.running-badge{
- display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border-radius:999px;
- border:1px solid rgba(200,255,69,.16);background:rgba(200,255,69,.055);color:#aab8a1;font-size:8px;letter-spacing:.17em
-}
-.running-badge i{width:5px;height:5px;border-radius:50%;background:var(--lime);box-shadow:0 0 10px var(--lime)}
-.center-run strong{display:block;margin-top:15px;font:500 clamp(62px,8vw,92px)/.9 "Space Grotesk";letter-spacing:-.095em;text-shadow:0 0 45px rgba(255,255,255,.07)}
-.center-run span{display:block;margin-top:9px;color:#65737d;font-size:8px;letter-spacing:.2em}
-.map-label{
- position:absolute;padding:6px 9px;border:1px solid rgba(255,255,255,.08);border-radius:999px;
- background:rgba(7,17,27,.75);backdrop-filter:blur(12px);color:#7b8993;font-size:7px;letter-spacing:.14em;z-index:5
-}
-.label-start{left:18%;bottom:17%}.label-finish{right:19%;top:16%}
-.run-metrics{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid rgba(255,255,255,.09)}
-.run-metric{min-height:150px;padding:25px;border-right:1px solid rgba(255,255,255,.09)}
-.run-metric:last-child{border-right:0}
-.run-metric small{display:block;color:#71808c;font-size:8px;letter-spacing:.14em}
-.run-metric strong{display:block;margin:7px 0 6px;font:500 31px "Space Grotesk";letter-spacing:-.06em}
-.run-metric strong em{font:500 10px "DM Sans";color:#73818b;font-style:normal;letter-spacing:0}
-.run-metric span{display:block;color:var(--lime);font-size:9px}
-.accuracy{height:4px;margin-top:12px;background:#1d2931;border-radius:10px;overflow:hidden}
-.accuracy i{display:block;width:88%;height:100%;background:var(--lime);box-shadow:0 0 10px var(--lime);animation:signal 2.4s ease-in-out infinite}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.step{padding:28px;border-top:1px solid rgba(255,255,255,.09);position:relative}.num{color:var(--lime);font:500 12px "Space Grotesk"}.step h3{font:600 25px "Space Grotesk";margin:28px 0 10px;letter-spacing:-.04em}.step p{color:#7f8d98;font-size:13px;line-height:1.7}
+.cta{padding:50px 0 120px}.cta-box{position:relative;overflow:hidden;text-align:center;padding:90px 25px;border-radius:36px;border:1px solid rgba(200,255,69,.18);background:radial-gradient(ellipse at 50% 0%,rgba(116,173,214,.18),transparent 45%),radial-gradient(ellipse at 50% 100%,rgba(200,255,69,.07),transparent 55%),linear-gradient(145deg,#0d1b27,#08131d);box-shadow:0 35px 90px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.045);pointer-events:none}.cta-box *{pointer-events:none}.cta-box a.btn{pointer-events:auto}.cta-box:before{content:"";position:absolute;width:420px;height:420px;left:50%;top:50%;transform:translate(-50%,-50%);border:1px solid rgba(160,205,235,.08);border-radius:50%;animation:spin 20s linear infinite}.cta h2{position:relative;font:600 clamp(45px,7vw,82px)/.9 "Space Grotesk";letter-spacing:-.08em;text-shadow:0 15px 40px rgba(0,0,0,.25)}.cta p{position:relative;max-width:550px;margin:18px auto 28px;color:#7f8d98;line-height:1.7}
+footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba(4,12,19,.35);display:flex;justify-content:space-between;color:#61717d;font-size:11px}footer strong{color:#d3dadc}
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .9s var(--ease),transform .9s var(--ease)}.reveal.show{opacity:1;transform:none}
+@keyframes pulse{50%{transform:scale(1.35);opacity:.65}}@keyframes glow{50%{transform:translateX(-50%) scale(1.08);opacity:.75}}@keyframes routeDraw{0%,8%{stroke-dashoffset:450}58%,100%{stroke-dashoffset:0}}@keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
 
-/* HOW */
-.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-.step{padding:28px;border-top:1px solid rgba(255,255,255,.09);position:relative}
-.num{color:var(--lime);font:500 12px "Space Grotesk"}
-.step h3{font:600 25px "Space Grotesk";margin:28px 0 10px;letter-spacing:-.04em}
-.step p{color:#7f8d98;font-size:13px;line-height:1.7}
-
-/* CTA */
-.cta{padding:50px 0 120px}
-.cta-box{
- position:relative;overflow:hidden;text-align:center;padding:90px 25px;border-radius:36px;
- border:1px solid rgba(200,255,69,.18);
- background:
-   radial-gradient(ellipse at 50% 0%,rgba(116,173,214,.18),transparent 45%),
-   radial-gradient(ellipse at 50% 100%,rgba(200,255,69,.07),transparent 55%),
-   linear-gradient(145deg,#0d1b27,#08131d);
- box-shadow:0 35px 90px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.045);
- pointer-events:none
-}
-.cta-box *{pointer-events:none}.cta-box a.btn{pointer-events:auto}
-.cta-box:before{
- content:"";position:absolute;width:420px;height:420px;left:50%;top:50%;
- transform:translate(-50%,-50%);border:1px solid rgba(160,205,235,.08);border-radius:50%;animation:spin 20s linear infinite
-}
-.cta h2{position:relative;font:600 clamp(45px,7vw,82px)/.9 "Space Grotesk";letter-spacing:-.08em;text-shadow:0 15px 40px rgba(0,0,0,.25)}
-.cta p{position:relative;max-width:550px;margin:18px auto 28px;color:#7f8d98;line-height:1.7}
-footer{
- padding:28px 0;border-top:1px solid rgba(255,255,255,.08);
- background:rgba(4,12,19,.35);display:flex;justify-content:space-between;color:#61717d;font-size:11px
-}
-footer strong{color:#d3dadc}
-
-/* REVEAL */
-.reveal{opacity:0;transform:translateY(28px);transition:opacity .9s var(--ease),transform .9s var(--ease)}
-.reveal.show{opacity:1;transform:none}
-
-/* ANIMATIONS */
-@keyframes pulse{50%{transform:scale(1.35);opacity:.65}}
-@keyframes glow{50%{transform:translateX(-50%) scale(1.08);opacity:.75}}
-@keyframes routeDraw{0%,8%{stroke-dashoffset:450}58%,100%{stroke-dashoffset:0}}
-@keyframes ringBreath{50%{box-shadow:0 0 38px rgba(200,255,69,.20),0 0 70px rgba(104,166,211,.07);transform:translate(-50%,-50%) rotate(-88deg)}}
-@keyframes signal{50%{width:58%}}
-@keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
-
-/* MOBILE */
 @media(max-width:850px){
- .navlinks{display:none}.nav{height:60px}
- .hero{padding-top:145px;min-height:820px}
- .hero h1{font-size:66px}.hero-copy{font-size:15px}
- .phone-wrap{height:525px}.phone{width:275px;height:525px}
+ .navlinks{display:none}.nav{height:60px}.hero{padding-top:145px;min-height:820px}.hero h1{font-size:66px}.hero-copy{font-size:15px}.phone-wrap{height:525px}.phone{width:275px;height:525px}
  .stats{grid-template-columns:1fr 1fr}.stat:nth-child(2){border-right:0}.stat:nth-child(-n+2){border-bottom:1px solid rgba(255,255,255,.10)}
  .cards,.steps{grid-template-columns:1fr}.section-top{display:block}.section-copy{margin-top:18px}
- .run-metrics{grid-template-columns:1fr 1fr}
- .run-metric:nth-child(2){border-right:0}.run-metric:nth-child(-n+2){border-bottom:1px solid rgba(255,255,255,.09)}
 }
 @media(max-width:700px){
- html,body{overflow-x:hidden;max-width:100%}
- .wrap{width:min(92%,560px);max-width:100%}
- section{overflow:hidden}
- .nav{display:none!important}
- .hero{padding-top:72px!important;padding-bottom:78px!important;min-height:auto}
- .hero-cinematic-bg{
-   opacity:.48;
-   background:
-     linear-gradient(90deg,rgba(7,16,26,.97),rgba(7,16,26,.68)),
-     linear-gradient(180deg,rgba(7,16,26,.12),rgba(7,16,26,.88)),
-     url("https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=1600&q=82") center/cover no-repeat
- }
- .hero h1{font-size:clamp(48px,14vw,62px);max-width:100%}
- .hero-copy{font-size:14px;line-height:1.7;max-width:100%;margin:0 auto 24px}
- .hero-actions{width:100%;margin-top:0;gap:12px}
- .hero-actions .btn{width:100%;box-sizing:border-box}
- .hero-note{margin-top:22px;gap:13px;flex-wrap:wrap}
- .phone-wrap{max-width:100%;overflow:hidden;margin-top:46px;height:485px}
- .phone{width:260px;height:485px;border-radius:43px}
- .big-time{font-size:47px}.live-route{height:160px}
- .section-title{font-size:clamp(38px,11vw,52px);line-height:.94;max-width:100%}
- .section-copy{font-size:13px;line-height:1.65;max-width:100%}
- .cards{display:grid!important;grid-template-columns:1fr!important;width:100%!important;gap:12px}
- .card{width:100%!important;min-width:0!important;min-height:260px;padding:24px!important}
- .card h3{font-size:29px;line-height:1.05;max-width:100%}
- .card p{font-size:13px;line-height:1.65;max-width:100%}
- .run-card{width:100%;max-width:100%;border-radius:24px}
- .run-card-head{height:54px;padding:0 15px}
- .run-card-head>span{display:block;position:static;transform:none;margin:0 auto;font-size:7px;letter-spacing:.12em}
- .run-card-head>b{font-size:7px;white-space:nowrap}
- .head-dots{gap:5px}.head-dots i{width:6px;height:6px}
- .run-visual{height:330px;min-height:330px}
- .center-progress{width:235px;height:235px}
- .center-progress:after{inset:10px}
- .center-run{width:100%}.center-run strong{font-size:54px;letter-spacing:-.085em;margin-top:12px}
- .running-badge{font-size:7px;padding:7px 10px}
- .center-run span{font-size:7px;margin-top:8px}
- .map-label{font-size:6px;padding:5px 7px}
- .label-start{left:10%;bottom:12%}.label-finish{right:9%;top:13%}
- .run-metrics{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;width:100%!important}
- .run-metric{min-width:0!important;min-height:118px;padding:18px 14px!important;border-right:1px solid rgba(255,255,255,.09);border-bottom:1px solid rgba(255,255,255,.09);overflow:hidden}
- .run-metric:nth-child(2n){border-right:0}.run-metric:nth-child(n+3){border-bottom:0}
- .run-metric small{font-size:7px;white-space:nowrap}
- .run-metric strong{font-size:25px;white-space:nowrap;line-height:1}
- .run-metric strong em{font-size:8px}
- .run-metric span{font-size:8px;line-height:1.35;max-width:100%;overflow-wrap:anywhere}
- .accuracy{margin-top:10px;width:100%}
- .stats .stat{padding:25px 10px}.stat strong{font-size:32px}
- section{padding:95px 0}
- .dashboard{border-radius:25px}
- .steps{grid-template-columns:1fr}
- .cta-box{padding:72px 20px}.cta h2{font-size:50px}
- footer{display:block;line-height:2}
+ html,body{overflow-x:hidden;max-width:100%}.wrap{width:min(92%,560px);max-width:100%}section{overflow:hidden}.nav{display:none!important}
+ .hero{padding-top:72px!important;padding-bottom:78px!important;min-height:auto}.hero-cinematic-bg{opacity:.48;background:linear-gradient(90deg,rgba(7,16,26,.97),rgba(7,16,26,.68)),linear-gradient(180deg,rgba(7,16,26,.12),rgba(7,16,26,.88)),url("https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=1600&q=82") center/cover no-repeat}
+ .hero h1{font-size:clamp(48px,14vw,62px);max-width:100%}.hero-copy{font-size:14px;line-height:1.7;max-width:100%;margin:0 auto 24px}.hero-actions{width:100%;margin-top:0;gap:12px}.hero-actions .btn{width:100%;box-sizing:border-box}.hero-note{margin-top:22px;gap:13px;flex-wrap:wrap}
+ .phone-wrap{max-width:100%;overflow:hidden;margin-top:46px;height:485px}.phone{width:260px;height:485px;border-radius:43px}.big-time{font-size:47px}.live-route{height:160px}
+ .section-title{font-size:clamp(38px,11vw,52px);line-height:.94;max-width:100%}.section-copy{font-size:13px;line-height:1.65;max-width:100%}
+ .cards{display:grid!important;grid-template-columns:1fr!important;width:100%!important;gap:12px}.card{width:100%!important;min-width:0!important;min-height:260px;padding:24px!important}.card h3{font-size:29px;line-height:1.05;max-width:100%}.card p{font-size:13px;line-height:1.65;max-width:100%}
+ .stats .stat{padding:25px 10px}.stat strong{font-size:32px}section{padding:95px 0}.steps{grid-template-columns:1fr}.cta-box{padding:72px 20px}.cta h2{font-size:50px}footer{display:block;line-height:2}
+}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+
+/* =========================================================
+   RAFTAAR APP-STYLE GPS SHOWCASE
+   ========================================================= */
+.app-showcase{display:flex;justify-content:center;position:relative;padding:15px 0 20px}
+.app-showcase:before{content:"";position:absolute;width:650px;height:650px;left:50%;top:50%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(111,183,232,.14),rgba(200,255,69,.035) 38%,transparent 70%);filter:blur(25px);pointer-events:none}
+.app-phone{position:relative;width:min(520px,92vw);padding:11px;border:1px solid rgba(255,255,255,.22);border-radius:62px;background:linear-gradient(145deg,#657381,#101923 18%,#02070b 80%,#4a5865);box-shadow:0 55px 120px rgba(0,0,0,.52),0 0 0 2px rgba(255,255,255,.05),inset 0 1px 2px rgba(255,255,255,.35);z-index:2}
+.app-phone:before{content:"";position:absolute;left:-5px;top:155px;width:4px;height:62px;border-radius:4px 0 0 4px;background:#3f4b56;box-shadow:0 80px 0 #3f4b56}
+.app-phone:after{content:"";position:absolute;right:-5px;top:205px;width:4px;height:92px;border-radius:0 4px 4px 0;background:#3f4b56}
+.app-island{position:absolute;z-index:12;left:50%;top:17px;transform:translateX(-50%);width:126px;height:31px;border-radius:22px;background:#000;box-shadow:inset 0 0 0 1px rgba(255,255,255,.025)}
+.app-screen{position:relative;overflow:hidden;border-radius:51px;background:#07131f;min-height:930px;color:#eef4f7}
+
+/* STATUSBAR */
+.app-statusbar{height:52px;padding:17px 24px 0;display:flex;justify-content:space-between;align-items:flex-start;font:600 15px/1 "DM Sans";letter-spacing:.01em;position:relative;z-index:8}
+.app-statusbar b{font-size:12px;margin-left:2px}.app-status-icons{font-weight:500;font-size:14px;opacity:.95;display:flex;align-items:center;gap:6px}
+
+.app-header{display:flex;align-items:flex-start;justify-content:space-between;padding:18px 26px 0;position:relative;z-index:8}
+.app-brand{display:flex;align-items:center;gap:12px}.app-runner{font-size:48px;line-height:.75;color:#baff35;transform:rotate(-22deg);text-shadow:0 0 22px rgba(186,255,53,.22)}
+.app-logo{font:700 31px/1 "Space Grotesk";font-style:italic;letter-spacing:-.06em}.app-tagline{margin-top:5px;color:#9babb9;font:500 16px/1 "DM Sans";font-style:italic}
+.app-header-actions{display:flex;align-items:center;gap:9px}.gps-chip{height:45px;padding:0 16px;border-radius:25px;border:1px solid rgba(115,171,213,.2);background:rgba(6,20,31,.78);backdrop-filter:blur(15px);display:flex;align-items:center;gap:8px;font-size:14px;white-space:nowrap;transition:0.3s}.gps-chip i{width:9px;height:9px;border-radius:50%;background:#aaff35;box-shadow:0 0 14px #aaff35}
+.gps-chip.connecting i{background:#ffc83b;box-shadow:0 0 12px #ffc83b}
+.gps-chip.error i{background:#ff4b4b;box-shadow:0 0 12px #ff4b4b}
+.icon-btn{width:45px;height:45px;border-radius:50%;border:1px solid rgba(126,169,203,.2);background:rgba(7,20,31,.72);color:#e8eff4;font-size:23px;cursor:pointer}
+.app-info-row{display:grid;grid-template-columns:1.45fr .7fr;gap:12px;padding:33px 18px 0;position:relative;z-index:8}
+.gps-banner,.distance-chip{border:1px solid rgba(130,178,211,.19);background:linear-gradient(145deg,rgba(25,50,69,.84),rgba(8,22,34,.84));box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 15px 35px rgba(0,0,0,.18);backdrop-filter:blur(18px)}
+.gps-banner{min-height:83px;border-radius:28px;padding:13px 13px;display:flex;align-items:center;gap:13px}.round-icon{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-size:23px}.green-icon{background:radial-gradient(circle at 35% 30%,#baff35,#39a90e);color:#07120a;box-shadow:0 0 22px rgba(151,255,53,.18)}
+.gps-banner strong{display:block;font-size:17px}.gps-banner span{display:block;color:#9eb0bf;font-size:12px;margin-top:4px}.chevron{margin-left:auto;font-size:30px;font-weight:300;color:#8ea5b7}
+.distance-chip{border-radius:24px;padding:15px 13px;display:flex;flex-direction:column;justify-content:center}.distance-chip strong{font-size:16px;white-space:nowrap}.distance-chip strong span:first-child{font-size:21px}.distance-chip small{margin-top:4px;color:#9aaab7;font-size:11px}
+
+
+/* APP VIEWS SWITCHING */
+.app-views-container { position: relative; min-height: 676px; }
+.app-view { display: none; }
+.app-view.active-view { display: block; animation: viewFadeIn 0.3s ease; }
+@keyframes viewFadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+/* RUN VIEW (Main) */
+.app-run-stage{height:505px;margin-top:-2px;position:relative;overflow:hidden;background:#0a1722}
+.mountain-bg{position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,20,31,.08),rgba(6,13,20,.18) 45%,rgba(4,10,16,.74) 100%),url("https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=1200&q=86") center/cover no-repeat;filter:saturate(.82) contrast(1.08);transform:scale(1.04)}
+.runner-silhouette{position:absolute;right:13%;bottom:18%;width:58px;height:135px;z-index:3;opacity:.86;background:linear-gradient(150deg,transparent 0 20%,#06090c 21% 66%,transparent 67%);filter:drop-shadow(0 12px 12px rgba(0,0,0,.6));border-radius:45% 45% 30% 30%}
+.run-stage-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(4,12,19,.10),rgba(4,10,15,.18) 35%,rgba(4,8,12,.65) 100%);z-index:2}
+.app-run-center{position:absolute;z-index:6;left:50%;top:42%;transform:translate(-50%,-50%);text-align:center;width:100%;pointer-events:none}
+.app-running-label{display:inline-flex;align-items:center;gap:9px;color:#f0e7b2;font:600 12px "Space Grotesk";letter-spacing:.42em}
+.app-running-label i{width:7px;height:7px;border-radius:50%;background:#c8ff45;box-shadow:0 0 13px #c8ff45}
+.app-running-label.active i{animation:pulse 1s infinite}
+#timer{display:block;margin-top:23px;font:600 82px/.9 "Space Grotesk";letter-spacing:-.08em;text-shadow:0 10px 40px rgba(0,0,0,.45);font-variant-numeric:tabular-nums}
+.app-elapsed{display:block;margin-top:13px;color:#b1bdc6;font:500 12px "DM Sans";letter-spacing:.30em}
+.app-route-svg{position:absolute;z-index:4;inset:20px 15px;width:calc(100% - 30px);height:calc(100% - 40px);pointer-events:none;opacity:.65}
+.app-route-svg polyline{fill:none;stroke:#baff35;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 8px rgba(186,255,53,.6))}
+
+/* CONTROLS */
+.app-controls{position:absolute;z-index:9;bottom:31px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:45px}
+.circle-control{width:74px;height:74px;border-radius:50%;border:1px solid rgba(144,177,202,.24);background:rgba(5,18,29,.75);backdrop-filter:blur(18px);color:#91a4b6;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);transition:.25s ease}
+.circle-control:not(:disabled):hover{transform:scale(1.05);color:#fff}
+.circle-control small{font:600 11px "DM Sans";margin-top:4px}.control-symbol{font-size:16px;line-height:1}
+.circle-control:disabled{opacity:.38;cursor:not-allowed}
+.main-control{width:105px;height:105px;border-radius:50%;border:7px solid rgba(200,255,69,.22);outline:2px solid rgba(200,255,69,.35);background:linear-gradient(145deg,#caff43,#9cf020);color:#081208;font-size:32px;display:grid;place-items:center;cursor:pointer;box-shadow:0 0 35px rgba(178,255,50,.24),inset 0 2px 0 rgba(255,255,255,.55);transition:.2s var(--ease)}
+.main-control:hover{transform:scale(1.04);box-shadow:0 0 45px rgba(178,255,50,.35)}
+.main-control:active{transform:scale(.95)}
+.main-control.running{background:linear-gradient(145deg,#ffdf5d,#f0a618);outline-color:rgba(255,210,80,.4);box-shadow:0 0 35px rgba(255,180,50,.28)}
+
+.app-metrics{position:relative;z-index:8;display:grid;grid-template-columns:1fr 1fr;gap:11px;padding:16px 16px 13px;background:#07131f}
+.app-metric{min-height:160px;padding:17px 18px;border-radius:25px;border:1px solid rgba(123,167,201,.17);background:linear-gradient(145deg,rgba(21,42,58,.86),rgba(7,20,31,.93));box-shadow:inset 0 1px 0 rgba(255,255,255,.045),0 12px 28px rgba(0,0,0,.18)}
+.metric-top{display:flex;align-items:center;gap:11px}.metric-top small{color:#9eb0bf;font:600 11px "DM Sans";letter-spacing:.10em}.metric-icon{width:39px;height:39px;border-radius:50%;display:grid;place-items:center;font-size:19px}.metric-green .metric-icon{background:linear-gradient(145deg,#b8ff37,#49aa14);color:#07100a;box-shadow:0 0 18px rgba(151,255,53,.16)}.metric-blue .metric-icon{background:linear-gradient(145deg,#2bd9ff,#0879df);color:#dff8ff;box-shadow:0 0 18px rgba(26,175,255,.16)}.metric-purple .metric-icon{background:linear-gradient(145deg,#9a45ff,#4d1ac8);color:#fff;box-shadow:0 0 18px rgba(133,61,255,.16)}.metric-orange .metric-icon{background:linear-gradient(145deg,#ffbd36,#bd5e00);color:#fff;box-shadow:0 0 18px rgba(255,153,24,.15)}
+.app-metric strong{display:block;margin:14px 0 9px;font:600 28px/1 "Space Grotesk";letter-spacing:-.055em;font-variant-numeric:tabular-nums}.app-metric strong em{font:500 12px "DM Sans";color:#91a5b4;font-style:normal;letter-spacing:0}
+.metric-note{display:block;color:#9aa9b6;font-size:11px}.metric-note i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;background:#7e9fff;box-shadow:0 0 7px rgba(126,159,255,.45)}.metric-green .metric-note i{background:#aaff35}.accuracy{height:3px;width:100%;margin-top:9px;border-radius:99px;background:#182a35;overflow:hidden}.accuracy i{display:block;height:100%;width:0;border-radius:99px;background:#c8ff45;box-shadow:0 0 9px #c8ff45;transition:width .4s ease}
+
+/* DUMMY VIEWS (History, Map, Profile) */
+.dummy-view-content { padding: 50px 25px; text-align: center; color: #8294a8; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;}
+.dummy-view-content .huge-icon { font-size: 60px; color: rgba(200,255,69,0.3); margin-bottom: 20px;}
+.dummy-view-content h3 { color: #fff; font: 600 28px "Space Grotesk"; margin-bottom: 12px; }
+.dummy-view-content p { font-size: 15px; line-height: 1.6; max-width: 80%; margin:0 auto;}
+
+/* SETTINGS MODAL */
+.settings-modal-overlay { position: absolute; inset: 0; background: rgba(4,10,16,0.85); z-index: 100; display: none; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
+.settings-modal-overlay.active { display: flex; animation: viewFadeIn 0.25s ease; }
+.settings-modal { background: #0c1823; border: 1px solid rgba(255,255,255,0.1); padding: 30px; border-radius: 32px; width: 85%; color: #fff; box-shadow: 0 30px 60px rgba(0,0,0,0.5); }
+.settings-modal h3 { font: 600 24px "Space Grotesk"; margin-bottom: 25px; text-align: center;}
+.setting-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-size: 16px; color: #9aa9b5;}
+.setting-item input[type="checkbox"] { width: 22px; height: 22px; accent-color: var(--lime); cursor: pointer; }
+
+/* BOTTOM NAVIGATION */
+.app-bottom-nav{height:84px;padding:9px 16px 14px;display:grid;grid-template-columns:repeat(4,1fr);background:rgba(5,16,26,.97);border-top:1px solid rgba(255,255,255,.07);position:relative;z-index:9}
+.app-bottom-nav .nav-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#8294a8;font-size:22px;position:relative;background:none;border:none;cursor:pointer;outline:none;transition:color .25s ease}
+.app-bottom-nav .nav-item small{font:500 12px "DM Sans";letter-spacing:.02em}
+.app-bottom-nav .nav-item.active{color:#baff35}
+.app-bottom-nav .nav-item.active:after{content:"";position:absolute;bottom:0;width:42px;height:4px;border-radius:99px;background:#baff35;box-shadow:0 0 11px rgba(186,255,53,.5)}
+
+.app-phone.locked .app-screen:after{content:"";position:absolute;inset:0;background:rgba(0,0,0,.22);z-index:20;pointer-events:none}
+.app-phone.locked .lock-control{color:#c8ff45;border-color:rgba(200,255,69,.45)}
+
+@media(max-width:700px){
+ .tracking-clean{padding-top:82px}.tracking-clean .section-top{margin-bottom:26px}
+ .app-showcase{padding:0}.app-phone{width:min(430px,96vw);padding:7px;border-radius:48px}.app-screen{border-radius:41px;min-height:775px}.app-island{top:12px;width:102px;height:25px}
+ .app-statusbar{height:42px;padding:13px 19px 0;font-size:13px}.app-status-icons{font-size:12px}.app-header{padding:15px 18px 0}.app-runner{font-size:38px}.app-logo{font-size:25px}.app-tagline{font-size:13px}
+ .gps-chip{height:36px;padding:0 11px;font-size:11px}.icon-btn{width:36px;height:36px;font-size:18px}.app-info-row{gap:8px;padding:25px 11px 0}.gps-banner{min-height:68px;border-radius:22px;padding:10px}
+ .round-icon{width:39px;height:39px;font-size:18px}.gps-banner strong{font-size:13px}.gps-banner span{font-size:9px}.chevron{font-size:23px}.distance-chip{border-radius:19px;padding:10px 9px}.distance-chip strong{font-size:12px}.distance-chip small{font-size:8px}
+ .app-views-container { min-height: 541px; }
+ .app-run-stage{height:405px}.app-run-center{top:43%}#timer{font-size:61px;margin-top:18px}.app-running-label{font-size:9px;letter-spacing:.32em}.app-elapsed{font-size:8px;margin-top:10px}
+ .app-controls{bottom:20px;gap:24px}.circle-control{width:60px;height:60px}.circle-control small{font-size:8px}.main-control{width:82px;height:82px;border-width:6px;font-size:24px}
+ .app-metrics{gap:8px;padding:11px 10px 10px}.app-metric{min-height:126px;padding:13px 12px;border-radius:19px}.metric-icon{width:31px;height:31px;font-size:15px}.metric-top{gap:8px}.metric-top small{font-size:8px}.app-metric strong{font-size:22px;margin:11px 0 7px}.app-metric strong em{font-size:9px}.metric-note{font-size:8px}.metric-note i{width:5px;height:5px}
+ .app-bottom-nav{height:67px;padding:6px 10px 10px}.app-bottom-nav .nav-item{font-size:18px;gap:4px}.app-bottom-nav .nav-item small{font-size:9px}
+ .dummy-view-content h3{font-size:24px}
 }
 @media(max-width:380px){
- .wrap{width:90%}.section-title{font-size:37px}
- .run-visual{height:300px;min-height:300px}.center-progress{width:210px;height:210px}
- .center-run strong{font-size:48px}
- .run-metric{padding:16px 12px!important;min-height:112px}
- .run-metric strong{font-size:22px}
-}
-@media(prefers-reduced-motion:reduce){
- *,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+ .app-phone{width:98vw;padding:5px;border-radius:40px}.app-screen{border-radius:35px}.app-header-actions .gps-chip{display:none}.app-info-row{grid-template-columns:1.35fr .65fr}
+ .app-views-container { min-height: 498px; }
+ .app-run-stage{height:370px}
+ .app-controls{gap:16px}.circle-control{width:52px;height:52px}.main-control{width:72px;height:72px}.app-metric{min-height:118px;padding:11px}.app-metric strong{font-size:20px}
 }
 </style>
 </head>
@@ -406,71 +241,38 @@ footer strong{color:#d3dadc}
   <div class="hero-cinematic-bg"></div>
   <div class="hero-glow"></div>
   <div class="hero-grid"></div>
-
   <div class="wrap hero-inner">
     <div class="pill reveal"><b></b> Free GPS run & distance tracker</div>
-
-    <h1 class="reveal">
-      Run with <span class="green">purpose.</span><br>
-      Move faster.
-    </h1>
-
-    <p class="hero-copy reveal">
-      Raftaar turns every run into a focused experience. Track your route,
-      distance, pace and progress — beautifully, privately and without clutter.
-    </p>
-
+    <h1 class="reveal">Run with <span class="green">purpose.</span><br>Move faster.</h1>
+    <p class="hero-copy reveal">Raftaar turns every run into a focused experience. Track your route, distance, pace and progress — beautifully, privately and without clutter.</p>
     <div class="hero-actions reveal">
       <a href="#download" class="btn btn-main">Download APK ↓</a>
       <a href="#features" class="btn btn-dark">Explore features →</a>
     </div>
-
-    <div class="hero-note reveal">
-      <span>✓ <strong>100% Free</strong></span>
-      <span>✓ <strong>GPS Powered</strong></span>
-      <span>✓ <strong>No Clutter</strong></span>
-    </div>
+    <div class="hero-note reveal"><span>✓ <strong>100% Free</strong></span><span>✓ <strong>GPS Powered</strong></span><span>✓ <strong>No Clutter</strong></span></div>
 
     <div class="phone-wrap reveal">
       <div class="phone-shadow"></div>
-
       <div class="phone">
         <div class="dynamic"></div>
-
         <div class="screen">
-          <div class="screen-top">
-            <span>RAFTAAR</span>
-            <span>GPS LIVE</span>
-          </div>
-
+          <div class="screen-top"><span>RAFTAAR</span><span>GPS LIVE</span></div>
           <div class="screen-title">CURRENT RUN</div>
           <div class="big-time">38:42</div>
-
           <div class="live-route">
             <svg class="route-svg" viewBox="0 0 250 150">
-              <path class="route-base"
-                d="M15 115 C45 90 42 40 83 48 C125 57 102 122 145 105 C185 89 164 28 215 42 C230 46 232 67 238 78"/>
-              <path id="phoneRoute" class="route-line"
-                d="M15 115 C45 90 42 40 83 48 C125 57 102 122 145 105 C185 89 164 28 215 42 C230 46 232 67 238 78"/>
-              <circle class="route-dot" r="4">
-                <animateMotion dur="4.2s" repeatCount="indefinite">
-                  <mpath href="#phoneRoute"/>
-                </animateMotion>
-              </circle>
+              <path class="route-base" d="M15 115 C45 90 42 40 83 48 C125 57 102 122 145 105 C185 89 164 28 215 42 C230 46 232 67 238 78"/>
+              <path id="phoneRoute" class="route-line" d="M15 115 C45 90 42 40 83 48 C125 57 102 122 145 105 C185 89 164 28 215 42 C230 46 232 67 238 78"/>
+              <circle class="route-dot" r="4"><animateMotion dur="4.2s" repeatCount="indefinite"><mpath href="#phoneRoute"/></animateMotion></circle>
             </svg>
           </div>
-
           <div class="phone-metrics">
             <div class="pmetric"><small>DISTANCE</small><strong>7.42</strong><span>KM</span></div>
             <div class="pmetric"><small>PACE</small><strong>5:18</strong><span>/ KM</span></div>
             <div class="pmetric"><small>SPEED</small><strong>12.6</strong><span>KM/H</span></div>
             <div class="pmetric"><small>AVG SPEED</small><strong>10.9</strong><span>KM/H</span></div>
           </div>
-
-          <div class="gps-line">
-            <span>GPS accuracy</span>
-            <span class="gps-live"><i></i>4.2 m</span>
-          </div>
+          <div class="gps-line"><span>GPS accuracy</span><span class="gps-live"><i></i>4.2 m</span></div>
         </div>
       </div>
     </div>
@@ -479,130 +281,187 @@ footer strong{color:#d3dadc}
 
 <section id="features">
   <div class="wrap">
-
     <div class="section-top reveal">
-      <div>
-        <div class="kicker">Built for movement</div>
-        <h2 class="section-title">
-          Everything you need.<br>
-          <span>Nothing you don't.</span>
-        </h2>
-      </div>
-
-      <p class="section-copy">
-        Fast, minimal and focused. The important numbers stay visible while
-        the rest stays out of your way.
-      </p>
+      <div><div class="kicker">Built for movement</div><h2 class="section-title">Everything you need.<br><span>Nothing you don't.</span></h2></div>
+      <p class="section-copy">Fast, minimal and focused. The important numbers stay visible while the rest stays out of your way.</p>
     </div>
-
     <div class="cards">
-
-      <article class="card reveal">
-        <div class="icon">GPS</div>
-        <h3>Accurate tracking</h3>
-        <p>
-          Follow your real route with live GPS updates, distance and location
-          precision built for outdoor runs.
-        </p>
-        <div class="card-line"><i></i></div>
-      </article>
-
-      <article class="card reveal">
-        <div class="icon">↗</div>
-        <h3>Speedometer</h3>
-        <p>
-          See current speed, average speed and pace at a glance without
-          digging through complicated screens.
-        </p>
-        <div class="card-line"><i></i></div>
-      </article>
-
-      <article class="card reveal">
-        <div class="icon">◷</div>
-        <h3>Live timer</h3>
-        <p>
-          A clean run timer keeps your session focused while your metrics
-          update smoothly in real time.
-        </p>
-        <div class="card-line"><i></i></div>
-      </article>
-
+      <article class="card reveal"><div class="icon">GPS</div><h3>Accurate tracking</h3><p>Follow your real route with live GPS updates, distance and location precision built for outdoor runs.</p><div class="card-line"><i></i></div></article>
+      <article class="card reveal"><div class="icon">↗</div><h3>Speedometer</h3><p>See current speed, average speed and pace at a glance without digging through complicated screens.</p><div class="card-line"><i></i></div></article>
+      <article class="card reveal"><div class="icon">◷</div><h3>Live timer</h3><p>A clean run timer keeps your session focused while your metrics update smoothly in real time.</p><div class="card-line"><i></i></div></article>
     </div>
   </div>
 </section>
 
 <section id="tracking" class="tracking-clean">
   <div class="wrap">
-
     <div class="section-top reveal">
       <div>
-        <div class="kicker">Your run, visualized</div>
-        <h2 class="section-title">
-          A calmer way<br>
-          <span>to see your run.</span>
-        </h2>
+        <div class="kicker">LIVE GPS TRACKING</div>
+        <h2 class="section-title">Your run.<br><span>Real data. Real time.</span></h2>
       </div>
-
-      <p class="section-copy">
-        One focused live view. Your route stays central, while the important
-        numbers stay clean and readable.
-      </p>
+      <p class="section-copy">A focused mobile experience with live GPS, route, timer, pace, speed and accuracy — exactly where you need it.</p>
     </div>
 
-    <div class="run-card reveal">
+    <div class="app-showcase reveal">
+      <div class="app-phone">
+        <div class="app-island"></div>
+        <div class="app-screen">
+          
+          <!-- SETTINGS MODAL -->
+          <div id="settingsModal" class="settings-modal-overlay">
+            <div class="settings-modal">
+              <h3>App Settings</h3>
+              <div class="setting-item"><span>Voice Feedback</span> <input type="checkbox" checked></div>
+              <div class="setting-item"><span>Auto-Pause Run</span> <input type="checkbox"></div>
+              <div class="setting-item"><span>Dark Mode UI</span> <input type="checkbox" checked disabled></div>
+              <div class="setting-item"><span>High Accuracy GPS</span> <input type="checkbox" checked></div>
+              <button onclick="closeSettings()" class="btn btn-dark" style="margin-top:20px; width:100%; justify-content:center;">Close</button>
+            </div>
+          </div>
 
-      <div class="run-card-head">
-        <div class="head-dots">
-          <i></i><i></i><i></i>
+          <!-- STATUS BAR -->
+          <div class="app-statusbar">
+            <span id="liveClock">--:-- <b>⌁</b></span>
+            <span class="app-status-icons">
+              ●●● &nbsp;5G&nbsp; <b id="liveBattery">100%</b>
+            </span>
+          </div>
+
+          <!-- APP HEADER -->
+          <div class="app-header">
+            <div class="app-brand">
+              <div class="app-runner">➜</div>
+              <div>
+                <div class="app-logo">Raftaar</div>
+                <div class="app-tagline">Run, Your Way.</div>
+              </div>
+            </div>
+            <div class="app-header-actions">
+              <div id="gpsStatus" class="gps-chip"><i></i> GPS Live</div>
+              <button class="icon-btn" type="button" aria-label="Settings" onclick="openSettings()">⚙</button>
+            </div>
+          </div>
+
+          <!-- INFO ROW -->
+          <div class="app-info-row">
+            <div class="gps-banner">
+              <div class="round-icon green-icon">●</div>
+              <div>
+                <strong id="bannerTitle">GPS Standby</strong>
+                <span id="bannerSubtitle">Tap start to begin run</span>
+              </div>
+              <b class="chevron">›</b>
+            </div>
+            <div class="distance-chip">
+              <strong><span>⌖</span> <span id="routeDistanceLabel">0.00 KM</span></strong>
+              <small>Total Distance</small>
+            </div>
+          </div>
+
+          <!-- VIEWS CONTAINER (Switches based on bottom nav) -->
+          <div class="app-views-container">
+            
+            <!-- 1. RUN VIEW (Active by default) -->
+            <div id="view-run" class="app-view active-view">
+              <div class="app-run-stage">
+                <div class="mountain-bg"></div>
+                <div class="runner-silhouette"></div>
+                <div class="run-stage-overlay"></div>
+
+                <div class="app-run-center">
+                  <div id="runningBadge" class="app-running-label"><i></i><span id="runState">READY</span></div>
+                  <strong id="timer">00:00</strong>
+                  <span class="app-elapsed">ELAPSED TIME</span>
+                </div>
+
+                <svg class="app-route-svg" viewBox="0 0 600 330" preserveAspectRatio="none" aria-hidden="true">
+                  <polyline id="liveRoute" points=""></polyline>
+                </svg>
+
+                <div class="app-controls">
+                  <button id="stopRun" class="circle-control" disabled type="button" title="Stop run">
+                    <span class="control-symbol">■</span><small>STOP</small>
+                  </button>
+                  <button id="startRun" class="main-control" type="button" aria-label="Start, pause or resume run">
+                    <span id="startIcon">▶</span>
+                  </button>
+                  <button id="lockRun" class="circle-control lock-control" type="button" title="Lock controls">
+                    <span class="control-symbol">⌑</span><small>LOCK</small>
+                  </button>
+                </div>
+              </div>
+
+              <div class="app-metrics">
+                <div class="app-metric metric-green">
+                  <div class="metric-top"><div class="metric-icon">●</div><small>DISTANCE</small></div>
+                  <strong><span id="distance">0.00</span> <em>km</em></strong>
+                  <span id="distanceStatus" class="metric-note"><i></i> Finding GPS...</span>
+                </div>
+                <div class="app-metric metric-blue">
+                  <div class="metric-top"><div class="metric-icon">⌁</div><small>LIVE PACE</small></div>
+                  <strong><span id="pace">--:--</span> <em>/km</em></strong>
+                  <span id="paceStatus" class="metric-note"><i></i> Calculating...</span>
+                </div>
+                <div class="app-metric metric-purple">
+                  <div class="metric-top"><div class="metric-icon">ϟ</div><small>LIVE SPEED</small></div>
+                  <strong><span id="speed">0.0</span> <em>km/h</em></strong>
+                  <span id="speedStatus" class="metric-note"><i></i> Waiting for GPS...</span>
+                </div>
+                <div class="app-metric metric-orange">
+                  <div class="metric-top"><div class="metric-icon">◎</div><small>GPS ACCURACY</small></div>
+                  <strong><span id="accuracyText">--</span> <em>m</em></strong>
+                  <span id="accuracyStatus" class="metric-note"><i></i> Outdoor movement required</span>
+                  <div class="accuracy"><i id="accuracyBar"></i></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. HISTORY VIEW -->
+            <div id="view-history" class="app-view">
+              <div class="dummy-view-content">
+                <div class="huge-icon">◷</div>
+                <h3>Run History</h3>
+                <p>Your past runs and recorded statistics will appear here once you complete a session.</p>
+              </div>
+            </div>
+
+            <!-- 3. MAP VIEW -->
+            <div id="view-map" class="app-view">
+              <div class="dummy-view-content">
+                <div class="huge-icon">⌑</div>
+                <h3>Route Map</h3>
+                <p>Full screen GPS map view to explore your running routes and saved trails.</p>
+              </div>
+            </div>
+
+            <!-- 4. PROFILE VIEW -->
+            <div id="view-profile" class="app-view">
+              <div class="dummy-view-content">
+                <div class="huge-icon">♙</div>
+                <h3>Your Profile</h3>
+                <p>Track your all-time records, personal bests, and manage your account settings.</p>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- BOTTOM NAV -->
+          <div class="app-bottom-nav">
+            <button class="nav-item active" type="button" data-tab="run">
+              <span>♟</span><small>Run</small>
+            </button>
+            <button class="nav-item" type="button" data-tab="history">
+              <span>◷</span><small>History</small>
+            </button>
+            <button class="nav-item" type="button" data-tab="map">
+              <span>⌑</span><small>Map</small>
+            </button>
+            <button class="nav-item" type="button" data-tab="profile">
+              <span>♙</span><small>Profile</small>
+            </button>
+          </div>
         </div>
-        <span>RAFTAAR / LIVE SESSION</span>
-        <b><i></i> GPS LIVE</b>
-      </div>
-
-      <div class="run-visual">
-
-        <div class="map-grid"></div>
-
-        <div class="center-progress" aria-hidden="true"></div>
-
-        <div class="center-run">
-          <div class="running-badge"><i></i> RUNNING</div>
-          <strong>38:42</strong>
-          <span>CURRENT SESSION</span>
-        </div>
-
-        <div class="map-label label-start">START</div>
-        <div class="map-label label-finish">7.42 KM</div>
-
-      </div>
-
-      <div class="run-metrics">
-
-        <div class="run-metric">
-          <small>DISTANCE</small>
-          <strong>7.42 <em>km</em></strong>
-          <span>↑ 12.8% this week</span>
-        </div>
-
-        <div class="run-metric">
-          <small>LIVE PACE</small>
-          <strong>5:18 <em>/km</em></strong>
-          <span>Steady pace</span>
-        </div>
-
-        <div class="run-metric">
-          <small>TOP SPEED</small>
-          <strong>16.8 <em>km/h</em></strong>
-          <span>Personal pace insight</span>
-        </div>
-
-        <div class="run-metric">
-          <small>GPS ACCURACY</small>
-          <strong>4.2 <em>m</em></strong>
-          <span>High precision signal</span>
-          <div class="accuracy"><i></i></div>
-        </div>
-
       </div>
     </div>
   </div>
@@ -610,76 +469,26 @@ footer strong{color:#d3dadc}
 
 <section id="how">
   <div class="wrap">
-
     <div class="section-top reveal">
-      <div>
-        <div class="kicker">Simple by design</div>
-        <h2 class="section-title">
-          Start running.<br>
-          <span>That's it.</span>
-        </h2>
-      </div>
-
-      <p class="section-copy">
-        No accounts. No clutter. No learning curve. Open Raftaar and get moving.
-      </p>
+      <div><div class="kicker">Simple by design</div><h2 class="section-title">Start running.<br><span>That's it.</span></h2></div>
+      <p class="section-copy">No accounts. No clutter. No learning curve. Open Raftaar and get moving.</p>
     </div>
-
     <div class="steps">
-
-      <div class="step reveal">
-        <div class="num">01 / OPEN</div>
-        <h3>Launch Raftaar</h3>
-        <p>
-          Open the app and start a new run in seconds. The interface keeps
-          the action obvious.
-        </p>
-      </div>
-
-      <div class="step reveal">
-        <div class="num">02 / MOVE</div>
-        <h3>Run naturally</h3>
-        <p>
-          GPS quietly records your route, distance, speed, pace and elapsed
-          time as you move.
-        </p>
-      </div>
-
-      <div class="step reveal">
-        <div class="num">03 / IMPROVE</div>
-        <h3>Know your numbers</h3>
-        <p>
-          Finish with a clean snapshot of your run and use the numbers to
-          move better next time.
-        </p>
-      </div>
-
+      <div class="step reveal"><div class="num">01 / OPEN</div><h3>Launch Raftaar</h3><p>Open the app and start a new run in seconds. The interface keeps the action obvious.</p></div>
+      <div class="step reveal"><div class="num">02 / MOVE</div><h3>Run naturally</h3><p>GPS quietly records your route, distance, speed, pace and elapsed time as you move.</p></div>
+      <div class="step reveal"><div class="num">03 / IMPROVE</div><h3>Know your numbers</h3><p>Finish with a clean snapshot of your run and use the numbers to move better next time.</p></div>
     </div>
   </div>
 </section>
 
 <section class="cta" id="download">
   <div class="wrap">
-
     <div class="cta-box reveal">
       <div class="kicker">Ready when you are</div>
-
-      <h2>
-        Run your way.<br>
-        <span class="green">Raftaar.</span>
-      </h2>
-
-      <p>
-        Download the free Android APK and turn your next run into a cleaner,
-        smarter experience.
-      </p>
-
-      <a class="btn btn-main"
-         href="https://github.com/RUNNERSPRO/RUNNERS/releases/download/v1.0.0/Raftaar.apk">
-        Download APK ↓
-      </a>
+      <h2>Run your way.<br><span class="green">Raftaar.</span></h2>
+      <p>Download the free Android APK and turn your next run into a cleaner, smarter experience.</p>
+      <a class="btn btn-main" href="https://github.com/RUNNERSPRO/RUNNERS/releases/download/v1.0.0/Raftaar.apk">Download APK ↓</a>
     </div>
-
   </div>
 </section>
 
@@ -687,59 +496,401 @@ footer strong{color:#d3dadc}
 
 <footer>
   <div class="wrap" style="display:flex;justify-content:space-between;width:90%">
-    <span>© 2026 <strong>Raftaar</strong></span>
-    <span>Free GPS Run & Distance Tracker</span>
+    <span>© 2026 <strong>Raftaar</strong></span><span>Free GPS Run & Distance Tracker</span>
   </div>
 </footer>
 
 <script>
-const observer = new IntersectionObserver((entries)=>{
-  entries.forEach((entry)=>{
-    if(entry.isIntersecting){
-      entry.target.classList.add('show');
-      observer.unobserve(entry.target);
-    }
-  });
+/* 1. SETTINGS MODAL LOGIC */
+function openSettings() {
+  document.getElementById('settingsModal').classList.add('active');
+}
+function closeSettings() {
+  document.getElementById('settingsModal').classList.remove('active');
+}
+
+/* 2. INTERSECTION OBSERVER & 3D TILT */
+const observer=new IntersectionObserver((entries)=>{
+ entries.forEach(entry=>{
+  if(entry.isIntersecting){entry.target.classList.add('show');observer.unobserve(entry.target)}
+ });
 },{threshold:.12});
-
 document.querySelectorAll('.reveal').forEach((el,i)=>{
-  el.style.transitionDelay = Math.min(i*35,280)+'ms';
-  observer.observe(el);
+ el.style.transitionDelay=Math.min(i*35,280)+'ms';observer.observe(el);
 });
 
-const phone = document.querySelector('.phone');
-
+const phone=document.querySelector('.phone');
 document.addEventListener('pointermove',(e)=>{
-  if(!phone || window.innerWidth < 900) return;
-
-  const x=(e.clientX/window.innerWidth-.5);
-  const y=(e.clientY/window.innerHeight-.5);
-
-  phone.style.transform=
-    `translateX(-50%) rotateX(${3-y*7}deg) rotateY(${-8+x*10}deg)`;
+ if(!phone||window.innerWidth<900)return;
+ const x=e.clientX/window.innerWidth-.5,y=e.clientY/window.innerHeight-.5;
+ phone.style.transform=`translateX(-50%) rotateX(${3-y*7}deg) rotateY(${-8+x*10}deg)`;
 });
-
 document.addEventListener('pointerleave',()=>{
-  if(phone){
-    phone.style.transform=
-      'translateX(-50%) rotateX(3deg) rotateY(-8deg)';
-  }
+ if(phone)phone.style.transform='translateX(-50%) rotateX(3deg) rotateY(-8deg)';
+});
+document.querySelectorAll('a[href^="#"]').forEach(a=>{
+ a.addEventListener('click',e=>{
+  const target=document.querySelector(a.getAttribute('href'));
+  if(target){e.preventDefault();target.scrollIntoView({behavior:'smooth',block:'start'})}
+ });
 });
 
-document.querySelectorAll('a[href^="#"]').forEach(a=>{
-  a.addEventListener('click',e=>{
-    const target=document.querySelector(a.getAttribute('href'));
+/* 3. REAL-TIME CLOCK & BATTERY UPDATER */
+function updateStatusBar() {
+  const clockEl = document.getElementById('liveClock');
+  const batteryEl = document.getElementById('liveBattery');
 
-    if(target){
-      e.preventDefault();
-      target.scrollIntoView({
-        behavior:'smooth',
-        block:'start'
-      });
+  const now = new Date();
+  let hours = now.getHours();
+  let mins = now.getMinutes();
+  hours = hours % 12 || 12;
+  mins = mins < 10 ? '0' + mins : mins;
+  if(clockEl) clockEl.innerHTML = `${hours}:${mins} <b>⌁</b>`;
+
+  if (navigator.getBattery) {
+    navigator.getBattery().then(battery => {
+      if(batteryEl) {
+        batteryEl.textContent = Math.round(battery.level * 100) + '%';
+      }
+    }).catch(()=>{});
+  }
+}
+setInterval(updateStatusBar, 1000);
+updateStatusBar();
+
+/* 4. GPS TRACKING LOGIC */
+let watchId=null;
+let timerInterval=null;
+let isRunning=false;
+let isPaused=false;
+let startTime=null;
+let accumulatedTime=0;
+let elapsedSeconds=0;
+let totalDistance=0;
+let lastPosition=null;
+let routePoints=[];
+
+const startBtn=document.getElementById('startRun');
+const stopBtn=document.getElementById('stopRun');
+const lockBtn=document.getElementById('lockRun');
+const startIcon=document.getElementById('startIcon');
+const timerEl=document.getElementById('timer');
+const distanceEl=document.getElementById('distance');
+const speedEl=document.getElementById('speed');
+const paceEl=document.getElementById('pace');
+const accuracyEl=document.getElementById('accuracyText');
+const gpsStatus=document.getElementById('gpsStatus');
+const runState=document.getElementById('runState');
+const runningBadge=document.getElementById('runningBadge');
+const bannerTitle=document.getElementById('bannerTitle');
+const bannerSubtitle=document.getElementById('bannerSubtitle');
+const distanceStatus=document.getElementById('distanceStatus');
+const paceStatus=document.getElementById('paceStatus');
+const speedStatus=document.getElementById('speedStatus');
+const accuracyStatus=document.getElementById('accuracyStatus');
+const accuracyBar=document.getElementById('accuracyBar');
+const liveRoute=document.getElementById('liveRoute');
+const routeDistanceLabel=document.getElementById('routeDistanceLabel');
+const appPhone=document.querySelector('.app-phone');
+
+function calculateDistance(lat1,lon1,lat2,lon2){
+ const R=6371000;
+ const dLat=(lat2-lat1)*Math.PI/180;
+ const dLon=(lon2-lon1)*Math.PI/180;
+ const a=Math.sin(dLat/2)**2+
+  Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
+  Math.sin(dLon/2)**2;
+ return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+function formatTime(seconds){
+ const hrs=Math.floor(seconds/3600);
+ const mins=Math.floor((seconds%3600)/60);
+ const secs=seconds%60;
+ if(hrs>0)return String(hrs).padStart(2,'0')+':'+String(mins).padStart(2,'0')+':'+String(secs).padStart(2,'0');
+ return String(mins).padStart(2,'0')+':'+String(secs).padStart(2,'0');
+}
+
+function calculatePace(){
+ if(totalDistance<0.01||elapsedSeconds<5)return '--:--';
+ const pace=elapsedSeconds/60/totalDistance;
+ const mins=Math.floor(pace);
+ const secs=Math.round((pace-mins)*60);
+ if(secs===60)return String(mins+1).padStart(2,'0')+':00';
+ return String(mins).padStart(2,'0')+':'+String(secs).padStart(2,'0');
+}
+
+function startTimer(){
+ startTime=Date.now();
+ timerInterval=setInterval(()=>{
+  const currentSpan=Math.floor((Date.now()-startTime)/1000);
+  elapsedSeconds=accumulatedTime+currentSpan;
+  timerEl.textContent=formatTime(elapsedSeconds);
+  paceEl.textContent=calculatePace();
+ },1000);
+}
+
+function pauseTimer(){
+ if(timerInterval){
+  clearInterval(timerInterval);
+  timerInterval=null;
+ }
+ if(startTime){
+  accumulatedTime+=Math.floor((Date.now()-startTime)/1000);
+  startTime=null;
+ }
+}
+
+function resetTimer(){
+ pauseTimer();
+ accumulatedTime=0;
+ elapsedSeconds=0;
+ timerEl.textContent='00:00';
+}
+
+function updateAccuracy(accuracy){
+ accuracyEl.textContent=Math.round(accuracy);
+ if(accuracy<=10){
+  accuracyStatus.textContent='Excellent GPS signal';
+  accuracyBar.style.width='95%';
+ }else if(accuracy<=25){
+  accuracyStatus.textContent='Good GPS signal';
+  accuracyBar.style.width='75%';
+ }else if(accuracy<=50){
+  accuracyStatus.textContent='Fair GPS signal';
+  accuracyBar.style.width='50%';
+ }else{
+  accuracyStatus.textContent='Weak GPS signal';
+  accuracyBar.style.width='25%';
+ }
+}
+
+function handlePosition(position){
+ const c=position.coords;
+ const lat=c.latitude,lon=c.longitude,accuracy=c.accuracy;
+
+ updateAccuracy(accuracy);
+
+ if(accuracy>100){
+  distanceStatus.textContent='Waiting for better GPS';
+  bannerSubtitle.textContent='Weak satellite reception';
+  return;
+ }
+
+ let currentSpeed=c.speed;
+ if(currentSpeed==null||currentSpeed<0){
+  if(lastPosition){
+   const d=calculateDistance(lastPosition.lat,lastPosition.lon,lat,lon);
+   const dt=(position.timestamp-lastPosition.timestamp)/1000;
+   currentSpeed=dt>0?d/dt:0;
+  }else currentSpeed=0;
+ }
+
+ const speedKmh=Math.max(0,currentSpeed*3.6);
+ speedEl.textContent=speedKmh.toFixed(1);
+ speedStatus.textContent=speedKmh>0.5?'Moving':'Standing';
+
+ if(lastPosition){
+  const delta=calculateDistance(lastPosition.lat,lastPosition.lon,lat,lon);
+  const dt=(position.timestamp-lastPosition.timestamp)/1000;
+  if(delta<50 && !(delta<3 && dt>0 && delta/dt>5)){
+   totalDistance+=delta/1000;
+  }
+ }
+
+ lastPosition={lat,lon,timestamp:position.timestamp};
+ routePoints.push({lat,lon});
+ if(routePoints.length>500)routePoints.shift();
+
+ distanceEl.textContent=totalDistance.toFixed(2);
+ routeDistanceLabel.textContent=totalDistance.toFixed(2)+' KM';
+ distanceStatus.textContent=totalDistance>0?'Live GPS distance':'GPS locked';
+ paceEl.textContent=calculatePace();
+ paceStatus.textContent=totalDistance>0?'Live pace':'Calculating';
+
+ drawRoute();
+}
+
+function drawRoute(){
+ if(routePoints.length<2){
+  liveRoute.setAttribute('points','');
+  return;
+ }
+
+ const lats=routePoints.map(p=>p.lat),lons=routePoints.map(p=>p.lon);
+ const minLat=Math.min(...lats),maxLat=Math.max(...lats);
+ const minLon=Math.min(...lons),maxLon=Math.max(...lons);
+ const latRange=Math.max(maxLat-minLat,0.00001);
+ const lonRange=Math.max(maxLon-minLon,0.00001);
+
+ const pts=routePoints.map(p=>{
+  const x=45+((p.lon-minLon)/lonRange)*510;
+  const y=285-((p.lat-minLat)/latRange)*240;
+  return `${x.toFixed(1)},${y.toFixed(1)}`;
+ });
+ liveRoute.setAttribute('points',pts.join(' '));
+}
+
+function handleGPSError(error){
+ if(gpsStatus){
+  gpsStatus.className='gps-chip error';
+ }
+ if(error.code===1){
+  if(gpsStatus) gpsStatus.innerHTML='<i></i> Permission Denied';
+  bannerSubtitle.textContent='Allow location permission';
+  accuracyStatus.textContent='Permission required';
+ }else if(error.code===2){
+  if(gpsStatus) gpsStatus.innerHTML='<i></i> GPS Unavailable';
+  bannerSubtitle.textContent='GPS hardware off';
+ }else if(error.code===3){
+  if(gpsStatus) gpsStatus.innerHTML='<i></i> GPS Timeout';
+  bannerSubtitle.textContent='Move under open sky';
+ }
+}
+
+function startOrResumeGPS(){
+ if(!navigator.geolocation){
+  alert('GPS is not supported by your browser.');
+  return;
+ }
+ if(gpsStatus){
+  gpsStatus.className='gps-chip connecting';
+  gpsStatus.innerHTML='<i></i> GPS Live';
+ }
+ watchId=navigator.geolocation.watchPosition(
+  handlePosition,
+  handleGPSError,
+  {enableHighAccuracy:true,maximumAge:1000,timeout:15000}
+ );
+}
+
+function stopGPS(){
+ if(watchId!==null){
+  navigator.geolocation.clearWatch(watchId);
+  watchId=null;
+ }
+}
+
+/* 5. MAIN ACTION BUTTON HANDLERS */
+function toggleRun(){
+  if(appPhone.classList.contains('locked')) return;
+
+  if(!isRunning){
+    // START
+    isRunning=true;
+    isPaused=false;
+    totalDistance=0;
+    lastPosition=null;
+    routePoints=[];
+
+    distanceEl.textContent='0.00';
+    speedEl.textContent='0.0';
+    paceEl.textContent='--:--';
+    accuracyEl.textContent='--';
+    routeDistanceLabel.textContent='0.00 KM';
+    liveRoute.setAttribute('points','');
+
+    startBtn.classList.add('running');
+    startIcon.textContent='❚❚';
+    stopBtn.disabled=false;
+    
+    runState.textContent='RUNNING';
+    runningBadge.classList.add('active');
+    bannerTitle.textContent='GPS Live Tracking';
+    bannerSubtitle.textContent='Your route is being recorded';
+
+    resetTimer();
+    startTimer();
+    startOrResumeGPS();
+
+  } else if(!isPaused){
+    // PAUSE
+    isPaused=true;
+    pauseTimer();
+    stopGPS();
+
+    startBtn.classList.remove('running');
+    startIcon.textContent='▶';
+    runState.textContent='PAUSED';
+    runningBadge.classList.remove('active');
+    bannerTitle.textContent='Run Paused';
+    bannerSubtitle.textContent='Tap play icon to resume';
+
+  } else {
+    // RESUME
+    isPaused=false;
+    startTimer();
+    startOrResumeGPS();
+
+    startBtn.classList.add('running');
+    startIcon.textContent='❚❚';
+    runState.textContent='RUNNING';
+    runningBadge.classList.add('active');
+    bannerTitle.textContent='GPS Live Tracking';
+    bannerSubtitle.textContent='Recording route...';
+  }
+}
+
+function endRun(){
+  if(appPhone.classList.contains('locked')) return;
+  if(!isRunning) return;
+
+  isRunning=false;
+  isPaused=false;
+  stopGPS();
+  pauseTimer();
+
+  startBtn.classList.remove('running');
+  startIcon.textContent='▶';
+  stopBtn.disabled=true;
+
+  runState.textContent='COMPLETED';
+  runningBadge.classList.remove('active');
+  bannerTitle.textContent='Run Finished';
+  bannerSubtitle.textContent=totalDistance.toFixed(2)+' km recorded';
+
+  distanceStatus.textContent='Run saved';
+  speedStatus.textContent='Avg speed tracked';
+  paceStatus.textContent='Final pace recorded';
+}
+
+startBtn.addEventListener('click',toggleRun);
+stopBtn.addEventListener('click',endRun);
+
+lockBtn.addEventListener('click',()=>{
+  appPhone.classList.toggle('locked');
+  const isLocked=appPhone.classList.contains('locked');
+  lockBtn.querySelector('small').textContent=isLocked?'UNLOCK':'LOCK';
+  lockBtn.querySelector('.control-symbol').textContent=isLocked?'🔒':'⌑';
+});
+
+
+/* 6. BOTTOM NAVIGATION TAB SWITCHER */
+const navItems = document.querySelectorAll('.app-bottom-nav .nav-item');
+const appViews = document.querySelectorAll('.app-view');
+
+navItems.forEach(item => {
+  item.addEventListener('click', () => {
+    // 1. Navbar me highlight change karo
+    navItems.forEach(n => n.classList.remove('active'));
+    item.classList.add('active');
+
+    const tabName = item.getAttribute('data-tab');
+
+    // 2. Main screen views switch karo
+    appViews.forEach(view => view.classList.remove('active-view'));
+    document.getElementById('view-' + tabName).classList.add('active-view');
+
+    // 3. Top Banner info update karo
+    if(tabName !== 'run'){
+      bannerTitle.textContent = tabName.charAt(0).toUpperCase() + tabName.slice(1); // capitalize first letter
+      bannerSubtitle.textContent = 'Previewing ' + tabName + ' data';
+    } else {
+      bannerTitle.textContent = isRunning ? (isPaused ? 'Run Paused' : 'GPS Live Tracking') : 'GPS Standby';
+      bannerSubtitle.textContent = isRunning ? 'Route is active' : 'Tap start to begin run';
     }
   });
 });
 </script>
-
 </body>
 </html>
