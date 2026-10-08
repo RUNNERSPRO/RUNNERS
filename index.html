@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
 <head>
@@ -148,12 +147,12 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
 .voice-cmd-wrapper input[type="checkbox"]:checked::after { content: ""; position: absolute; left: 5px; top: 2px; width: 4px; height: 8px; border: solid #000; border-width: 0 2px 2px 0; transform: rotate(45deg); }
 
 /* VIEWS CONTAINER */
-.app-views-container { position: relative; flex:1; display:flex; flex-direction:column; margin-top: 15px; }
-.app-view { display: none; height:100%; flex-direction:column; flex:1;}
+.app-views-container { position: relative; flex:1; display:flex; flex-direction:column; margin-top: 15px; min-height: 0;}
+.app-view { display: none; height:100%; flex-direction:column; flex:1; min-height: 0;}
 .app-view.active-view { display: flex; animation: viewFadeIn 0.3s ease; }
 @keyframes viewFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-/* RUN VIEW TOP BAR & COMPASS */
+/* RUN VIEW TOP BAR & COMPASS FIX */
 .run-top-bar { display:flex; gap:12px; padding: 0 18px 15px; z-index:8; position:relative; align-items:flex-start;}
 .btn-show-map { flex: 1; background: linear-gradient(145deg,rgba(25,50,69,.84),rgba(8,22,34,.84)); border: 1px solid rgba(130,178,211,.19); border-radius: 20px; color: #fff; font: 600 16px "Space Grotesk"; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; box-shadow:0 10px 20px rgba(0,0,0,.15); transition:0.2s; height: 50px;}
 .btn-show-map:hover { background: rgba(25,50,69,1); transform:translateY(-2px); }
@@ -229,8 +228,8 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
 .app-phone.locked .lock-control{color:#c8ff45;border-color:rgba(200,255,69,.45)}
 
 @media(max-width:700px){
- .app-showcase{padding:0}.app-phone{width:min(430px,96vw);padding:7px;border-radius:48px;height:auto;max-height:none;} 
- .app-screen{border-radius:41px;min-height:auto;height:auto;}
+ .app-showcase{padding:0}.app-phone{width:min(400px,96vw);padding:7px;border-radius:48px;height:auto;min-height:880px;max-height:none;} 
+ .app-screen{border-radius:41px;height:100%;min-height:100%;}
  .app-island{top:12px;width:102px;height:25px}
  
  /* MOBILE HEADER ALIGNED */
@@ -251,10 +250,11 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
  .app-metrics{gap:8px;padding:10px}.app-metric{min-height:115px;padding:12px;border-radius:18px}.app-metric strong{font-size:20px;margin:8px 0 4px}
  .app-bottom-nav{height:67px;padding:6px 10px 10px}.app-bottom-nav .nav-item{font-size:16px;gap:4px}.app-bottom-nav .nav-item small{font-size:9px}
  
- .map-view-container { border-radius: 20px 20px 0 0; min-height:450px;}
+ .map-view-container { border-radius: 20px 20px 0 0; min-height: 0; flex: 1;}
 }
 @media(max-width:380px){
- .app-phone{width:98vw;padding:5px;border-radius:40px;height:auto;}.app-screen{border-radius:35px}
+ .app-phone{width:98vw;padding:5px;border-radius:40px;height:auto;min-height:850px;}
+ .app-screen{border-radius:35px}
  .gps-chip{max-width:70px;overflow:hidden;} 
  .app-controls{gap:16px}.circle-control{width:52px;height:52px}.main-control{width:72px;height:72px}.app-metric{min-height:118px;padding:11px}.app-metric strong{font-size:20px}
 }
@@ -471,7 +471,6 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
                 </select>
               </div>
               <div class="map-view-container">
-                <!-- Using realMap inside full width/height container -->
                 <div id="realMap"></div>
               </div>
             </div>
@@ -536,7 +535,19 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-/* 1. COMPASS (DEVICE ORIENTATION) */
+/* VOICE COMMAND LOGIC */
+function announce(message) {
+    const voiceToggle = document.getElementById('voiceToggle');
+    if (voiceToggle && voiceToggle.checked && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel(); // Stop current speech
+        const speech = new SpeechSynthesisUtterance(message);
+        speech.lang = 'en-US'; // English 
+        speech.rate = 1.0;
+        window.speechSynthesis.speak(speech);
+    }
+}
+
+/* COMPASS (DEVICE ORIENTATION) */
 if (window.DeviceOrientationEvent) {
   window.addEventListener('deviceorientation', function(e) {
     if(e.alpha !== null) {
@@ -552,7 +563,7 @@ if (window.DeviceOrientationEvent) {
   });
 }
 
-/* 2. REAL MAP & ROUTE TRACKING (Leaflet.js) */
+/* REAL MAP & ROUTE TRACKING (Leaflet.js) */
 let leafletMap = null;
 let mapMarker = null;
 let mapPolyline = null;
@@ -564,8 +575,8 @@ const tileLayers = {
 };
 
 function initRealMap(lat, lon) {
-  // Use user's real location or default location (Delhi fallback)
-  leafletMap = L.map('realMap', {zoomControl: false}).setView([lat || 28.6139, lon || 77.2090], 18); // Zoom level 18 for close view
+  // Use user's real location or default location
+  leafletMap = L.map('realMap', {zoomControl: false}).setView([lat || 28.6139, lon || 77.2090], 18); 
   L.control.zoom({ position: 'bottomright' }).addTo(leafletMap);
   
   // Default to Street Map with Dark Mode CSS Filter
@@ -573,7 +584,7 @@ function initRealMap(lat, lon) {
   currentTileLayer.addTo(leafletMap);
   document.getElementById('realMap').classList.add('dark-map-mode');
 
-  // Thick, visible glowing route line (Like the reference image)
+  // Thick, visible glowing route line
   mapPolyline = L.polyline([], {color: '#c8ff45', weight: 6, opacity: 0.9, lineCap: 'round', lineJoin: 'round'}).addTo(leafletMap);
   
   // Clean location marker
@@ -602,7 +613,7 @@ document.getElementById('mapTypeSelect').addEventListener('change', function(e) 
   currentTileLayer.addTo(leafletMap);
 });
 
-/* 3. SCROLL & 3D PHONE EFFECTS */
+/* SCROLL & 3D PHONE EFFECTS */
 const observer=new IntersectionObserver((entries)=>{
  entries.forEach(entry=>{
   if(entry.isIntersecting){entry.target.classList.add('show');observer.unobserve(entry.target)}
@@ -621,7 +632,7 @@ document.addEventListener('pointerleave',()=>{
  if(phone)phone.style.transform='translateX(-50%) rotateX(3deg) rotateY(-8deg)';
 });
 
-/* 4. REAL-TIME CLOCK & BATTERY UPDATER */
+/* REAL-TIME CLOCK & BATTERY UPDATER */
 function updateStatusBar() {
   const clockEl = document.getElementById('liveClock');
   const batteryEl = document.getElementById('liveBattery');
@@ -639,7 +650,7 @@ function updateStatusBar() {
 setInterval(updateStatusBar, 1000); updateStatusBar();
 
 
-/* 5. GPS TRACKING & HISTORY LOGIC */
+/* GPS TRACKING & HISTORY LOGIC */
 let watchId=null;
 let timerInterval=null;
 let isRunning=false;
@@ -750,6 +761,9 @@ function toggleRun(){
     
     if(leafletMap && mapPolyline) mapPolyline.setLatLngs([]); // clear old route line
 
+    // Voice Announcement
+    announce("Run started. GPS tracking active.");
+
     startTimer();
     if(navigator.geolocation) {
        watchId = navigator.geolocation.watchPosition(handleLivePosition, handleGPSError, {enableHighAccuracy: true});
@@ -761,12 +775,19 @@ function toggleRun(){
     startBtn.classList.remove('running'); startIcon.textContent='▶';
     document.getElementById('runState').textContent='PAUSED';
     document.getElementById('runningBadge').classList.remove('active');
+    
+    // Voice Announcement
+    announce("Run paused.");
+
   } else {
     // Resume
     isPaused=false; startTimer();
     startBtn.classList.add('running'); startIcon.textContent='❚❚';
     document.getElementById('runState').textContent='RUNNING';
     document.getElementById('runningBadge').classList.add('active');
+    
+    // Voice Announcement
+    announce("Run resumed.");
   }
 }
 
@@ -782,6 +803,15 @@ function endRun(){
   document.getElementById('gpsStatus').innerHTML = '<i></i> Run Saved';
   
   if(totalDistance > 0 || elapsedSeconds > 0) {
+     let mins = Math.floor(elapsedSeconds / 60);
+     let secs = elapsedSeconds % 60;
+     let timeStr = "";
+     if (mins > 0) timeStr += mins + " minutes ";
+     if (secs > 0) timeStr += secs + " seconds";
+
+     // Voice Announcement
+     announce("Run completed. Total distance " + totalDistance.toFixed(2) + " kilometers in " + timeStr + ".");
+
      const runData = {
          date: new Date().toLocaleDateString() + ' at ' + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
          dist: totalDistance.toFixed(2),
@@ -790,6 +820,8 @@ function endRun(){
      };
      runHistory.push(runData);
      renderHistory(); 
+  } else {
+     announce("Run completed.");
   }
 }
 
@@ -824,7 +856,7 @@ lockBtn.addEventListener('click',()=>{
   lockBtn.querySelector('.control-symbol').textContent = isLocked ? 'L' : 'U';
 });
 
-/* 6. TAB SWITCHING & MAP RE-SIZING FIX */
+/* TAB SWITCHING & MAP RE-SIZING FIX */
 const navItems = document.querySelectorAll('.app-bottom-nav .nav-item');
 const appViews = document.querySelectorAll('.app-view');
 
@@ -844,13 +876,11 @@ navItems.forEach(item => {
     // IMPORTANT: Map inside a hidden container needs resize invalidation and immediate init
     if(tabName === 'map') {
        if(!leafletMap) {
-           // Provide fallback coordinates (Delhi) to initialize immediately if GPS takes time
            initRealMap(28.6139, 77.2090); 
            if(navigator.geolocation && !lastPosition) {
                navigator.geolocation.getCurrentPosition(handleLivePosition, ()=>{});
            }
        }
-       // Force redraw after CSS transition completes
        setTimeout(() => { if(leafletMap) leafletMap.invalidateSize(); }, 150);
     }
   });
