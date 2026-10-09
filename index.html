@@ -120,14 +120,14 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
 .app-showcase{display:flex;justify-content:center;position:relative;padding:15px 0 20px}
 .app-showcase:before{content:"";position:absolute;width:650px;height:650px;left:50%;top:50%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(111,183,232,.14),rgba(200,255,69,.035) 38%,transparent 70%);filter:blur(25px);pointer-events:none}
 
-/* REALISTIC PHONE CONTAINER */
+/* REALISTIC PHONE CONTAINER - BALANCED SIZE */
 .app-phone{
   position:relative;
-  width:360px; /* Standard mobile width */
-  height:740px; /* Standard mobile height */
-  max-width:95vw;
+  width:360px;
+  height:760px;
+  max-width:95vw; 
   max-height:88vh;
-  padding:10px;
+  padding:12px;
   border:1px solid rgba(255,255,255,.22);
   border-radius:48px;
   background:linear-gradient(145deg,#657381,#101923 18%,#02070b 80%,#4a5865);
@@ -157,21 +157,17 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
 .app-statusbar b{font-size:11px;margin-left:2px}.app-status-icons{font-weight:500;font-size:12px;opacity:.95;display:flex;align-items:center;gap:5px}
 
 /* iOS PREMIUM HEADER */
-.app-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 20px 5px; position: relative; z-index: 8; flex-shrink: 0; }
+.app-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 20px 10px; position: relative; z-index: 8; flex-shrink: 0; }
 .app-brand { display: flex; align-items: center; gap: 12px; }
 .app-runner { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; background: linear-gradient(135deg, rgba(200,255,69,0.15), rgba(200,255,69,0.02)); border: 1px solid rgba(200,255,69,0.25); border-radius: 12px; color: var(--lime); box-shadow: 0 4px 15px rgba(200,255,69,0.05);}
 .app-logo { font: 700 24px/1.1 "Space Grotesk"; letter-spacing: -0.04em; color: #fff; }
 .app-tagline { font: 500 11px/1 "DM Sans"; color: #8294a8; letter-spacing: 0.02em; margin-top: 2px; }
 
 /* STACKED ACTIONS WITH PROPER SPACING */
-.app-header-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
-
-/* SLEEK GPS PILL */
-.gps-chip { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); padding: 5px 10px; border-radius: 99px; backdrop-filter: blur(10px); font-size: 10px; font-weight: 600; color: #d0dbd0; transition: 0.3s; }
-.gps-chip i { width: 5px; height: 5px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 8px var(--lime); }
+.app-header-actions { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; }
 
 /* iOS STYLE VOICE TOGGLE */
-.voice-control { display: flex; align-items: center; gap: 8px; }
+.voice-control { display: flex; align-items: center; gap: 8px; margin-top: 2px;}
 .voice-control label { font-size: 10px; font-weight: 500; color: #8294a8; cursor: pointer; white-space:nowrap;}
 .ios-switch { position: relative; display: inline-block; width: 32px; height: 18px; }
 .ios-switch input { opacity: 0; width: 0; height: 0; }
@@ -180,9 +176,9 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
 .ios-switch input:checked + .ios-slider { background-color: var(--lime); border-color: var(--lime); }
 .ios-switch input:checked + .ios-slider:before { transform: translateX(12px); background-color: #07101a; }
 
-/* VIEWS CONTAINER (SCROLLABLE) */
+/* VIEWS CONTAINER */
 .app-views-container { 
-  position: relative; flex:1; display:flex; flex-direction:column; margin-top: 10px; 
+  position: relative; flex:1; display:flex; flex-direction:column; margin-top: 5px; 
   min-height: 0; overflow-y: auto; overflow-x: hidden;
 }
 .app-views-container::-webkit-scrollbar { width: 4px; }
@@ -192,22 +188,26 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
 .app-view.active-view { display: flex; animation: viewFadeIn 0.3s ease; }
 @keyframes viewFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-/* RUN VIEW TOP BAR & COMPASS */
-.run-top-bar { display:flex; gap:12px; padding: 0 16px 12px; z-index:8; position:relative; align-items:flex-start;}
-.btn-show-map { flex: 1; background: linear-gradient(145deg,rgba(25,50,69,.84),rgba(8,22,34,.84)); border: 1px solid rgba(130,178,211,.19); border-radius: 16px; color: #fff; font: 600 14px "Space Grotesk"; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; box-shadow:0 8px 15px rgba(0,0,0,.15); transition:0.2s; height: 42px;}
-.btn-show-map:hover { background: rgba(25,50,69,1); transform:translateY(-2px); }
+/* iOS PREMIUM FROSTED GPS PILL */
+.gps-on-stage {
+  position: absolute; top: 12px; left: 12px; z-index: 10;
+  background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.15); border-radius: 99px; color: #fff;
+  font: 600 11px "Space Grotesk"; display:flex; align-items:center; gap:6px;
+  height: 30px; padding: 0 12px; box-shadow:0 6px 16px rgba(0,0,0,0.3); transition: color 0.3s;
+}
+.gps-on-stage svg { color: var(--lime); transition: color 0.3s;}
 
-/* COMPASS */
-.compass-container { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 4px; flex-shrink: 0;}
-.compass-circle { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(145deg, rgba(25,50,69,.9), rgba(8,22,34,.9)); border: 2px solid rgba(200,255,69,.4); box-shadow: 0 0 10px rgba(200,255,69,.1); position: relative; }
+.compass-container { position: absolute; top: 12px; right: 12px; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 4px; flex-shrink: 0;}
+.compass-circle { width: 36px; height: 36px; border-radius: 50%; background: rgba(0,0,0,0.4); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 6px 16px rgba(0,0,0,0.3); position: relative; }
 .compass-dial { position: absolute; inset: 0; transition: transform 0.2s ease-out; }
-.compass-arrow-up { position: absolute; top: 3px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-bottom: 14px solid var(--lime); }
-.compass-arrow-down { position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 14px solid #ff4b4b; }
+.compass-arrow-up { position: absolute; top: 3px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-bottom: 12px solid var(--lime); }
+.compass-arrow-down { position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 12px solid #ff4b4b; }
 .compass-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 4px; height: 4px; background: #fff; border-radius: 50%; z-index: 2; box-shadow: 0 0 4px rgba(0,0,0,0.5);}
-#headingText { font-size: 9px; font-weight: bold; color: var(--lime); white-space: nowrap; line-height: 1;}
+#headingText { font-size: 8px; font-weight: bold; color: var(--lime); white-space: nowrap; line-height: 1; text-shadow: 0 1px 2px rgba(0,0,0,0.8);}
 
-/* RUN STAGE */
-.app-run-stage{position:relative; overflow:hidden; background:#0a1722; border-radius:20px; margin: 0 16px; min-height:240px; flex-shrink: 0;}
+/* RUN STAGE - PROPORTIONAL HEIGHT */
+.app-run-stage{position:relative; overflow:hidden; background:#0a1722; border-radius:24px; margin: 0 16px; min-height:250px; flex-shrink: 0;}
 .mountain-bg{position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,20,31,.08),rgba(6,13,20,.18) 45%,rgba(4,10,16,.74) 100%),url("https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=800&q=80") center/cover no-repeat;filter:saturate(.82) contrast(1.08);transform:scale(1.04)}
 .runner-silhouette{position:absolute;right:10%;bottom:15%;width:50px;height:115px;z-index:3;opacity:.86;background:linear-gradient(150deg,transparent 0 20%,#06090c 21% 66%,transparent 67%);filter:drop-shadow(0 12px 12px rgba(0,0,0,.6));border-radius:45% 45% 30% 30%}
 .run-stage-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(4,12,19,.10),rgba(4,10,15,.18) 35%,rgba(4,8,12,.65) 100%);z-index:2}
@@ -230,10 +230,10 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
 
 /* METRICS */
 .app-metrics{position:relative;z-index:8;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 16px 15px;background:#07131f;flex-shrink:0;}
-.app-metric{min-height:100px;padding:12px;border-radius:16px;border:1px solid rgba(123,167,201,.17);background:linear-gradient(145deg,rgba(21,42,58,.86),rgba(7,20,31,.93));box-shadow:inset 0 1px 0 rgba(255,255,255,.045),0 8px 20px rgba(0,0,0,.18)}
-.metric-top{display:flex;align-items:center;gap:8px}.metric-top small{color:#9eb0bf;font:600 9px "DM Sans";letter-spacing:.08em}.metric-icon{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:13px}.metric-green .metric-icon{background:linear-gradient(145deg,#b8ff37,#49aa14);color:#07100a;}.metric-blue .metric-icon{background:linear-gradient(145deg,#2bd9ff,#0879df);color:#dff8ff;}.metric-purple .metric-icon{background:linear-gradient(145deg,#9a45ff,#4d1ac8);color:#fff;}.metric-orange .metric-icon{background:linear-gradient(145deg,#ffbd36,#bd5e00);color:#fff;}
-.app-metric strong{display:block;margin:8px 0 4px;font:600 20px/1 "Space Grotesk";letter-spacing:-.04em;font-variant-numeric:tabular-nums}.app-metric strong em{font:500 10px "DM Sans";color:#91a5b4;font-style:normal;}
-.metric-note{display:block;color:#9aa9b6;font-size:9px}.metric-note i{display:inline-block;width:4px;height:4px;border-radius:50%;margin-right:4px;background:#7e9fff;}.metric-green .metric-note i{background:#aaff35}.accuracy{height:3px;width:100%;margin-top:6px;border-radius:99px;background:#182a35;overflow:hidden}.accuracy i{display:block;height:100%;width:0;border-radius:99px;background:#c8ff45;transition:width .4s ease}
+.app-metric{min-height:85px; padding:10px 12px;border-radius:16px;border:1px solid rgba(123,167,201,.17);background:linear-gradient(145deg,rgba(21,42,58,.86),rgba(7,20,31,.93));box-shadow:inset 0 1px 0 rgba(255,255,255,.045),0 8px 20px rgba(0,0,0,.18)}
+.metric-top{display:flex;align-items:center;gap:8px}.metric-top small{color:#9eb0bf;font:600 9px "DM Sans";letter-spacing:.08em}.metric-icon{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:13px}.metric-green .metric-icon{background:linear-gradient(145deg,#b8ff37,#49aa14);color:#07100a;}.metric-blue .metric-icon{background:linear-gradient(145deg,#2bd9ff,#0879df);color:#dff8ff;}.metric-purple .metric-icon{background:linear-gradient(145deg,#9a45ff,#4d1ac8);color:#fff;}.metric-orange .metric-icon{background:linear-gradient(145deg,#ff5e36,#bd1c00);color:#fff;}
+.app-metric strong{display:block;margin:6px 0 2px;font:600 20px/1 "Space Grotesk";letter-spacing:-.04em;font-variant-numeric:tabular-nums}.app-metric strong em{font:500 10px "DM Sans";color:#91a5b4;font-style:normal;}
+.metric-note{display:block;color:#9aa9b6;font-size:9px}.metric-note i{display:inline-block;width:4px;height:4px;border-radius:50%;margin-right:4px;background:#7e9fff;}.metric-green .metric-note i{background:#aaff35}.metric-orange .metric-note i{background:#ff967e}
 
 /* MAP VIEW (REAL LEAFLET MAP) */
 .map-top-bar { padding: 0 16px 10px; z-index:8; position:relative; flex-shrink: 0;}
@@ -254,8 +254,28 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
 .hist-stats strong { font-size: 18px; color: var(--lime); display:block; margin-bottom:2px; font-family:"Space Grotesk";}
 .empty-hist { padding-top: 40px; text-align:center; color:#8294a8;}
 
-/* BOTTOM NAV */
-.app-bottom-nav{height:68px;padding:6px 16px 10px;display:grid;grid-template-columns:repeat(3,1fr);background:rgba(5,16,26,.97);border-top:1px solid rgba(255,255,255,.07);position:relative;z-index:9;flex-shrink:0;}
+/* MUSIC VIEW UI */
+.music-view-container { padding: 10px 16px; flex:1; display:flex; flex-direction:column; gap:12px; }
+.bt-card { background: linear-gradient(145deg,rgba(25,50,69,.8),rgba(8,22,34,.9)); border: 1px solid rgba(130,178,211,.15); border-radius: 16px; padding: 14px 16px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 6px 12px rgba(0,0,0,.2); }
+.bt-info { display:flex; align-items:center; gap:12px; color:#fff; font-size:14px; font-weight:600;}
+.bt-icon { width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,0.1); display:grid; place-items:center; color:#8294a8; transition:color 0.3s;}
+.bt-connect-btn { background: rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); color:#fff; padding:6px 14px; border-radius:12px; font:600 11px "Space Grotesk"; cursor:pointer; transition:0.3s;}
+.bt-connect-btn:hover { background: rgba(200,255,69,0.2); border-color:rgba(200,255,69,0.4); color:var(--lime);}
+.songs-card { background: linear-gradient(145deg,rgba(25,50,69,.4),rgba(8,22,34,.6)); border: 1px solid rgba(130,178,211,.1); border-radius: 16px; padding: 16px; flex:1; display:flex; flex-direction:column; overflow:hidden;}
+.songs-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; color:#fff; font-family:"Space Grotesk";}
+.load-btn { background:var(--lime); color:#000; border:none; padding:6px 12px; border-radius:10px; font:600 11px "Space Grotesk"; cursor:pointer;}
+.song-list { overflow-y:auto; flex:1; padding-right:5px; margin-bottom:10px;}
+.song-list::-webkit-scrollbar { width: 3px; }
+.song-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+.song-item { display:flex; align-items:center; justify-content:space-between; padding:12px 10px; border-bottom:1px solid rgba(255,255,255,0.05); color:#9aa9b5; font-size:13px; font-weight:500; cursor:pointer; transition:0.2s; border-radius:8px;}
+.song-item:hover { background: rgba(255,255,255,0.05); color:#fff; }
+.song-item.playing { color:var(--lime); background: rgba(200,255,69,0.05); border-color:transparent;}
+.player-container { background:rgba(8,22,34,.9); border-radius:16px; padding:10px; border: 1px solid rgba(130,178,211,.15); box-shadow:0 -4px 20px rgba(0,0,0,0.3);}
+audio { width:100%; height:40px; outline:none; border-radius:8px; }
+audio::-webkit-media-controls-panel { background-color: #f8faf8; }
+
+/* BOTTOM NAV - 4 ITEMS NOW */
+.app-bottom-nav{height:60px;padding:4px 16px 8px;display:grid;grid-template-columns:repeat(4,1fr);background:rgba(5,16,26,.97);border-top:1px solid rgba(255,255,255,.07);position:relative;z-index:9;flex-shrink:0;}
 .app-bottom-nav .nav-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#8294a8;font-size:16px;position:relative;background:none;border:none;cursor:pointer;outline:none;transition:color .25s ease}
 .app-bottom-nav .nav-item small{font:500 10px "DM Sans";letter-spacing:.02em}
 .app-bottom-nav .nav-item.active{color:#baff35}
@@ -373,9 +393,8 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
                 <div class="app-tagline">Run, Your Way.</div>
               </div>
             </div>
+            <!-- REMOVED GPS READY PILL, ALIGNED VOICE COMMAND UP -->
             <div class="app-header-actions">
-              <div id="gpsStatus" class="gps-chip"><i></i> GPS Ready</div>
-              <!-- PREMIUM iOS STYLE VOICE TOGGLE -->
               <div class="voice-control">
                 <label for="voiceToggle">Voice Command</label>
                 <label class="ios-switch">
@@ -392,11 +411,19 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
             <!-- 1. RUN VIEW -->
             <div id="view-run" class="app-view active-view">
               
-              <div class="run-top-bar">
-                <button class="btn-show-map" onclick="showMapTab()">
-                  Show Map
-                  <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
-                </button>
+              <div class="app-run-stage">
+                <div class="mountain-bg"></div>
+                <div class="runner-silhouette"></div>
+                <div class="run-stage-overlay"></div>
+                
+                <!-- iOS PREMIUM GPS ACCURACY PILL TOP LEFT -->
+                <div class="gps-on-stage" id="gpsIndicator">
+                  <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 20h.01"/><path d="M7 20v-4"/><path d="M12 20v-8"/><path d="M17 20v-12"/><path d="M22 20v-16"/>
+                  </svg>
+                  <span id="stageGpsAccuracy">± -- m</span>
+                </div>
+                
                 <div class="compass-container">
                   <div class="compass-circle">
                     <div class="compass-dial" id="compassIcon">
@@ -407,12 +434,6 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
                   </div>
                   <span id="headingText">0 N</span>
                 </div>
-              </div>
-
-              <div class="app-run-stage">
-                <div class="mountain-bg"></div>
-                <div class="runner-silhouette"></div>
-                <div class="run-stage-overlay"></div>
 
                 <div class="app-run-center">
                   <div id="runningBadge" class="app-running-label"><i></i><span id="runState">READY</span></div>
@@ -449,16 +470,63 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
                   <strong><span id="speed">0.0</span> <em>km/h</em></strong>
                   <span id="speedStatus" class="metric-note"><i></i> Waiting...</span>
                 </div>
+                
+                <!-- NEW CALORIES METRIC (Replacing GPS Accuracy) -->
                 <div class="app-metric metric-orange">
-                  <div class="metric-top"><div class="metric-icon">◎</div><small>GPS ACCURACY</small></div>
-                  <strong><span id="accuracyText">--</span> <em>m</em></strong>
-                  <span id="accuracyStatus" class="metric-note"><i></i> Move outdoors</span>
-                  <div class="accuracy"><i id="accuracyBar"></i></div>
+                  <div class="metric-top">
+                    <div class="metric-icon">
+                      <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2c0 0-5 6.5-5 11a5 5 0 0 0 10 0c0-4.5-5-11-5-11Z"></path>
+                      </svg>
+                    </div>
+                    <small>CALORIES</small>
+                  </div>
+                  <strong><span id="caloriesText">0</span> <em>kcal</em></strong>
+                  <span id="caloriesStatus" class="metric-note"><i></i> Burning energy</span>
                 </div>
               </div>
             </div>
 
-            <!-- 2. MAP VIEW -->
+            <!-- 2. MUSIC VIEW -->
+            <div id="view-music" class="app-view">
+              <div class="music-view-container">
+                
+                <div class="bt-card">
+                  <div class="bt-info">
+                    <div class="bt-icon" id="btStatusIcon">
+                      <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"></polyline></svg>
+                    </div>
+                    <div>
+                      <span style="display:block; font-size:10px; color:#8294a8; letter-spacing:1px;">BLUETOOTH</span>
+                      <strong id="btName">Not Connected</strong>
+                    </div>
+                  </div>
+                  <button class="bt-connect-btn" id="btConnectBtn">Connect</button>
+                </div>
+                
+                <div class="songs-card">
+                  <div class="songs-header">
+                    <h4>Downloaded Songs</h4>
+                    <button class="load-btn" onclick="document.getElementById('audioUpload').click()">+ Load</button>
+                    <!-- MULTIPLE SELECT FOR ADDING SONGS -->
+                    <input type="file" id="audioUpload" multiple accept="audio/*" style="display:none;">
+                  </div>
+                  <div id="songList" class="song-list">
+                    <div style="text-align:center; color:#8294a8; margin-top:15px; font-size:12px;">
+                      <svg viewBox="0 0 24 24" width="40" height="40" stroke="currentColor" stroke-width="1" fill="none" style="margin-bottom:10px; opacity:0.5;"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+                      <br>Web apps cannot read internal storage.<br>Tap '+ Load' to select multiple songs.
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="player-container">
+                  <audio id="audioPlayer" controls></audio>
+                </div>
+                
+              </div>
+            </div>
+
+            <!-- 3. MAP VIEW -->
             <div id="view-map" class="app-view">
               <div class="map-top-bar">
                 <select id="mapTypeSelect" class="map-select">
@@ -472,7 +540,7 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
               </div>
             </div>
 
-            <!-- 3. HISTORY VIEW -->
+            <!-- 4. HISTORY VIEW -->
             <div id="view-history" class="app-view">
               <div id="historyContent" class="history-list">
                 <div class="empty-hist">
@@ -494,6 +562,15 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
               </svg>
               <small>Run</small>
+            </button>
+            <!-- NEW MUSIC BUTTON -->
+            <button class="nav-item" type="button" data-tab="music">
+              <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 18V5l12-2v13"></path>
+                <circle cx="6" cy="18" r="3"></circle>
+                <circle cx="18" cy="16" r="3"></circle>
+              </svg>
+              <small>Music</small>
             </button>
             <button class="nav-item" type="button" data-tab="map">
               <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
@@ -574,6 +651,81 @@ if (window.DeviceOrientationEvent) {
     }
   });
 }
+
+/* BLUETOOTH & LOCAL MUSIC LOGIC */
+const btConnectBtn = document.getElementById('btConnectBtn');
+const btName = document.getElementById('btName');
+const btStatusIcon = document.getElementById('btStatusIcon');
+
+btConnectBtn.addEventListener('click', async () => {
+    try {
+        if (!navigator.bluetooth) {
+            alert("Web Bluetooth API is not supported in this browser. Try on Chrome for Android.");
+            return;
+        }
+        // Will explicitly open Bluetooth pairing dialogue box
+        const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true });
+        
+        // If user connects successfully:
+        btName.textContent = device.name || 'Unknown Device';
+        btStatusIcon.style.color = '#c8ff45';
+        btConnectBtn.textContent = 'Connected';
+        btConnectBtn.style.background = 'rgba(200,255,69,0.15)';
+        btConnectBtn.style.borderColor = 'rgba(200,255,69,0.4)';
+        btConnectBtn.style.color = 'var(--lime)';
+    } catch (err) {
+        console.log("Bluetooth connection cancelled or failed", err);
+        // Do not update UI (stays "Not Connected")
+    }
+});
+
+const audioUpload = document.getElementById('audioUpload');
+const songList = document.getElementById('songList');
+const audioPlayer = document.getElementById('audioPlayer');
+let songs = [];
+let currentSongIndex = 0;
+
+audioUpload.addEventListener('change', (e) => {
+    const files = Array.from(e.target.files);
+    const newSongs = files.filter(f => f.type.startsWith('audio/'));
+    if(newSongs.length > 0) {
+        songs = songs.concat(newSongs); // Append new songs to existing playlist
+        renderSongs();
+        if(!audioPlayer.src || audioPlayer.src === window.location.href) {
+            playSong(songs.length - newSongs.length); // Play first of newly added
+        }
+    }
+});
+
+function renderSongs() {
+    if(songs.length === 0) return;
+    let html = '';
+    songs.forEach((song, index) => {
+        const isPlaying = (index === currentSongIndex) ? 'playing' : '';
+        const icon = (index === currentSongIndex) ? '■' : '▶';
+        html += `<div class="song-item ${isPlaying}" onclick="playSong(${index})">
+                    <span style="text-overflow:ellipsis; overflow:hidden; white-space:nowrap; max-width:85%;">${song.name.replace(/\.[^/.]+$/, "")}</span>
+                    <span>${icon}</span>
+                 </div>`;
+    });
+    songList.innerHTML = html;
+}
+
+function playSong(index) {
+    currentSongIndex = index;
+    const file = songs[index];
+    const url = URL.createObjectURL(file);
+    audioPlayer.src = url;
+    audioPlayer.play();
+    renderSongs(); // update UI playing status
+}
+
+// Auto play next song when current song ends
+audioPlayer.addEventListener('ended', () => {
+    if(currentSongIndex < songs.length - 1) {
+        playSong(currentSongIndex + 1);
+    }
+});
 
 /* REAL MAP & ROUTE TRACKING (Leaflet.js) */
 let leafletMap = null;
@@ -656,7 +808,7 @@ function updateStatusBar() {
 setInterval(updateStatusBar, 1000); updateStatusBar();
 
 
-/* GPS TRACKING & LOCALSTORAGE HISTORY LOGIC */
+/* GPS TRACKING, ALGORITHMS & LOCALSTORAGE HISTORY LOGIC */
 let watchId=null;
 let timerInterval=null;
 let isRunning=false;
@@ -711,8 +863,18 @@ function handleLivePosition(pos) {
     const lon = pos.coords.longitude;
     const accuracy = pos.coords.accuracy;
     
-    document.getElementById('accuracyText').textContent = Math.round(accuracy);
-    if(accuracy > 100) return;
+    // Update Premium Stage GPS Accuracy text and colors
+    const stageAcc = document.getElementById('stageGpsAccuracy');
+    const gpsInd = document.getElementById('gpsIndicator');
+    
+    if(stageAcc) stageAcc.textContent = '± ' + Math.round(accuracy) + ' m';
+    if(gpsInd) {
+       if(accuracy <= 15) gpsInd.querySelector('svg').style.color = '#c8ff45';
+       else if(accuracy <= 40) gpsInd.querySelector('svg').style.color = '#ffbd36';
+       else gpsInd.querySelector('svg').style.color = '#ff4b4b';
+    }
+
+    if(accuracy > 100) return; // Drop bad signals to avoid jitter jumps
 
     if(document.getElementById('realMap') && !leafletMap) {
         initRealMap(lat, lon);
@@ -733,12 +895,22 @@ function handleLivePosition(pos) {
            const x = (lon2-lon1) * Math.cos((lat1+lat2)/2);
            const y = (lat2-lat1);
            const d = Math.sqrt(x*x + y*y) * R;
-           totalDistance += d;
-           document.getElementById('distance').textContent = totalDistance.toFixed(2);
            
-           let dt = (pos.timestamp - lastPosition.time) / 1000;
-           let speed = dt > 0 ? (d*1000/dt)*3.6 : 0;
-           document.getElementById('speed').textContent = speed.toFixed(1);
+           // Filter jitter (only add distance if moved > 1 meter)
+           if (d > 0.001) {
+               totalDistance += d;
+               document.getElementById('distance').textContent = totalDistance.toFixed(2);
+               
+               let dt = (pos.timestamp - lastPosition.time) / 1000;
+               let speed = dt > 0 ? (d*1000/dt)*3.6 : 0;
+               if(speed < 40) { // Limit unrealistic speeds
+                   document.getElementById('speed').textContent = speed.toFixed(1);
+               }
+               
+               // Calculate REAL Calories (Rough avg formula: weight 72kg * dist * 1.036)
+               let calories = totalDistance * 74.5;
+               document.getElementById('caloriesText').textContent = Math.round(calories);
+           }
        }
     }
     
@@ -755,10 +927,10 @@ function toggleRun(){
   if(!isRunning){
     isRunning=true; isPaused=false; totalDistance=0; accumulatedTime=0; elapsedSeconds=0; lastPosition=null;
     document.getElementById('distance').textContent='0.00';
+    document.getElementById('caloriesText').textContent='0';
     startBtn.classList.add('running'); startIcon.textContent='❚❚'; stopBtn.disabled=false;
     document.getElementById('runState').textContent='RUNNING';
     document.getElementById('runningBadge').classList.add('active');
-    document.getElementById('gpsStatus').innerHTML = '<i></i> GPS Active';
     
     if(leafletMap && mapPolyline) mapPolyline.setLatLngs([]); 
 
@@ -795,7 +967,6 @@ function endRun(){
   startBtn.classList.remove('running'); startIcon.textContent='▶'; stopBtn.disabled=true;
   document.getElementById('runState').textContent='COMPLETED';
   document.getElementById('runningBadge').classList.remove('active');
-  document.getElementById('gpsStatus').innerHTML = '<i></i> Run Saved';
   
   if(totalDistance > 0 || elapsedSeconds > 0) {
      let mins = Math.floor(elapsedSeconds / 60);
@@ -865,10 +1036,6 @@ lockBtn.addEventListener('click',()=>{
 /* TAB SWITCHING */
 const navItems = document.querySelectorAll('.app-bottom-nav .nav-item');
 const appViews = document.querySelectorAll('.app-view');
-
-function showMapTab() {
-   document.querySelector('[data-tab=map]').click();
-}
 
 navItems.forEach(item => {
   item.addEventListener('click', () => {
