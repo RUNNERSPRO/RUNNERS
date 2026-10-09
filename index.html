@@ -176,7 +176,7 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
 .ios-switch input:checked + .ios-slider { background-color: var(--lime); border-color: var(--lime); }
 .ios-switch input:checked + .ios-slider:before { transform: translateX(12px); background-color: #07101a; }
 
-/* VIEWS CONTAINER (SCROLLABLE) */
+/* VIEWS CONTAINER */
 .app-views-container { 
   position: relative; flex:1; display:flex; flex-direction:column; margin-top: 5px; 
   min-height: 0; overflow-y: auto; overflow-x: hidden;
@@ -229,11 +229,52 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
 .main-control.running{background:linear-gradient(145deg,#ffdf5d,#f0a618);outline-color:rgba(255,210,80,.4);box-shadow:0 0 25px rgba(255,180,50,.28)}
 
 /* METRICS */
-.app-metrics{position:relative;z-index:8;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 16px 15px;background:#07131f;flex-shrink:0;}
+.app-metrics{position:relative;z-index:8;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 16px 10px;background:#07131f;flex-shrink:0;}
 .app-metric{min-height:85px; padding:10px 12px;border-radius:16px;border:1px solid rgba(123,167,201,.17);background:linear-gradient(145deg,rgba(21,42,58,.86),rgba(7,20,31,.93));box-shadow:inset 0 1px 0 rgba(255,255,255,.045),0 8px 20px rgba(0,0,0,.18)}
 .metric-top{display:flex;align-items:center;gap:8px}.metric-top small{color:#9eb0bf;font:600 9px "DM Sans";letter-spacing:.08em}.metric-icon{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:13px}.metric-green .metric-icon{background:linear-gradient(145deg,#b8ff37,#49aa14);color:#07100a;}.metric-blue .metric-icon{background:linear-gradient(145deg,#2bd9ff,#0879df);color:#dff8ff;}.metric-purple .metric-icon{background:linear-gradient(145deg,#9a45ff,#4d1ac8);color:#fff;}.metric-orange .metric-icon{background:linear-gradient(145deg,#ff5e36,#bd1c00);color:#fff;}
 .app-metric strong{display:block;margin:6px 0 2px;font:600 20px/1 "Space Grotesk";letter-spacing:-.04em;font-variant-numeric:tabular-nums}.app-metric strong em{font:500 10px "DM Sans";color:#91a5b4;font-style:normal;}
 .metric-note{display:block;color:#9aa9b6;font-size:9px}.metric-note i{display:inline-block;width:4px;height:4px;border-radius:50%;margin-right:4px;background:#7e9fff;}.metric-green .metric-note i{background:#aaff35}.metric-orange .metric-note i{background:#ff967e}
+
+/* MINI MUSIC PLAYER (At the bottom of Run View) */
+.mini-player {
+  margin: auto 16px 10px; /* Pushes player to the bottom, leaving space from nav */
+  padding: 10px 14px;
+  background: linear-gradient(145deg, rgba(25,50,69,.6), rgba(8,22,34,.8));
+  border: 1px solid rgba(130,178,211,.15);
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+.mini-player-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  font-size: 12px;
+  font-family: "Space Grotesk";
+  width: 55%;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.mini-player-info span {
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+.mini-player-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.mini-btn {
+  background: none; border: none; color: #fff; cursor: pointer; display: grid; place-items: center; opacity: 0.8; transition: 0.2s;
+}
+.mini-btn:hover { opacity: 1; color: var(--lime); }
+.mini-btn.main {
+  width: 32px; height: 32px; background: var(--lime); color: #000; border-radius: 50%; opacity: 1;
+}
+.mini-btn.main:hover { transform: scale(1.05); }
 
 /* MAP VIEW (REAL LEAFLET MAP) */
 .map-top-bar { padding: 0 16px 10px; z-index:8; position:relative; flex-shrink: 0;}
@@ -384,7 +425,7 @@ audio { display:none; } /* Hide native audio element */
             <span class="app-status-icons">●●● &nbsp;5G&nbsp; <b id="liveBattery">100%</b></span>
           </div>
 
-          <!-- APP HEADER WITH STACKED ACTIONS (FIXED CRAMPING) -->
+          <!-- APP HEADER -->
           <div class="app-header">
             <div class="app-brand">
               <div class="app-runner">
@@ -395,7 +436,6 @@ audio { display:none; } /* Hide native audio element */
                 <div class="app-tagline">Run, Your Way.</div>
               </div>
             </div>
-            <!-- REMOVED GPS READY PILL, ALIGNED VOICE COMMAND UP -->
             <div class="app-header-actions">
               <div class="voice-control">
                 <label for="voiceToggle">Voice Command</label>
@@ -473,7 +513,7 @@ audio { display:none; } /* Hide native audio element */
                   <span id="speedStatus" class="metric-note"><i></i> Waiting...</span>
                 </div>
                 
-                <!-- NEW CALORIES METRIC -->
+                <!-- CALORIES METRIC -->
                 <div class="app-metric metric-orange">
                   <div class="metric-top">
                     <div class="metric-icon">
@@ -487,9 +527,29 @@ audio { display:none; } /* Hide native audio element */
                   <span id="caloriesStatus" class="metric-note"><i></i> Burning energy</span>
                 </div>
               </div>
+
+              <!-- MINI MUSIC PLAYER (Fills the bottom gap) -->
+              <div class="mini-player">
+                <div class="mini-player-info">
+                  <svg viewBox="0 0 24 24" width="16" height="16" stroke="var(--lime)" stroke-width="2" fill="none"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+                  <span id="miniSongName">No music loaded</span>
+                </div>
+                <div class="mini-player-controls">
+                  <button class="mini-btn" id="miniPrevBtn">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5"></line></svg>
+                  </button>
+                  <button class="mini-btn main" id="miniPlayPauseBtn">
+                    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="currentColor" id="miniPlayIcon"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                  </button>
+                  <button class="mini-btn" id="miniNextBtn">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg>
+                  </button>
+                </div>
+              </div>
+
             </div>
 
-            <!-- 2. MUSIC VIEW (No Bluetooth Connection code needed as it uses device's native Bluetooth) -->
+            <!-- 2. MUSIC VIEW -->
             <div id="view-music" class="app-view">
               <div class="music-view-container">
                 
@@ -663,10 +723,21 @@ if (window.DeviceOrientationEvent) {
 const audioUpload = document.getElementById('audioUpload');
 const songList = document.getElementById('songList');
 const audioPlayer = document.getElementById('audioPlayer');
+
+// Main Player Controls
 const playPauseBtn = document.getElementById('playPauseBtn');
 const prevBtn = document.getElementById('prevBtn');
 const nextBtn = document.getElementById('nextBtn');
 const playIcon = document.getElementById('playIcon');
+
+// Mini Player Controls
+const miniPlayPauseBtn = document.getElementById('miniPlayPauseBtn');
+const miniPrevBtn = document.getElementById('miniPrevBtn');
+const miniNextBtn = document.getElementById('miniNextBtn');
+const miniPlayIcon = document.getElementById('miniPlayIcon');
+const miniSongName = document.getElementById('miniSongName');
+
+// Progress
 const progressFill = document.getElementById('progressFill');
 const progressBarContainer = document.getElementById('progressBarContainer');
 const timeCurrent = document.getElementById('timeCurrent');
@@ -714,46 +785,72 @@ function loadSong(index) {
     const url = URL.createObjectURL(file);
     audioPlayer.src = url;
     audioPlayer.load();
+    
+    const cleanName = file.name.replace(/\.[^/.]+$/, "");
+    miniSongName.textContent = cleanName; // Update Mini Player Title
+    
     renderSongs();
 }
 
 function playSongIndex(index) {
     loadSong(index);
-    togglePlayPause();
+    if(audioPlayer.paused) {
+        togglePlayPause(); // Only toggle if not already playing
+    } else {
+        audioPlayer.play();
+    }
+}
+
+function updatePlayIcons() {
+    if(audioPlayer.paused) {
+        const playSvg = `<polygon points="5 3 19 12 5 21 5 3"></polygon>`;
+        playIcon.innerHTML = playSvg;
+        miniPlayIcon.innerHTML = playSvg;
+    } else {
+        const pauseSvg = `<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>`;
+        playIcon.innerHTML = pauseSvg;
+        miniPlayIcon.innerHTML = pauseSvg;
+    }
 }
 
 function togglePlayPause() {
     if(songs.length === 0) return;
     if(audioPlayer.paused) {
         audioPlayer.play();
-        playIcon.innerHTML = `<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>`;
     } else {
         audioPlayer.pause();
-        playIcon.innerHTML = `<polygon points="5 3 19 12 5 21 5 3"></polygon>`;
     }
+    updatePlayIcons();
     renderSongs();
 }
 
-playPauseBtn.addEventListener('click', togglePlayPause);
-
-prevBtn.addEventListener('click', () => {
-    if(songs.length === 0) return;
-    currentSongIndex = (currentSongIndex - 1 + songs.length) % songs.length;
-    loadSong(currentSongIndex);
-    audioPlayer.play();
-    playIcon.innerHTML = `<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>`;
-});
-
-nextBtn.addEventListener('click', () => {
+function playNext() {
     if(songs.length === 0) return;
     currentSongIndex = (currentSongIndex + 1) % songs.length;
     loadSong(currentSongIndex);
     audioPlayer.play();
-    playIcon.innerHTML = `<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>`;
-});
+    updatePlayIcons();
+}
+
+function playPrev() {
+    if(songs.length === 0) return;
+    currentSongIndex = (currentSongIndex - 1 + songs.length) % songs.length;
+    loadSong(currentSongIndex);
+    audioPlayer.play();
+    updatePlayIcons();
+}
+
+playPauseBtn.addEventListener('click', togglePlayPause);
+miniPlayPauseBtn.addEventListener('click', togglePlayPause);
+
+prevBtn.addEventListener('click', playPrev);
+miniPrevBtn.addEventListener('click', playPrev);
+
+nextBtn.addEventListener('click', playNext);
+miniNextBtn.addEventListener('click', playNext);
 
 audioPlayer.addEventListener('ended', () => {
-    nextBtn.click();
+    playNext();
 });
 
 audioPlayer.addEventListener('timeupdate', () => {
