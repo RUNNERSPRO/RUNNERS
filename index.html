@@ -87,7 +87,7 @@ section{padding:125px 0;position:relative;z-index:2}.section-top{display:flex;ju
 .stats{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid rgba(255,255,255,.10);border-bottom:1px solid rgba(255,255,255,.10)}.stat{padding:32px 20px;border-right:1px solid rgba(255,255,255,.10);text-align:center}.stat:last-child{border-right:0}.stat strong{font:500 clamp(34px,4vw,52px) "Space Grotesk";letter-spacing:-.06em}.stat span{display:block;color:#71808c;font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-top:7px}
 
 .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.card{position:relative;min-height:320px;padding:27px;border:1px solid rgba(255,255,255,.105);border-radius:28px;background:linear-gradient(145deg,rgba(255,255,255,.065),rgba(255,255,255,.025));overflow:hidden;transition:.55s var(--ease);box-shadow:0 25px 70px rgba(0,0,0,.13),inset 0 1px 0 rgba(255,255,255,.035);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
-.card:hover{transform:translateY(-10px);border-color:rgba(200,255,69,.23);box-shadow:0 35px 80px rgba(0,0,0,.24),0 0 45px rgba(120,175,210,.05)}.card:after{content:"";position:absolute;width:230px;height:230px;right:-130px;top:-130px;background:radial-gradient(circle,rgba(112,170,215,.13),transparent 68%)}
+.card:hover{transform:translateY(-10px);border-color:rgba(200,255,69,.23);box-shadow:0 35px 80px rgba(0,0,0,.24),0 0 45px rgba(120,175,210,.05)}.card:after{content:"absolute";width:230px;height:230px;right:-130px;top:-130px;background:radial-gradient(circle,rgba(112,170,215,.13),transparent 68%)}
 .icon{width:46px;height:46px;border:1px solid rgba(200,255,69,.17);border-radius:15px;background:linear-gradient(145deg,rgba(200,255,69,.09),rgba(100,155,200,.05));display:grid;place-items:center;color:var(--lime);font:600 17px "Space Grotesk"}
 .card h3{font:600 24px "Space Grotesk";letter-spacing:-.04em;margin:35px 0 9px}.card p{color:#7f8d98;font-size:13px;line-height:1.7}.card-line{position:absolute;left:27px;right:27px;bottom:26px;height:1px;background:rgba(255,255,255,.08)}.card-line i{display:block;width:35%;height:1px;background:var(--lime);box-shadow:0 0 10px rgba(200,255,69,.55)}
 
@@ -115,149 +115,155 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
 
 
 /* =========================================================
-   RAFTAAR APP-STYLE GPS SHOWCASE (UPDATED DESIGN)
+   RAFTAAR APP-STYLE GPS SHOWCASE (DEDICATED DIGITAL PHONE)
    ========================================================= */
 .app-showcase{display:flex;justify-content:center;position:relative;padding:15px 0 20px}
 .app-showcase:before{content:"";position:absolute;width:650px;height:650px;left:50%;top:50%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(111,183,232,.14),rgba(200,255,69,.035) 38%,transparent 70%);filter:blur(25px);pointer-events:none}
-.app-phone{position:relative;width:min(520px,92vw);padding:11px;border:1px solid rgba(255,255,255,.22);border-radius:62px;background:linear-gradient(145deg,#657381,#101923 18%,#02070b 80%,#4a5865);box-shadow:0 55px 120px rgba(0,0,0,.52),0 0 0 2px rgba(255,255,255,.05),inset 0 1px 2px rgba(255,255,255,.35);z-index:2;display:flex;}
-.app-phone:before{content:"";position:absolute;left:-5px;top:155px;width:4px;height:62px;border-radius:4px 0 0 4px;background:#3f4b56;box-shadow:0 80px 0 #3f4b56}
-.app-phone:after{content:"";position:absolute;right:-5px;top:205px;width:4px;height:92px;border-radius:0 4px 4px 0;background:#3f4b56}
-.app-island{position:absolute;z-index:12;left:50%;top:17px;transform:translateX(-50%);width:126px;height:31px;border-radius:22px;background:#000;box-shadow:inset 0 0 0 1px rgba(255,255,255,.025)}
-.app-screen{position:relative;overflow:hidden;border-radius:51px;background:#07131f;flex:1;min-height:930px;color:#eef4f7;display:flex;flex-direction:column;}
+
+/* REALISTIC PHONE CONTAINER */
+.app-phone{
+  position:relative;
+  width:360px; /* Standard mobile width */
+  height:740px; /* Standard mobile height */
+  max-width:95vw;
+  max-height:88vh;
+  padding:10px;
+  border:1px solid rgba(255,255,255,.22);
+  border-radius:48px;
+  background:linear-gradient(145deg,#657381,#101923 18%,#02070b 80%,#4a5865);
+  box-shadow:0 45px 100px rgba(0,0,0,.5),0 0 0 2px rgba(255,255,255,.05),inset 0 1px 2px rgba(255,255,255,.35);
+  z-index:2;
+  display:flex;
+  flex-direction:column;
+}
+
+.app-phone:before{content:"";position:absolute;left:-5px;top:125px;width:4px;height:50px;border-radius:4px 0 0 4px;background:#3f4b56;box-shadow:0 70px 0 #3f4b56}
+.app-phone:after{content:"";position:absolute;right:-5px;top:165px;width:4px;height:80px;border-radius:0 4px 4px 0;background:#3f4b56}
+.app-island{position:absolute;z-index:12;left:50%;top:18px;transform:translateX(-50%);width:110px;height:26px;border-radius:22px;background:#000;box-shadow:inset 0 0 0 1px rgba(255,255,255,.025)}
+
+/* SCREEN & INTERNAL SCROLLING */
+.app-screen{
+  position:relative;
+  overflow:hidden;
+  border-radius:38px;
+  background:#07131f;
+  flex:1;
+  display:flex;
+  flex-direction:column;
+}
 
 /* STATUSBAR */
-.app-statusbar{height:52px;padding:17px 24px 0;display:flex;justify-content:space-between;align-items:flex-start;font:600 15px/1 "DM Sans";letter-spacing:.01em;position:relative;z-index:8}
-.app-statusbar b{font-size:12px;margin-left:2px}.app-status-icons{font-weight:500;font-size:14px;opacity:.95;display:flex;align-items:center;gap:6px}
+.app-statusbar{height:44px;padding:14px 20px 0;display:flex;justify-content:space-between;align-items:flex-start;font:600 13px/1 "DM Sans";letter-spacing:.01em;position:relative;z-index:8}
+.app-statusbar b{font-size:11px;margin-left:2px}.app-status-icons{font-weight:500;font-size:12px;opacity:.95;display:flex;align-items:center;gap:5px}
 
-/* HEADER WITH VOICE COMMAND CHECKBOX */
-.app-header{display:flex;align-items:center;justify-content:space-between;padding:15px 24px 0;position:relative;z-index:8;flex-shrink:0;gap:8px;}
-.app-brand{display:flex;align-items:center;gap:10px;min-width:0;flex-shrink:1;}
-.app-runner{font-size:42px;line-height:.75;color:#baff35;transform:rotate(-22deg);text-shadow:0 0 22px rgba(186,255,53,.22);flex-shrink:0;}
-.app-logo{font:700 28px/1 "Space Grotesk";font-style:italic;letter-spacing:-.06em;white-space:nowrap;}
-.app-tagline{margin-top:4px;color:#9babb9;font:500 14px/1 "DM Sans";font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.app-header-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;}
-.gps-chip{height:38px;padding:0 12px;border-radius:20px;border:1px solid rgba(115,171,213,.2);background:rgba(6,20,31,.78);backdrop-filter:blur(15px);display:flex;align-items:center;gap:6px;font-size:12px;white-space:nowrap;transition:0.3s;}
-.gps-chip i{width:8px;height:8px;border-radius:50%;background:#aaff35;box-shadow:0 0 12px #aaff35;flex-shrink:0;}
+/* iOS PREMIUM HEADER */
+.app-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 20px 5px; position: relative; z-index: 8; flex-shrink: 0; }
+.app-brand { display: flex; align-items: center; gap: 12px; }
+.app-runner { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; background: linear-gradient(135deg, rgba(200,255,69,0.15), rgba(200,255,69,0.02)); border: 1px solid rgba(200,255,69,0.25); border-radius: 12px; color: var(--lime); box-shadow: 0 4px 15px rgba(200,255,69,0.05);}
+.app-logo { font: 700 24px/1.1 "Space Grotesk"; letter-spacing: -0.04em; color: #fff; }
+.app-tagline { font: 500 11px/1 "DM Sans"; color: #8294a8; letter-spacing: 0.02em; margin-top: 2px; }
 
-/* VOICE COMMAND CHECKBOX */
-.voice-cmd-wrapper { display: flex; align-items: center; gap: 8px; background: rgba(6, 20, 31, 0.78); border: 1px solid rgba(126, 169, 203, 0.2); padding: 8px 12px; border-radius: 20px; backdrop-filter: blur(15px); }
-.voice-cmd-wrapper label { color: #e8eff4; font-size: 11px; font-weight: 600; cursor: pointer; white-space:nowrap;}
-.voice-cmd-wrapper input[type="checkbox"] { appearance: none; width: 16px; height: 16px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; outline: none; cursor: pointer; position: relative; transition:0.2s;}
-.voice-cmd-wrapper input[type="checkbox"]:checked { background: var(--lime); border-color: var(--lime); }
-.voice-cmd-wrapper input[type="checkbox"]:checked::after { content: ""; position: absolute; left: 5px; top: 2px; width: 4px; height: 8px; border: solid #000; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+/* STACKED ACTIONS WITH PROPER SPACING */
+.app-header-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
 
-/* VIEWS CONTAINER */
-.app-views-container { position: relative; flex:1; display:flex; flex-direction:column; margin-top: 15px; min-height: 0;}
-.app-view { display: none; height:100%; flex-direction:column; flex:1; min-height: 0;}
+/* SLEEK GPS PILL */
+.gps-chip { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); padding: 5px 10px; border-radius: 99px; backdrop-filter: blur(10px); font-size: 10px; font-weight: 600; color: #d0dbd0; transition: 0.3s; }
+.gps-chip i { width: 5px; height: 5px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 8px var(--lime); }
+
+/* iOS STYLE VOICE TOGGLE */
+.voice-control { display: flex; align-items: center; gap: 8px; }
+.voice-control label { font-size: 10px; font-weight: 500; color: #8294a8; cursor: pointer; white-space:nowrap;}
+.ios-switch { position: relative; display: inline-block; width: 32px; height: 18px; }
+.ios-switch input { opacity: 0; width: 0; height: 0; }
+.ios-slider { position: absolute; cursor: pointer; inset: 0; background-color: rgba(255,255,255,0.1); border-radius: 20px; transition: .3s; border: 1px solid rgba(255,255,255,0.05); }
+.ios-slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 1px; bottom: 1px; background-color: #8294a8; border-radius: 50%; transition: .3s; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+.ios-switch input:checked + .ios-slider { background-color: var(--lime); border-color: var(--lime); }
+.ios-switch input:checked + .ios-slider:before { transform: translateX(12px); background-color: #07101a; }
+
+/* VIEWS CONTAINER (SCROLLABLE) */
+.app-views-container { 
+  position: relative; flex:1; display:flex; flex-direction:column; margin-top: 10px; 
+  min-height: 0; overflow-y: auto; overflow-x: hidden;
+}
+.app-views-container::-webkit-scrollbar { width: 4px; }
+.app-views-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+.app-view { display: none; flex-direction:column; flex:1; }
 .app-view.active-view { display: flex; animation: viewFadeIn 0.3s ease; }
 @keyframes viewFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-/* RUN VIEW TOP BAR & COMPASS FIX */
-.run-top-bar { display:flex; gap:12px; padding: 0 18px 15px; z-index:8; position:relative; align-items:flex-start;}
-.btn-show-map { flex: 1; background: linear-gradient(145deg,rgba(25,50,69,.84),rgba(8,22,34,.84)); border: 1px solid rgba(130,178,211,.19); border-radius: 20px; color: #fff; font: 600 16px "Space Grotesk"; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; box-shadow:0 10px 20px rgba(0,0,0,.15); transition:0.2s; height: 50px;}
+/* RUN VIEW TOP BAR & COMPASS */
+.run-top-bar { display:flex; gap:12px; padding: 0 16px 12px; z-index:8; position:relative; align-items:flex-start;}
+.btn-show-map { flex: 1; background: linear-gradient(145deg,rgba(25,50,69,.84),rgba(8,22,34,.84)); border: 1px solid rgba(130,178,211,.19); border-radius: 16px; color: #fff; font: 600 14px "Space Grotesk"; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; box-shadow:0 8px 15px rgba(0,0,0,.15); transition:0.2s; height: 42px;}
 .btn-show-map:hover { background: rgba(25,50,69,1); transform:translateY(-2px); }
 
-/* IMPROVED COMPASS */
-.compass-container { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 6px; flex-shrink: 0;}
-.compass-circle { width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(145deg, rgba(25,50,69,.9), rgba(8,22,34,.9)); border: 2px solid rgba(200,255,69,.4); box-shadow: 0 0 10px rgba(200,255,69,.1); position: relative; }
+/* COMPASS */
+.compass-container { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 4px; flex-shrink: 0;}
+.compass-circle { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(145deg, rgba(25,50,69,.9), rgba(8,22,34,.9)); border: 2px solid rgba(200,255,69,.4); box-shadow: 0 0 10px rgba(200,255,69,.1); position: relative; }
 .compass-dial { position: absolute; inset: 0; transition: transform 0.2s ease-out; }
-.compass-arrow-up { position: absolute; top: 4px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 18px solid var(--lime); }
-.compass-arrow-down { position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 18px solid #ff4b4b; }
-.compass-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 6px; height: 6px; background: #fff; border-radius: 50%; z-index: 2; box-shadow: 0 0 4px rgba(0,0,0,0.5);}
-#headingText { font-size: 10px; font-weight: bold; color: var(--lime); white-space: nowrap; line-height: 1;}
+.compass-arrow-up { position: absolute; top: 3px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-bottom: 14px solid var(--lime); }
+.compass-arrow-down { position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 14px solid #ff4b4b; }
+.compass-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 4px; height: 4px; background: #fff; border-radius: 50%; z-index: 2; box-shadow: 0 0 4px rgba(0,0,0,0.5);}
+#headingText { font-size: 9px; font-weight: bold; color: var(--lime); white-space: nowrap; line-height: 1;}
 
 /* RUN STAGE */
-.app-run-stage{flex:1; position:relative; overflow:hidden; background:#0a1722; border-radius:24px; margin: 0 16px; min-height:350px;}
-.mountain-bg{position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,20,31,.08),rgba(6,13,20,.18) 45%,rgba(4,10,16,.74) 100%),url("https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=1200&q=86") center/cover no-repeat;filter:saturate(.82) contrast(1.08);transform:scale(1.04)}
-.runner-silhouette{position:absolute;right:13%;bottom:18%;width:58px;height:135px;z-index:3;opacity:.86;background:linear-gradient(150deg,transparent 0 20%,#06090c 21% 66%,transparent 67%);filter:drop-shadow(0 12px 12px rgba(0,0,0,.6));border-radius:45% 45% 30% 30%}
+.app-run-stage{position:relative; overflow:hidden; background:#0a1722; border-radius:20px; margin: 0 16px; min-height:240px; flex-shrink: 0;}
+.mountain-bg{position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,20,31,.08),rgba(6,13,20,.18) 45%,rgba(4,10,16,.74) 100%),url("https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=800&q=80") center/cover no-repeat;filter:saturate(.82) contrast(1.08);transform:scale(1.04)}
+.runner-silhouette{position:absolute;right:10%;bottom:15%;width:50px;height:115px;z-index:3;opacity:.86;background:linear-gradient(150deg,transparent 0 20%,#06090c 21% 66%,transparent 67%);filter:drop-shadow(0 12px 12px rgba(0,0,0,.6));border-radius:45% 45% 30% 30%}
 .run-stage-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(4,12,19,.10),rgba(4,10,15,.18) 35%,rgba(4,8,12,.65) 100%);z-index:2}
-.app-run-center{position:absolute;z-index:6;left:50%;top:38%;transform:translate(-50%,-50%);text-align:center;width:100%;pointer-events:none}
-.app-running-label{display:inline-flex;align-items:center;gap:9px;color:#f0e7b2;font:600 12px "Space Grotesk";letter-spacing:.42em}
-.app-running-label i{width:7px;height:7px;border-radius:50%;background:#c8ff45;box-shadow:0 0 13px #c8ff45}
+.app-run-center{position:absolute;z-index:6;left:50%;top:35%;transform:translate(-50%,-50%);text-align:center;width:100%;pointer-events:none}
+.app-running-label{display:inline-flex;align-items:center;gap:6px;color:#f0e7b2;font:600 10px "Space Grotesk";letter-spacing:.4em}
+.app-running-label i{width:5px;height:5px;border-radius:50%;background:#c8ff45;box-shadow:0 0 10px #c8ff45}
 .app-running-label.active i{animation:pulse 1s infinite}
-#timer{display:block;margin-top:20px;font:600 82px/.9 "Space Grotesk";letter-spacing:-.08em;text-shadow:0 10px 40px rgba(0,0,0,.45);font-variant-numeric:tabular-nums}
-.app-elapsed{display:block;margin-top:13px;color:#b1bdc6;font:500 12px "DM Sans";letter-spacing:.30em}
+#timer{display:block;margin-top:10px;font:600 52px/.9 "Space Grotesk";letter-spacing:-.08em;text-shadow:0 10px 30px rgba(0,0,0,.45);font-variant-numeric:tabular-nums}
+.app-elapsed{display:block;margin-top:6px;color:#b1bdc6;font:500 10px "DM Sans";letter-spacing:.25em}
 
 /* CONTROLS */
-.app-controls{position:absolute;z-index:9;bottom:25px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:45px}
-.circle-control{width:70px;height:70px;border-radius:50%;border:1px solid rgba(144,177,202,.24);background:rgba(5,18,29,.75);backdrop-filter:blur(18px);color:#91a4b6;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);transition:.25s ease}
+.app-controls{position:absolute;z-index:9;bottom:15px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:25px}
+.circle-control{width:54px;height:54px;border-radius:50%;border:1px solid rgba(144,177,202,.24);background:rgba(5,18,29,.75);backdrop-filter:blur(18px);color:#91a4b6;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);transition:.25s ease}
 .circle-control:not(:disabled):hover{transform:scale(1.05);color:#fff}
-.circle-control small{font:600 10px "DM Sans";margin-top:4px}.control-symbol{font-size:16px;line-height:1}
+.circle-control small{font:600 8px "DM Sans";margin-top:3px}.control-symbol{font-size:14px;line-height:1}
 .circle-control:disabled{opacity:.38;cursor:not-allowed}
-.main-control{width:95px;height:95px;border-radius:50%;border:6px solid rgba(200,255,69,.22);outline:2px solid rgba(200,255,69,.35);background:linear-gradient(145deg,#caff43,#9cf020);color:#081208;font-size:30px;display:grid;place-items:center;cursor:pointer;box-shadow:0 0 35px rgba(178,255,50,.24);transition:.2s var(--ease)}
+.main-control{width:70px;height:70px;border-radius:50%;border:4px solid rgba(200,255,69,.22);outline:2px solid rgba(200,255,69,.35);background:linear-gradient(145deg,#caff43,#9cf020);color:#081208;font-size:22px;display:grid;place-items:center;cursor:pointer;box-shadow:0 0 25px rgba(178,255,50,.24);transition:.2s var(--ease)}
 .main-control:active{transform:scale(.95)}
-.main-control.running{background:linear-gradient(145deg,#ffdf5d,#f0a618);outline-color:rgba(255,210,80,.4);box-shadow:0 0 35px rgba(255,180,50,.28)}
+.main-control.running{background:linear-gradient(145deg,#ffdf5d,#f0a618);outline-color:rgba(255,210,80,.4);box-shadow:0 0 25px rgba(255,180,50,.28)}
 
 /* METRICS */
-.app-metrics{position:relative;z-index:8;display:grid;grid-template-columns:1fr 1fr;gap:11px;padding:15px 16px 13px;background:#07131f;flex-shrink:0;}
-.app-metric{min-height:140px;padding:15px;border-radius:22px;border:1px solid rgba(123,167,201,.17);background:linear-gradient(145deg,rgba(21,42,58,.86),rgba(7,20,31,.93));box-shadow:inset 0 1px 0 rgba(255,255,255,.045),0 12px 28px rgba(0,0,0,.18)}
-.metric-top{display:flex;align-items:center;gap:11px}.metric-top small{color:#9eb0bf;font:600 11px "DM Sans";letter-spacing:.10em}.metric-icon{width:35px;height:35px;border-radius:50%;display:grid;place-items:center;font-size:17px}.metric-green .metric-icon{background:linear-gradient(145deg,#b8ff37,#49aa14);color:#07100a;}.metric-blue .metric-icon{background:linear-gradient(145deg,#2bd9ff,#0879df);color:#dff8ff;}.metric-purple .metric-icon{background:linear-gradient(145deg,#9a45ff,#4d1ac8);color:#fff;}.metric-orange .metric-icon{background:linear-gradient(145deg,#ffbd36,#bd5e00);color:#fff;}
-.app-metric strong{display:block;margin:12px 0 6px;font:600 24px/1 "Space Grotesk";letter-spacing:-.055em;font-variant-numeric:tabular-nums}.app-metric strong em{font:500 12px "DM Sans";color:#91a5b4;font-style:normal;}
-.metric-note{display:block;color:#9aa9b6;font-size:10px}.metric-note i{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:5px;background:#7e9fff;}.metric-green .metric-note i{background:#aaff35}.accuracy{height:3px;width:100%;margin-top:8px;border-radius:99px;background:#182a35;overflow:hidden}.accuracy i{display:block;height:100%;width:0;border-radius:99px;background:#c8ff45;transition:width .4s ease}
+.app-metrics{position:relative;z-index:8;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 16px 15px;background:#07131f;flex-shrink:0;}
+.app-metric{min-height:100px;padding:12px;border-radius:16px;border:1px solid rgba(123,167,201,.17);background:linear-gradient(145deg,rgba(21,42,58,.86),rgba(7,20,31,.93));box-shadow:inset 0 1px 0 rgba(255,255,255,.045),0 8px 20px rgba(0,0,0,.18)}
+.metric-top{display:flex;align-items:center;gap:8px}.metric-top small{color:#9eb0bf;font:600 9px "DM Sans";letter-spacing:.08em}.metric-icon{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:13px}.metric-green .metric-icon{background:linear-gradient(145deg,#b8ff37,#49aa14);color:#07100a;}.metric-blue .metric-icon{background:linear-gradient(145deg,#2bd9ff,#0879df);color:#dff8ff;}.metric-purple .metric-icon{background:linear-gradient(145deg,#9a45ff,#4d1ac8);color:#fff;}.metric-orange .metric-icon{background:linear-gradient(145deg,#ffbd36,#bd5e00);color:#fff;}
+.app-metric strong{display:block;margin:8px 0 4px;font:600 20px/1 "Space Grotesk";letter-spacing:-.04em;font-variant-numeric:tabular-nums}.app-metric strong em{font:500 10px "DM Sans";color:#91a5b4;font-style:normal;}
+.metric-note{display:block;color:#9aa9b6;font-size:9px}.metric-note i{display:inline-block;width:4px;height:4px;border-radius:50%;margin-right:4px;background:#7e9fff;}.metric-green .metric-note i{background:#aaff35}.accuracy{height:3px;width:100%;margin-top:6px;border-radius:99px;background:#182a35;overflow:hidden}.accuracy i{display:block;height:100%;width:0;border-radius:99px;background:#c8ff45;transition:width .4s ease}
 
-/* MAP VIEW (REAL LEAFLET MAP - FULL SCREEN STYLE) */
-.map-top-bar { padding: 0 18px 15px; z-index:8; position:relative; }
-.map-select { width: 100%; padding: 14px 18px; border-radius: 18px; background: rgba(8,22,34,.9); border: 1px solid rgba(130,178,211,.25); color: #fff; font: 600 16px "Space Grotesk"; outline:none; cursor:pointer; -webkit-appearance:none; appearance:none; }
-.map-view-container { flex: 1; border-radius: 24px 24px 0 0; overflow: hidden; margin: 0; border: 1px solid rgba(130,178,211,.2); border-bottom:none; position:relative; background:#101d29; display: flex; flex-direction: column;}
+/* MAP VIEW (REAL LEAFLET MAP) */
+.map-top-bar { padding: 0 16px 10px; z-index:8; position:relative; flex-shrink: 0;}
+.map-select { width: 100%; padding: 10px 14px; border-radius: 14px; background: rgba(8,22,34,.9); border: 1px solid rgba(130,178,211,.25); color: #fff; font: 600 14px "Space Grotesk"; outline:none; cursor:pointer; -webkit-appearance:none; appearance:none; }
+.map-view-container { flex: 1; border-radius: 20px 20px 0 0; overflow: hidden; margin: 0; border: 1px solid rgba(130,178,211,.2); border-bottom:none; position:relative; background:#101d29; display: flex; flex-direction: column; min-height: 400px;}
 #realMap { flex: 1; width: 100%; z-index: 1;}
 
 /* LEAFLET CSS OVERRIDES (SMART DARK MODE) */
 .leaflet-container { background: #07131f !important; font-family: "DM Sans", sans-serif; outline: none;}
 .leaflet-control-attribution { display: none !important;}
-/* Dark filter on tiles only, not on lines or markers */
-.dark-map-mode .leaflet-tile-pane {
-    filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(85%);
-}
+.dark-map-mode .leaflet-tile-pane { filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(85%); }
 
 /* HISTORY VIEW */
-.history-list { flex:1; padding: 0 18px 20px; overflow-y: auto; }
-.history-card { background: linear-gradient(145deg,rgba(25,50,69,.8),rgba(8,22,34,.9)); border: 1px solid rgba(130,178,211,.15); border-radius: 20px; padding: 18px; margin-bottom: 15px; box-shadow:0 10px 20px rgba(0,0,0,.2); animation: viewFadeIn 0.4s ease;}
-.hist-header { display:flex; justify-content:space-between; margin-bottom: 12px; font-size: 12px; color: #9aa9b5; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px;}
-.hist-stats { display: flex; justify-content: space-between; color: #fff; font-size: 12px; text-align:center;}
-.hist-stats strong { font-size: 22px; color: var(--lime); display:block; margin-bottom:4px; font-family:"Space Grotesk";}
-.empty-hist { padding-top: 50px; text-align:center; color:#8294a8;}
+.history-list { flex:1; padding: 0 16px 15px; overflow-y: auto; }
+.history-card { background: linear-gradient(145deg,rgba(25,50,69,.8),rgba(8,22,34,.9)); border: 1px solid rgba(130,178,211,.15); border-radius: 16px; padding: 14px; margin-bottom: 12px; box-shadow:0 6px 12px rgba(0,0,0,.2); animation: viewFadeIn 0.4s ease;}
+.hist-header { display:flex; justify-content:space-between; margin-bottom: 8px; font-size: 10px; color: #9aa9b5; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:6px;}
+.hist-stats { display: flex; justify-content: space-between; color: #fff; font-size: 10px; text-align:center;}
+.hist-stats strong { font-size: 18px; color: var(--lime); display:block; margin-bottom:2px; font-family:"Space Grotesk";}
+.empty-hist { padding-top: 40px; text-align:center; color:#8294a8;}
 
-/* BOTTOM NAV - 3 COLUMNS */
-.app-bottom-nav{height:84px;padding:9px 16px 14px;display:grid;grid-template-columns:repeat(3,1fr);background:rgba(5,16,26,.97);border-top:1px solid rgba(255,255,255,.07);position:relative;z-index:9;flex-shrink:0;}
-.app-bottom-nav .nav-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#8294a8;font-size:18px;position:relative;background:none;border:none;cursor:pointer;outline:none;transition:color .25s ease}
-.app-bottom-nav .nav-item small{font:500 12px "DM Sans";letter-spacing:.02em}
+/* BOTTOM NAV */
+.app-bottom-nav{height:68px;padding:6px 16px 10px;display:grid;grid-template-columns:repeat(3,1fr);background:rgba(5,16,26,.97);border-top:1px solid rgba(255,255,255,.07);position:relative;z-index:9;flex-shrink:0;}
+.app-bottom-nav .nav-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#8294a8;font-size:16px;position:relative;background:none;border:none;cursor:pointer;outline:none;transition:color .25s ease}
+.app-bottom-nav .nav-item small{font:500 10px "DM Sans";letter-spacing:.02em}
 .app-bottom-nav .nav-item.active{color:#baff35}
-.app-bottom-nav .nav-item.active:after{content:"";position:absolute;bottom:0;width:42px;height:4px;border-radius:99px;background:#baff35;box-shadow:0 0 11px rgba(186,255,53,.5)}
+.app-bottom-nav .nav-item.active:after{content:"";position:absolute;bottom:0;width:30px;height:3px;border-radius:99px;background:#baff35;box-shadow:0 0 10px rgba(186,255,53,.5)}
 
 .app-phone.locked .app-screen:after{content:"";position:absolute;inset:0;background:rgba(0,0,0,.22);z-index:20;pointer-events:none}
 .app-phone.locked .lock-control{color:#c8ff45;border-color:rgba(200,255,69,.45)}
 
-@media(max-width:700px){
- .app-showcase{padding:0}.app-phone{width:min(400px,96vw);padding:7px;border-radius:48px;height:auto;min-height:880px;max-height:none;} 
- .app-screen{border-radius:41px;height:100%;min-height:100%;}
- .app-island{top:12px;width:102px;height:25px}
- 
- /* MOBILE HEADER ALIGNED */
- .app-header{padding:15px 16px 0;gap:6px;}
- .app-runner{font-size:32px;}
- .app-logo{font-size:22px;}
- .app-tagline{font-size:11px;}
- .gps-chip{height:34px;padding:0 10px;font-size:10px;}
- .voice-cmd-wrapper{padding: 5px 8px;}
- .voice-cmd-wrapper label{font-size:9px;}
- 
- .run-top-bar, .map-top-bar { padding: 0 12px 10px;}
- .btn-show-map { height: 44px; font-size:14px; }
- .compass-circle { width: 44px; height: 44px; }
- .app-run-stage{ margin: 0 12px;}
- .app-run-center{top:38%}#timer{font-size:60px;margin-top:12px}
- .app-controls{bottom:15px;gap:24px}.circle-control{width:56px;height:56px}.main-control{width:75px;height:75px;}
- .app-metrics{gap:8px;padding:10px}.app-metric{min-height:115px;padding:12px;border-radius:18px}.app-metric strong{font-size:20px;margin:8px 0 4px}
- .app-bottom-nav{height:67px;padding:6px 10px 10px}.app-bottom-nav .nav-item{font-size:16px;gap:4px}.app-bottom-nav .nav-item small{font-size:9px}
- 
- .map-view-container { border-radius: 20px 20px 0 0; min-height: 0; flex: 1;}
-}
-@media(max-width:380px){
- .app-phone{width:98vw;padding:5px;border-radius:40px;height:auto;min-height:850px;}
- .app-screen{border-radius:35px}
- .gps-chip{max-width:70px;overflow:hidden;} 
- .app-controls{gap:16px}.circle-control{width:52px;height:52px}.main-control{width:72px;height:72px}.app-metric{min-height:118px;padding:11px}.app-metric strong{font-size:20px}
-}
 </style>
 </head>
 
@@ -285,7 +291,7 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
     <p class="hero-copy reveal">Raftaar turns every run into a focused experience. Track your route, distance, pace and progress.</p>
     <div class="hero-actions reveal">
       <a href="#download" class="btn btn-main">Download APK</a>
-      <a href="#features" class="btn btn-dark">Explore features</a>
+      <a href="#tracking" class="btn btn-dark">Try App</a>
     </div>
     <div class="hero-note reveal"><span>✓ <strong>100% Free</strong></span><span>✓ <strong>GPS Powered</strong></span><span>✓ <strong>No Clutter</strong></span></div>
 
@@ -356,10 +362,12 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
             <span class="app-status-icons">●●● &nbsp;5G&nbsp; <b id="liveBattery">100%</b></span>
           </div>
 
-          <!-- APP HEADER WITH VOICE CHECKBOX -->
+          <!-- APP HEADER WITH STACKED ACTIONS (FIXED CRAMPING) -->
           <div class="app-header">
             <div class="app-brand">
-              <div class="app-runner">➜</div>
+              <div class="app-runner">
+                <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+              </div>
               <div>
                 <div class="app-logo">Raftaar</div>
                 <div class="app-tagline">Run, Your Way.</div>
@@ -367,10 +375,13 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
             </div>
             <div class="app-header-actions">
               <div id="gpsStatus" class="gps-chip"><i></i> GPS Ready</div>
-              <!-- VOICE COMMAND CHECKBOX -->
-              <div class="voice-cmd-wrapper">
+              <!-- PREMIUM iOS STYLE VOICE TOGGLE -->
+              <div class="voice-control">
                 <label for="voiceToggle">Voice Command</label>
-                <input type="checkbox" id="voiceToggle" checked>
+                <label class="ios-switch">
+                  <input type="checkbox" id="voiceToggle" checked>
+                  <span class="ios-slider"></span>
+                </label>
               </div>
             </div>
           </div>
@@ -384,9 +395,8 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
               <div class="run-top-bar">
                 <button class="btn-show-map" onclick="showMapTab()">
                   Show Map
-                  <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
+                  <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
                 </button>
-                <!-- NEW PROPER CIRCULAR COMPASS -->
                 <div class="compass-container">
                   <div class="compass-circle">
                     <div class="compass-dial" id="compassIcon">
@@ -448,20 +458,7 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
               </div>
             </div>
 
-            <!-- 2. HISTORY VIEW -->
-            <div id="view-history" class="app-view">
-              <div id="historyContent" class="history-list">
-                <div class="empty-hist">
-                  <div style="margin-bottom:15px; color:rgba(200,255,69,0.3)">
-                    <svg viewBox="0 0 24 24" width="60" height="60" stroke="currentColor" stroke-width="1.5" fill="none"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                  </div>
-                  <h3 style="color:#fff; font-family:'Space Grotesk'; font-size:24px; margin-bottom:10px;">No Runs Yet</h3>
-                  <p>Complete your first run to see your history saved here.</p>
-                </div>
-              </div>
-            </div>
-
-            <!-- 3. FULL SCREEN MAP VIEW -->
+            <!-- 2. MAP VIEW -->
             <div id="view-map" class="app-view">
               <div class="map-top-bar">
                 <select id="mapTypeSelect" class="map-select">
@@ -475,20 +472,35 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
               </div>
             </div>
 
+            <!-- 3. HISTORY VIEW -->
+            <div id="view-history" class="app-view">
+              <div id="historyContent" class="history-list">
+                <div class="empty-hist">
+                  <div style="margin-bottom:15px; color:rgba(200,255,69,0.3)">
+                    <svg viewBox="0 0 24 24" width="60" height="60" stroke="currentColor" stroke-width="1.5" fill="none"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                  </div>
+                  <h3 style="color:#fff; font-family:'Space Grotesk'; font-size:24px; margin-bottom:10px;">No Runs Yet</h3>
+                  <p>Complete your first run to see your history saved here.</p>
+                </div>
+              </div>
+            </div>
+
           </div>
 
           <!-- BOTTOM NAV -->
           <div class="app-bottom-nav">
             <button class="nav-item active" type="button" data-tab="run">
-              <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><path d="M14.5 2C15.33 2 16 2.67 16 3.5C16 4.33 15.33 5 14.5 5C13.67 5 13 4.33 13 3.5C13 2.67 13.67 2 14.5 2ZM6.73 21.68L9.22 12.35L7.09 13.11L6 9.87L11.53 7.55C12.18 7.28 12.92 7.42 13.43 7.89L15.65 10C16.94 11.23 18.81 12 20.73 12V14C18.23 14 15.98 12.94 14.5 11.35L13.78 14.88L16.27 21.68H14.15L12 15.36L9.85 21.68H6.73Z"></path></svg>
+              <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
               <small>Run</small>
             </button>
             <button class="nav-item" type="button" data-tab="map">
-              <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
+              <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
               <small>Map</small>
             </button>
             <button class="nav-item" type="button" data-tab="history">
-              <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path></svg>
+              <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path></svg>
               <small>History</small>
             </button>
           </div>
@@ -539,9 +551,9 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
 function announce(message) {
     const voiceToggle = document.getElementById('voiceToggle');
     if (voiceToggle && voiceToggle.checked && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); // Stop current speech
+        window.speechSynthesis.cancel();
         const speech = new SpeechSynthesisUtterance(message);
-        speech.lang = 'en-US'; // English 
+        speech.lang = 'en-US'; 
         speech.rate = 1.0;
         window.speechSynthesis.speak(speech);
     }
@@ -575,28 +587,22 @@ const tileLayers = {
 };
 
 function initRealMap(lat, lon) {
-  // Use user's real location or default location
   leafletMap = L.map('realMap', {zoomControl: false}).setView([lat || 28.6139, lon || 77.2090], 18); 
   L.control.zoom({ position: 'bottomright' }).addTo(leafletMap);
   
-  // Default to Street Map with Dark Mode CSS Filter
   currentTileLayer = tileLayers.street;
   currentTileLayer.addTo(leafletMap);
   document.getElementById('realMap').classList.add('dark-map-mode');
 
-  // Thick, visible glowing route line
   mapPolyline = L.polyline([], {color: '#c8ff45', weight: 6, opacity: 0.9, lineCap: 'round', lineJoin: 'round'}).addTo(leafletMap);
   
-  // Clean location marker
   mapMarker = L.circleMarker([lat || 28.6139, lon || 77.2090], {
     radius: 7, fillColor: '#c8ff45', color: '#07101a', weight: 2, fillOpacity: 1
   }).addTo(leafletMap);
 }
 
-// Change Map Base Theme (Smart Filters)
 document.getElementById('mapTypeSelect').addEventListener('change', function(e) {
   if(!leafletMap) return;
-  
   let val = e.target.value;
   leafletMap.removeLayer(currentTileLayer);
   
@@ -650,7 +656,7 @@ function updateStatusBar() {
 setInterval(updateStatusBar, 1000); updateStatusBar();
 
 
-/* GPS TRACKING & HISTORY LOGIC */
+/* GPS TRACKING & LOCALSTORAGE HISTORY LOGIC */
 let watchId=null;
 let timerInterval=null;
 let isRunning=false;
@@ -660,7 +666,9 @@ let accumulatedTime=0;
 let elapsedSeconds=0;
 let totalDistance=0;
 let lastPosition=null;
-let runHistory = []; 
+
+// LOAD HISTORY FROM LOCALSTORAGE
+let runHistory = JSON.parse(localStorage.getItem('raftaarRunHistory')) || [];
 
 const startBtn=document.getElementById('startRun');
 const stopBtn=document.getElementById('stopRun');
@@ -698,16 +706,14 @@ function pauseTimer(){
  if(startTime) { accumulatedTime+=Math.floor((Date.now()-startTime)/1000); startTime=null; }
 }
 
-// REAL GPS POSITION HANDLER
 function handleLivePosition(pos) {
     const lat = pos.coords.latitude;
     const lon = pos.coords.longitude;
     const accuracy = pos.coords.accuracy;
     
     document.getElementById('accuracyText').textContent = Math.round(accuracy);
-    if(accuracy > 100) return; // Ignore very bad signals
+    if(accuracy > 100) return;
 
-    // Check map existence and initialize if needed
     if(document.getElementById('realMap') && !leafletMap) {
         initRealMap(lat, lon);
     }
@@ -716,10 +722,8 @@ function handleLivePosition(pos) {
     if(mapMarker) mapMarker.setLatLng(latlng);
     
     if(isRunning && !isPaused) {
-       // Draw route line if running
        if(mapPolyline) mapPolyline.addLatLng(latlng);
        
-       // Calculate distance
        if(lastPosition) {
            const lat1 = lastPosition.lat * Math.PI / 180;
            const lon1 = lastPosition.lon * Math.PI / 180;
@@ -732,14 +736,12 @@ function handleLivePosition(pos) {
            totalDistance += d;
            document.getElementById('distance').textContent = totalDistance.toFixed(2);
            
-           // Simple speed calculation
            let dt = (pos.timestamp - lastPosition.time) / 1000;
            let speed = dt > 0 ? (d*1000/dt)*3.6 : 0;
            document.getElementById('speed').textContent = speed.toFixed(1);
        }
     }
     
-    // Pan map to follow user
     if(leafletMap) leafletMap.panTo(latlng);
     lastPosition = {lat: lat, lon: lon, time: pos.timestamp};
 }
@@ -751,7 +753,6 @@ function handleGPSError(err) {
 function toggleRun(){
   if(appPhone.classList.contains('locked')) return;
   if(!isRunning){
-    // Start New Run
     isRunning=true; isPaused=false; totalDistance=0; accumulatedTime=0; elapsedSeconds=0; lastPosition=null;
     document.getElementById('distance').textContent='0.00';
     startBtn.classList.add('running'); startIcon.textContent='❚❚'; stopBtn.disabled=false;
@@ -759,9 +760,8 @@ function toggleRun(){
     document.getElementById('runningBadge').classList.add('active');
     document.getElementById('gpsStatus').innerHTML = '<i></i> GPS Active';
     
-    if(leafletMap && mapPolyline) mapPolyline.setLatLngs([]); // clear old route line
+    if(leafletMap && mapPolyline) mapPolyline.setLatLngs([]); 
 
-    // Voice Announcement
     announce("Run started. GPS tracking active.");
 
     startTimer();
@@ -770,23 +770,18 @@ function toggleRun(){
     }
 
   } else if(!isPaused){
-    // Pause
     isPaused=true; pauseTimer();
     startBtn.classList.remove('running'); startIcon.textContent='▶';
     document.getElementById('runState').textContent='PAUSED';
     document.getElementById('runningBadge').classList.remove('active');
     
-    // Voice Announcement
     announce("Run paused.");
-
   } else {
-    // Resume
     isPaused=false; startTimer();
     startBtn.classList.add('running'); startIcon.textContent='❚❚';
     document.getElementById('runState').textContent='RUNNING';
     document.getElementById('runningBadge').classList.add('active');
     
-    // Voice Announcement
     announce("Run resumed.");
   }
 }
@@ -809,7 +804,6 @@ function endRun(){
      if (mins > 0) timeStr += mins + " minutes ";
      if (secs > 0) timeStr += secs + " seconds";
 
-     // Voice Announcement
      announce("Run completed. Total distance " + totalDistance.toFixed(2) + " kilometers in " + timeStr + ".");
 
      const runData = {
@@ -818,7 +812,14 @@ function endRun(){
          time: formatTime(elapsedSeconds),
          pace: calculatePace()
      };
-     runHistory.push(runData);
+     
+     // ADD TO HISTORY & SAVE TO LOCALSTORAGE (Max 50)
+     runHistory.unshift(runData);
+     if(runHistory.length > 50) {
+         runHistory.pop();
+     }
+     localStorage.setItem('raftaarRunHistory', JSON.stringify(runHistory));
+     
      renderHistory(); 
   } else {
      announce("Run completed.");
@@ -829,12 +830,12 @@ function renderHistory() {
   const container = document.getElementById('historyContent');
   if(runHistory.length === 0) return;
   
-  let html = `<h3 style="color:#fff; margin-bottom:15px; font-family:'Space Grotesk';">Saved Runs (${runHistory.length})</h3>`;
-  for(let i = runHistory.length - 1; i >= 0; i--) {
-    let run = runHistory[i];
+  let html = `<h3 style="color:#fff; margin-bottom:15px; font-family:'Space Grotesk';">Saved Runs</h3>`;
+  
+  runHistory.forEach((run, index) => {
     html += `
       <div class="history-card">
-         <div class="hist-header"><span>Run #${i+1}</span> <span>${run.date}</span></div>
+         <div class="hist-header"><span>Run #${runHistory.length - index}</span> <span>${run.date}</span></div>
          <div class="hist-stats">
             <div><strong>${run.dist}</strong> km</div>
             <div><strong>${run.time}</strong> time</div>
@@ -842,9 +843,14 @@ function renderHistory() {
          </div>
       </div>
     `;
-  }
+  });
   container.innerHTML = html;
 }
+
+// Initial render on load
+document.addEventListener("DOMContentLoaded", () => {
+    renderHistory();
+});
 
 startBtn.addEventListener('click',toggleRun);
 stopBtn.addEventListener('click',endRun);
@@ -856,7 +862,7 @@ lockBtn.addEventListener('click',()=>{
   lockBtn.querySelector('.control-symbol').textContent = isLocked ? 'L' : 'U';
 });
 
-/* TAB SWITCHING & MAP RE-SIZING FIX */
+/* TAB SWITCHING */
 const navItems = document.querySelectorAll('.app-bottom-nav .nav-item');
 const appViews = document.querySelectorAll('.app-view');
 
@@ -873,7 +879,6 @@ navItems.forEach(item => {
     appViews.forEach(view => view.classList.remove('active-view'));
     document.getElementById('view-' + tabName).classList.add('active-view');
     
-    // IMPORTANT: Map inside a hidden container needs resize invalidation and immediate init
     if(tabName === 'map') {
        if(!leafletMap) {
            initRealMap(28.6139, 77.2090); 
