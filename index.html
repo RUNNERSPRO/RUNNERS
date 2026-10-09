@@ -691,14 +691,38 @@ audio { display:none; } /* Hide native audio element */
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-/* VOICE COMMAND LOGIC */
+/* VOICE COMMAND LOGIC WITH AUDIO DUCKING (Lowers music volume when speaking) */
+let originalAudioVolume = 1.0;
+let isAudioDucked = false;
+
 function announce(message) {
     const voiceToggle = document.getElementById('voiceToggle');
     if (voiceToggle && voiceToggle.checked && 'speechSynthesis' in window) {
+        const audioPlayer = document.getElementById('audioPlayer');
+        
+        // Duck the audio volume if music is playing
+        if (audioPlayer && !audioPlayer.paused && !isAudioDucked) {
+            originalAudioVolume = audioPlayer.volume;
+            audioPlayer.volume = 0.15; // Set very low
+            isAudioDucked = true;
+        }
+
         window.speechSynthesis.cancel();
         const speech = new SpeechSynthesisUtterance(message);
         speech.lang = 'en-US'; 
         speech.rate = 1.0;
+        
+        // Restore volume when speech ends or errors out
+        const restoreVolume = () => {
+            if (audioPlayer && isAudioDucked) {
+                audioPlayer.volume = originalAudioVolume;
+                isAudioDucked = false;
+            }
+        };
+        
+        speech.onend = restoreVolume;
+        speech.onerror = restoreVolume;
+
         window.speechSynthesis.speak(speech);
     }
 }
