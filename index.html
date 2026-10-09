@@ -120,13 +120,13 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
 .app-showcase{display:flex;justify-content:center;position:relative;padding:15px 0 20px}
 .app-showcase:before{content:"";position:absolute;width:650px;height:650px;left:50%;top:50%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(111,183,232,.14),rgba(200,255,69,.035) 38%,transparent 70%);filter:blur(25px);pointer-events:none}
 
-/* REALISTIC PHONE CONTAINER - BALANCED SIZE */
+/* REALISTIC PHONE CONTAINER - INCREASED HEIGHT */
 .app-phone{
   position:relative;
   width:360px;
-  height:760px;
+  height:820px; /* Increased to fix bottom overlap in browsers */
   max-width:95vw; 
-  max-height:88vh;
+  max-height:92vh; /* Relaxed max-height */
   padding:12px;
   border:1px solid rgba(255,255,255,.22);
   border-radius:48px;
@@ -237,7 +237,7 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
 
 /* MINI MUSIC PLAYER (At the bottom of Run View) */
 .mini-player {
-  margin: auto 16px 10px; /* Pushes player to the bottom, leaving space from nav */
+  margin: auto 16px 15px; /* Added more bottom margin so it doesn't hide */
   padding: 10px 14px;
   background: linear-gradient(145deg, rgba(25,50,69,.6), rgba(8,22,34,.8));
   border: 1px solid rgba(130,178,211,.15);
@@ -528,7 +528,7 @@ audio { display:none; } /* Hide native audio element */
                 </div>
               </div>
 
-              <!-- MINI MUSIC PLAYER (Fills the bottom gap) -->
+              <!-- MINI MUSIC PLAYER (Fills the bottom gap perfectly) -->
               <div class="mini-player">
                 <div class="mini-player-info">
                   <svg viewBox="0 0 24 24" width="16" height="16" stroke="var(--lime)" stroke-width="2" fill="none"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
