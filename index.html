@@ -163,7 +163,7 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
 .app-logo { font: 700 24px/1.1 "Space Grotesk"; letter-spacing: -0.04em; color: #fff; }
 .app-tagline { font: 500 11px/1 "DM Sans"; color: #8294a8; letter-spacing: 0.02em; margin-top: 2px; }
 
-/* STACKED ACTIONS WITH PROPER SPACING */
+/* STACKED ACTIONS WITH PROPER SPACING (Centered nicely without GPS pill) */
 .app-header-actions { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; }
 
 /* iOS STYLE VOICE TOGGLE */
@@ -176,7 +176,7 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
 .ios-switch input:checked + .ios-slider { background-color: var(--lime); border-color: var(--lime); }
 .ios-switch input:checked + .ios-slider:before { transform: translateX(12px); background-color: #07101a; }
 
-/* VIEWS CONTAINER */
+/* VIEWS CONTAINER (SCROLLABLE) */
 .app-views-container { 
   position: relative; flex:1; display:flex; flex-direction:column; margin-top: 5px; 
   min-height: 0; overflow-y: auto; overflow-x: hidden;
@@ -254,13 +254,8 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
 .hist-stats strong { font-size: 18px; color: var(--lime); display:block; margin-bottom:2px; font-family:"Space Grotesk";}
 .empty-hist { padding-top: 40px; text-align:center; color:#8294a8;}
 
-/* MUSIC VIEW UI */
+/* OFFLINE MUSIC VIEW UI (Sleek & Native feel) */
 .music-view-container { padding: 10px 16px; flex:1; display:flex; flex-direction:column; gap:12px; }
-.bt-card { background: linear-gradient(145deg,rgba(25,50,69,.8),rgba(8,22,34,.9)); border: 1px solid rgba(130,178,211,.15); border-radius: 16px; padding: 14px 16px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 6px 12px rgba(0,0,0,.2); }
-.bt-info { display:flex; align-items:center; gap:12px; color:#fff; font-size:14px; font-weight:600;}
-.bt-icon { width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,0.1); display:grid; place-items:center; color:#8294a8; transition:color 0.3s;}
-.bt-connect-btn { background: rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); color:#fff; padding:6px 14px; border-radius:12px; font:600 11px "Space Grotesk"; cursor:pointer; transition:0.3s;}
-.bt-connect-btn:hover { background: rgba(200,255,69,0.2); border-color:rgba(200,255,69,0.4); color:var(--lime);}
 .songs-card { background: linear-gradient(145deg,rgba(25,50,69,.4),rgba(8,22,34,.6)); border: 1px solid rgba(130,178,211,.1); border-radius: 16px; padding: 16px; flex:1; display:flex; flex-direction:column; overflow:hidden;}
 .songs-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; color:#fff; font-family:"Space Grotesk";}
 .load-btn { background:var(--lime); color:#000; border:none; padding:6px 12px; border-radius:10px; font:600 11px "Space Grotesk"; cursor:pointer;}
@@ -270,9 +265,16 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.08);background:rgba
 .song-item { display:flex; align-items:center; justify-content:space-between; padding:12px 10px; border-bottom:1px solid rgba(255,255,255,0.05); color:#9aa9b5; font-size:13px; font-weight:500; cursor:pointer; transition:0.2s; border-radius:8px;}
 .song-item:hover { background: rgba(255,255,255,0.05); color:#fff; }
 .song-item.playing { color:var(--lime); background: rgba(200,255,69,0.05); border-color:transparent;}
-.player-container { background:rgba(8,22,34,.9); border-radius:16px; padding:10px; border: 1px solid rgba(130,178,211,.15); box-shadow:0 -4px 20px rgba(0,0,0,0.3);}
-audio { width:100%; height:40px; outline:none; border-radius:8px; }
-audio::-webkit-media-controls-panel { background-color: #f8faf8; }
+.player-ui { background:rgba(8,22,34,.9); border-radius:16px; padding:15px; border: 1px solid rgba(130,178,211,.15); box-shadow:0 -4px 20px rgba(0,0,0,0.3); display:flex; flex-direction:column; gap:10px;}
+.player-controls { display:flex; align-items:center; justify-content:center; gap:20px; color:#fff; }
+.player-btn { background:none; border:none; color:#fff; cursor:pointer; display:grid; place-items:center; opacity:0.8; transition:0.2s;}
+.player-btn:hover { opacity:1; color:var(--lime);}
+.player-btn.main-play { width:40px; height:40px; background:var(--lime); color:#000; border-radius:50%; opacity:1;}
+.player-btn.main-play:hover { transform:scale(1.05);}
+.progress-container { display:flex; align-items:center; gap:10px; font-size:10px; color:#8294a8; }
+.progress-bar { flex:1; height:4px; background:rgba(255,255,255,0.1); border-radius:4px; position:relative; cursor:pointer; overflow:hidden;}
+.progress-fill { position:absolute; left:0; top:0; height:100%; width:0%; background:var(--lime); transition:width 0.1s linear;}
+audio { display:none; } /* Hide native audio element */
 
 /* BOTTOM NAV - 4 ITEMS NOW */
 .app-bottom-nav{height:60px;padding:4px 16px 8px;display:grid;grid-template-columns:repeat(4,1fr);background:rgba(5,16,26,.97);border-top:1px solid rgba(255,255,255,.07);position:relative;z-index:9;flex-shrink:0;}
@@ -471,7 +473,7 @@ audio::-webkit-media-controls-panel { background-color: #f8faf8; }
                   <span id="speedStatus" class="metric-note"><i></i> Waiting...</span>
                 </div>
                 
-                <!-- NEW CALORIES METRIC (Replacing GPS Accuracy) -->
+                <!-- NEW CALORIES METRIC -->
                 <div class="app-metric metric-orange">
                   <div class="metric-top">
                     <div class="metric-icon">
@@ -487,40 +489,46 @@ audio::-webkit-media-controls-panel { background-color: #f8faf8; }
               </div>
             </div>
 
-            <!-- 2. MUSIC VIEW -->
+            <!-- 2. MUSIC VIEW (No Bluetooth Connection code needed as it uses device's native Bluetooth) -->
             <div id="view-music" class="app-view">
               <div class="music-view-container">
                 
-                <div class="bt-card">
-                  <div class="bt-info">
-                    <div class="bt-icon" id="btStatusIcon">
-                      <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"></polyline></svg>
-                    </div>
-                    <div>
-                      <span style="display:block; font-size:10px; color:#8294a8; letter-spacing:1px;">BLUETOOTH</span>
-                      <strong id="btName">Not Connected</strong>
-                    </div>
-                  </div>
-                  <button class="bt-connect-btn" id="btConnectBtn">Connect</button>
-                </div>
-                
                 <div class="songs-card">
                   <div class="songs-header">
-                    <h4>Downloaded Songs</h4>
-                    <button class="load-btn" onclick="document.getElementById('audioUpload').click()">+ Load</button>
+                    <h4>Local Playlist</h4>
+                    <button class="load-btn" onclick="document.getElementById('audioUpload').click()">+ Load Files</button>
                     <!-- MULTIPLE SELECT FOR ADDING SONGS -->
                     <input type="file" id="audioUpload" multiple accept="audio/*" style="display:none;">
                   </div>
                   <div id="songList" class="song-list">
-                    <div style="text-align:center; color:#8294a8; margin-top:15px; font-size:12px;">
+                    <div style="text-align:center; color:#8294a8; margin-top:20px; font-size:12px;">
                       <svg viewBox="0 0 24 24" width="40" height="40" stroke="currentColor" stroke-width="1" fill="none" style="margin-bottom:10px; opacity:0.5;"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
-                      <br>Web apps cannot read internal storage.<br>Tap '+ Load' to select multiple songs.
+                      <br>No music loaded.<br>Tap '+ Load Files' to select audio from your device.
                     </div>
                   </div>
                 </div>
                 
-                <div class="player-container">
-                  <audio id="audioPlayer" controls></audio>
+                <div class="player-ui">
+                  <div class="progress-container">
+                    <span id="timeCurrent">0:00</span>
+                    <div class="progress-bar" id="progressBarContainer">
+                      <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <span id="timeTotal">0:00</span>
+                  </div>
+                  
+                  <div class="player-controls">
+                    <button class="player-btn" id="prevBtn">
+                      <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5"></line></svg>
+                    </button>
+                    <button class="player-btn main-play" id="playPauseBtn">
+                      <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="currentColor" id="playIcon"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    </button>
+                    <button class="player-btn" id="nextBtn">
+                      <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg>
+                    </button>
+                  </div>
+                  <audio id="audioPlayer"></audio>
                 </div>
                 
               </div>
@@ -563,7 +571,6 @@ audio::-webkit-media-controls-panel { background-color: #f8faf8; }
               </svg>
               <small>Run</small>
             </button>
-            <!-- NEW MUSIC BUTTON -->
             <button class="nav-item" type="button" data-tab="music">
               <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M9 18V5l12-2v13"></path>
@@ -652,36 +659,19 @@ if (window.DeviceOrientationEvent) {
   });
 }
 
-/* BLUETOOTH & LOCAL MUSIC LOGIC */
-const btConnectBtn = document.getElementById('btConnectBtn');
-const btName = document.getElementById('btName');
-const btStatusIcon = document.getElementById('btStatusIcon');
-
-btConnectBtn.addEventListener('click', async () => {
-    try {
-        if (!navigator.bluetooth) {
-            alert("Web Bluetooth API is not supported in this browser. Try on Chrome for Android.");
-            return;
-        }
-        // Will explicitly open Bluetooth pairing dialogue box
-        const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true });
-        
-        // If user connects successfully:
-        btName.textContent = device.name || 'Unknown Device';
-        btStatusIcon.style.color = '#c8ff45';
-        btConnectBtn.textContent = 'Connected';
-        btConnectBtn.style.background = 'rgba(200,255,69,0.15)';
-        btConnectBtn.style.borderColor = 'rgba(200,255,69,0.4)';
-        btConnectBtn.style.color = 'var(--lime)';
-    } catch (err) {
-        console.log("Bluetooth connection cancelled or failed", err);
-        // Do not update UI (stays "Not Connected")
-    }
-});
-
+/* SMART MUSIC PLAYER LOGIC (Plays over device's connected audio output) */
 const audioUpload = document.getElementById('audioUpload');
 const songList = document.getElementById('songList');
 const audioPlayer = document.getElementById('audioPlayer');
+const playPauseBtn = document.getElementById('playPauseBtn');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+const playIcon = document.getElementById('playIcon');
+const progressFill = document.getElementById('progressFill');
+const progressBarContainer = document.getElementById('progressBarContainer');
+const timeCurrent = document.getElementById('timeCurrent');
+const timeTotal = document.getElementById('timeTotal');
+
 let songs = [];
 let currentSongIndex = 0;
 
@@ -689,21 +679,28 @@ audioUpload.addEventListener('change', (e) => {
     const files = Array.from(e.target.files);
     const newSongs = files.filter(f => f.type.startsWith('audio/'));
     if(newSongs.length > 0) {
-        songs = songs.concat(newSongs); // Append new songs to existing playlist
+        songs = songs.concat(newSongs);
         renderSongs();
         if(!audioPlayer.src || audioPlayer.src === window.location.href) {
-            playSong(songs.length - newSongs.length); // Play first of newly added
+            loadSong(songs.length - newSongs.length);
         }
     }
 });
+
+function formatAudioTime(seconds) {
+    if(isNaN(seconds)) return "0:00";
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
 
 function renderSongs() {
     if(songs.length === 0) return;
     let html = '';
     songs.forEach((song, index) => {
         const isPlaying = (index === currentSongIndex) ? 'playing' : '';
-        const icon = (index === currentSongIndex) ? '■' : '▶';
-        html += `<div class="song-item ${isPlaying}" onclick="playSong(${index})">
+        const icon = (index === currentSongIndex && !audioPlayer.paused) ? '■' : '▶';
+        html += `<div class="song-item ${isPlaying}" onclick="playSongIndex(${index})">
                     <span style="text-overflow:ellipsis; overflow:hidden; white-space:nowrap; max-width:85%;">${song.name.replace(/\.[^/.]+$/, "")}</span>
                     <span>${icon}</span>
                  </div>`;
@@ -711,20 +708,76 @@ function renderSongs() {
     songList.innerHTML = html;
 }
 
-function playSong(index) {
+function loadSong(index) {
     currentSongIndex = index;
     const file = songs[index];
     const url = URL.createObjectURL(file);
     audioPlayer.src = url;
-    audioPlayer.play();
-    renderSongs(); // update UI playing status
+    audioPlayer.load();
+    renderSongs();
 }
 
-// Auto play next song when current song ends
-audioPlayer.addEventListener('ended', () => {
-    if(currentSongIndex < songs.length - 1) {
-        playSong(currentSongIndex + 1);
+function playSongIndex(index) {
+    loadSong(index);
+    togglePlayPause();
+}
+
+function togglePlayPause() {
+    if(songs.length === 0) return;
+    if(audioPlayer.paused) {
+        audioPlayer.play();
+        playIcon.innerHTML = `<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>`;
+    } else {
+        audioPlayer.pause();
+        playIcon.innerHTML = `<polygon points="5 3 19 12 5 21 5 3"></polygon>`;
     }
+    renderSongs();
+}
+
+playPauseBtn.addEventListener('click', togglePlayPause);
+
+prevBtn.addEventListener('click', () => {
+    if(songs.length === 0) return;
+    currentSongIndex = (currentSongIndex - 1 + songs.length) % songs.length;
+    loadSong(currentSongIndex);
+    audioPlayer.play();
+    playIcon.innerHTML = `<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>`;
+});
+
+nextBtn.addEventListener('click', () => {
+    if(songs.length === 0) return;
+    currentSongIndex = (currentSongIndex + 1) % songs.length;
+    loadSong(currentSongIndex);
+    audioPlayer.play();
+    playIcon.innerHTML = `<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>`;
+});
+
+audioPlayer.addEventListener('ended', () => {
+    nextBtn.click();
+});
+
+audioPlayer.addEventListener('timeupdate', () => {
+    const current = audioPlayer.currentTime;
+    const total = audioPlayer.duration;
+    timeCurrent.textContent = formatAudioTime(current);
+    if(!isNaN(total)) {
+        timeTotal.textContent = formatAudioTime(total);
+        const progressPercent = (current / total) * 100;
+        progressFill.style.width = `${progressPercent}%`;
+    }
+});
+
+audioPlayer.addEventListener('loadedmetadata', () => {
+    timeTotal.textContent = formatAudioTime(audioPlayer.duration);
+});
+
+progressBarContainer.addEventListener('click', (e) => {
+    if(songs.length === 0 || isNaN(audioPlayer.duration)) return;
+    const rect = progressBarContainer.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const width = rect.width;
+    const newTime = (clickX / width) * audioPlayer.duration;
+    audioPlayer.currentTime = newTime;
 });
 
 /* REAL MAP & ROUTE TRACKING (Leaflet.js) */
